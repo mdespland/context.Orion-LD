@@ -376,7 +376,7 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
         ciP->httpStatusCode = SccBadRequest;
         goto respond;
       }
-      LM_TMP(("KZ: orionldState.contextP points to '%s'", orionldState.contextP->url));
+      LM_TMP(("orionldState.contextP points to '%s'", orionldState.contextP->url));
     }
     else
       orionldState.contextP = NULL;

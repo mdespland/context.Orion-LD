@@ -125,7 +125,7 @@ bool orionldContextTreat
   {
     char* details;
 
-    LM_TMP(("KZ: Setting orionldState.contextP to the output from orionldContextCreateFromUrl"));
+    LM_TMP(("Setting orionldState.contextP to the output from orionldContextCreateFromUrl"));
     if ((orionldState.contextP = orionldContextCreateFromUrl(ciP, contextNodeP->value.s, OrionldUserContext, &details)) == NULL)
     {
       LM_E(("Failed to create context from URL: %s", details));
@@ -165,7 +165,7 @@ bool orionldContextTreat
 
     snprintf(linkPath, linkPathLen, "http://%s:%d/ngsi-ld/ex/v1/contexts/%s", orionldHostName, restPortGet(), entityId);
 
-    LM_TMP(("KZ: Setting orionldState.contextP to the output from orionldContextCreateFromTree"));
+    LM_TMP(("Setting orionldState.contextP to the output from orionldContextCreateFromTree"));
     orionldState.contextP = orionldContextCreateFromTree(contextNodeP, linkPath, OrionldUserContext, &details);
 
     if (linkPath != linkPathV)
@@ -232,7 +232,7 @@ bool orionldContextTreat
     orionldState.inlineContext.temporary = true;
     orionldState.inlineContext.next      = NULL;
     orionldState.contextP                = &orionldState.inlineContext;
-    LM_TMP(("KZ: Set orionldState.contextP to &orionldState.inlineContext"));
+    LM_TMP(("Set orionldState.contextP to &orionldState.inlineContext"));
 
     return true;
   }

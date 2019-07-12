@@ -29,7 +29,6 @@ extern "C"
 {
 #include "kjson/KjNode.h"                                      // KjNode
 #include "kjson/kjParse.h"                                     // kjParse
-#include "kjson/kjClone.h"                                     // kjClone
 #include "kjson/kjFree.h"                                      // kjFree
 }
 
@@ -102,18 +101,6 @@ OrionldContext* orionldContextCreateFromUrl(ConnectionInfo* ciP, const char* url
 
   orionldState.contextToBeFreed = false;
   LM_T(LmtContextList, ("Context is to be inserted into the common context list, so, it needs to be cloned"));
-
-  // <DEBUG>
-  contextArrayPresent(contextP->tree, "Before cloning");
-  // </DEBUG>
-
-  // FIXME: Don't clone if core or vocab context
-  contextP->tree = kjClone(contextP->tree);
-
-  // <DEBUG>
-  contextArrayPresent(contextP->tree, "Just after cloning");
-  // </DEBUG>
-
 
   LM_T(LmtContextList, ("Inserting context '%s' in common list", url));
 

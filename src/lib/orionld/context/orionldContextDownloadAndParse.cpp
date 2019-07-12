@@ -22,14 +22,15 @@
 *
 * Author: Ken Zangelin
 */
-#include "logMsg/logMsg.h"                                  // LM_*
-#include "logMsg/traceLevels.h"                             // Lmt*
+#include "logMsg/logMsg.h"                                     // LM_*
+#include "logMsg/traceLevels.h"                                // Lmt*
 
 extern "C"
 {
-#include "kjson/kjson.h"                                    // Kjson
-#include "kjson/KjNode.h"                                   // KjNode
-#include "kjson/kjParse.h"                                  // kjParse
+#include "kjson/kjson.h"                                       // Kjson
+#include "kjson/KjNode.h"                                      // KjNode
+#include "kjson/kjParse.h"                                     // kjParse
+#include "kjson/kjClone.h"                                     // kjClone
 }
 
 #include "orionld/common/OrionldResponseBuffer.h"              // OrionldResponseBuffer
@@ -160,7 +161,6 @@ KjNode* orionldContextDownloadAndParse(Kjson* kjsonP, const char* url, bool useI
     return NULL;
   }
 
-
   //
   // Lastly, make sure the context is not shadowing any alias form the Core Context
   // If the Core Context is NULL, then this check is NOT done, as we are processing the
@@ -193,6 +193,7 @@ KjNode* orionldContextDownloadAndParse(Kjson* kjsonP, const char* url, bool useI
 
   KjNode* contextNodeP = tree->value.firstChildP;
   LM_T(LmtContext, ("contextNodeP is named '%s'", contextNodeP->name));
+
 
   if (contextNodeP == NULL)
   {
@@ -229,6 +230,16 @@ KjNode* orionldContextDownloadAndParse(Kjson* kjsonP, const char* url, bool useI
     }
   }
 
+
+  //
+  // All OK, the tree is cloned
+  //
+
+  // FIXME: Don't clone if core or vocab context
+  LM_TMP(("KZ: Cloning context '%s'", url));
+  tree = kjClone(tree);
+
+
   // Now, we have '@context' - is it an object?
   if (contextNodeP->type != KjObject)
   {
@@ -248,6 +259,8 @@ KjNode* orionldContextDownloadAndParse(Kjson* kjsonP, const char* url, bool useI
       }
     }
     // </DEBUG>
+
+    LM_TMP(("KZ: Not an object ('@context' in '%s' is of type '%s') - we are done here (no collision check necessary)", url, kjValueType(contextNodeP->type)));
 
     return tree;
   }
