@@ -22,17 +22,18 @@
 *
 * Author: Ken Zangelin
 */
-#include "logMsg/logMsg.h"                                  // LM_*
-#include "logMsg/traceLevels.h"                             // Lmt*
+#include "logMsg/logMsg.h"                                     // LM_*
+#include "logMsg/traceLevels.h"                                // Lmt*
 
 extern "C"
 {
-#include "kjson/kjson.h"                                    // Kjson
-#include "kjson/KjNode.h"                                   // KjNode
-#include "kjson/kjParse.h"                                  // kjParse
+#include "kjson/kjson.h"                                       // Kjson
+#include "kjson/KjNode.h"                                      // KjNode
+#include "kjson/kjParse.h"                                     // kjParse
 }
 
 #include "orionld/common/OrionldResponseBuffer.h"              // OrionldResponseBuffer
+#include "orionld/common/orionldState.h"                       // orionldState
 #include "orionld/common/orionldRequestSend.h"                 // orionldRequestSend
 #include "orionld/context/orionldCoreContext.h"                // orionldCoreContext
 #include "orionld/context/orionldContextDownloadAndParse.h"    // Own interface
@@ -63,7 +64,6 @@ void contextArrayPresent(KjNode* tree, const char* what)
 
 
 
-static __thread OrionldResponseBuffer  httpResponse;
 // -----------------------------------------------------------------------------
 //
 // orionldContextDownloadAndParse -
@@ -85,32 +85,32 @@ KjNode* orionldContextDownloadAndParse(Kjson* kjsonP, const char* url, bool useI
 
   for (int tries = 0; tries < 5; tries++)
   {
-    httpResponse.buf       = NULL;
-    httpResponse.size      = 0;
-    httpResponse.used      = 0;
-    httpResponse.allocated = false;
+    orionldState.httpResponse.buf       = NULL;
+    orionldState.httpResponse.size      = 0;
+    orionldState.httpResponse.used      = 0;
+    orionldState.httpResponse.allocated = false;
 
     if (useInternalBuffer)
     {
-      httpResponse.buf = httpResponse.internalBuffer;  // Contexts to be saved will need to be cloned
-      if (httpResponse.buf == NULL)
+      orionldState.httpResponse.buf = orionldState.httpResponse.internalBuffer;  // Contexts to be saved will need to be cloned
+      if (orionldState.httpResponse.buf == NULL)
       {
         *detailsPP = (char*) "out of memory";
         return NULL;
       }
-      httpResponse.size = sizeof(httpResponse.internalBuffer);
+      orionldState.httpResponse.size = sizeof(orionldState.httpResponse.internalBuffer);
     }
 
     LM_T(LmtContext, ("Downloading context '%s'", url));
 
     //
     // detailsPP is filled in by orionldRequestSend()
-    // httpResponse.buf freed by orionldRequestSend() in case of error
+    // orionldState.httpResponse.buf freed by orionldRequestSend() in case of error
     //
     bool tryAgain = false;
     bool reqOk;
 
-    reqOk = orionldRequestSend(&httpResponse, url, 10000, detailsPP, &tryAgain);
+    reqOk = orionldRequestSend(&orionldState.httpResponse, url, 10000, detailsPP, &tryAgain);
     if (reqOk == true)
     {
       ok = true;
@@ -131,9 +131,9 @@ KjNode* orionldContextDownloadAndParse(Kjson* kjsonP, const char* url, bool useI
   }
 
   // Now parse the payload
-  // LM_T(LmtContext, ("Got @context: %s", httpResponse.buf));
+  // LM_T(LmtContext, ("Got @context: %s", orionldState.httpResponse.buf));
   // LM_T(LmtContext, ("Got @context - parsing it"));
-  KjNode* tree = kjParse(kjsonP, httpResponse.buf);
+  KjNode* tree = kjParse(kjsonP, orionldState.httpResponse.buf);
   LM_T(LmtContext, ("Got @context - parsed it"));
 
   // <DEBUG>
@@ -151,7 +151,7 @@ KjNode* orionldContextDownloadAndParse(Kjson* kjsonP, const char* url, bool useI
 
   // <DEBUG>
   extern void contextArrayPresent(KjNode* tree, const char* what);
-  contextArrayPresent(tree, "Just after freeing httpResponse");
+  contextArrayPresent(tree, "Just after freeing orionldState.httpResponse");
   // </DEBUG>
 
   if ((tree->type != KjArray) && (tree->type != KjString) && (tree->type != KjObject))

@@ -26,15 +26,8 @@
 #include "logMsg/traceLevels.h"                                // Lmt*
 
 #include "rest/ConnectionInfo.h"                               // ConnectionInfo
+#include "orionld/common/orionldState.h"                       // static_buffer, orionldState
 #include "orionld/rest/orionldMhdConnectionPayloadRead.h"      // Own interface
-
-
-
-// -----------------------------------------------------------------------------
-//
-// static_buffer - from src/lib/rest.cpp
-//
-extern __thread char  static_buffer[STATIC_BUFFER_SIZE + 1];
 
 
 

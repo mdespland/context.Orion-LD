@@ -30,10 +30,20 @@ extern "C"
 #include "kjson/kjson.h"                                       // Kjson
 #include "kjson/KjNode.h"                                      // KjNode
 }
-#include "common/globals.h"                                    // ApiVersion
-#include "orionld/context/OrionldContext.h"                    // OrionldContext
 
+#include "common/globals.h"                                    // ApiVersion
+#include "common/limits.h"                                     // STATIC_BUFFER_SIZE
+#include "orionld/context/OrionldContext.h"                    // OrionldContext
+#include "orionld/common/OrionldResponseBuffer.h"              // OrionldResponseBuffer
+
+
+
+// -----------------------------------------------------------------------------
+//
+// Forward declarations - to avoid including difficult files (including this one)
+//
 struct OrionLdRestService;
+
 
 
 // -----------------------------------------------------------------------------
@@ -100,7 +110,19 @@ typedef struct OrionldConnectionState
   bool                    acceptJson;
   bool                    acceptJsonld;
   bool                    ngsildContent;
+  OrionldResponseBuffer   httpResponse;
 } OrionldConnectionState;
+
+
+
+// -----------------------------------------------------------------------------
+//
+// static_buffer - from src/lib/rest.cpp
+//
+// This variable really should be part of OrionldConnectionState, but as a __thread
+// buffer already exists in orion, we'll of course use that one ...
+//
+extern __thread char  static_buffer[STATIC_BUFFER_SIZE + 1];
 
 
 
