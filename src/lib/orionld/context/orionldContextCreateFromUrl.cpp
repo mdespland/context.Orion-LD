@@ -80,7 +80,7 @@ OrionldContext* orionldContextCreateFromUrl(ConnectionInfo* ciP, const char* url
     return NULL;
   }
 
-  contextP->tree = orionldContextDownloadAndParse(orionldState.kjsonP, url, true, detailsPP);
+  contextP->tree = orionldContextDownloadAndParse(kjsonP, url, true, detailsPP);
   if (contextP->tree == NULL)
   {
     LM_E(("orionldContextDownloadAndParse: %s", *detailsPP));
@@ -123,12 +123,15 @@ OrionldContext* orionldContextCreateFromUrl(ConnectionInfo* ciP, const char* url
 
   if (contextP->tree->value.firstChildP->type == KjArray)
   {
-    KjNode* arrayP = contextP->tree->value.firstChildP;
+    KjNode* arrayP       = contextP->tree->value.firstChildP;
+    int     arrayMembers = 0;
     LM_TMP(("KZ: We got an array - need to download more contexts"));
 
     LM_T(LmtContextList, ("We got an array - need to download more contexts"));
     for (KjNode* aItemP = arrayP->value.firstChildP; aItemP != NULL; aItemP = aItemP->next)
     {
+      ++arrayMembers;
+      LM_TMP(("KZ: Array member %d: %s", arrayMembers, aItemP->value.s));
       //
       // Is the context already present in the list?
       // If so, no need to download, parse and insert into the context list
@@ -137,7 +140,10 @@ OrionldContext* orionldContextCreateFromUrl(ConnectionInfo* ciP, const char* url
         continue;
 
       if (orionldContextLookup(aItemP->value.s) != NULL)
+      {
+        LM_TMP(("KZ: Already in cache: %s", aItemP->value.s)); 
         continue;
+      }
 
       if (urlCheck(aItemP->value.s, detailsPP) == false)
       {
@@ -148,6 +154,7 @@ OrionldContext* orionldContextCreateFromUrl(ConnectionInfo* ciP, const char* url
 
       OrionldContext*  arrayItemContextP;
 
+      LM_TMP(("KZ: Calling orionldContextCreateFromUrl for %s", aItemP->value.s));
       if ((arrayItemContextP = orionldContextCreateFromUrl(ciP, aItemP->value.s, OrionldUserContext, detailsPP)) == NULL)
       {
         LM_E(("KZ: orionldContextCreateFromUrl error: %s", *detailsPP));
@@ -158,6 +165,7 @@ OrionldContext* orionldContextCreateFromUrl(ConnectionInfo* ciP, const char* url
       LM_T(LmtContextList, ("Inserting context '%s' in common list", url));
       orionldContextListInsert(arrayItemContextP, false);
     }
+    LM_TMP(("KZ: %d Array Members", arrayMembers));
   }
 
   return contextP;

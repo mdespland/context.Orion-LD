@@ -44,6 +44,7 @@ extern "C"
 #include "orionld/common/linkCheck.h"                          // linkCheck
 #include "orionld/common/SCOMPARE.h"                           // SCOMPARE
 #include "orionld/common/orionldState.h"                       // orionldState
+#include "orionld/common/urlCheck.h"                           // urlCheck
 #include "orionld/context/orionldContextCreateFromUrl.h"       // orionldContextCreateFromUrl
 #include "orionld/context/orionldContextAppend.h"              // orionldContextAppend
 #include "orionld/serviceRoutines/orionldBadVerb.h"            // orionldBadVerb
@@ -314,6 +315,7 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
 
       if (contextNodeP != NULL)
       {
+        LM_TMP(("KZ: orionldMhdConnectionTreat found a @context in the payload"));
         // A @context in the payload must be a JSON String, Array, or an Object
         if ((contextNodeP->type != KjString) && (contextNodeP->type != KjArray) && (contextNodeP->type != KjObject))
         {
@@ -330,7 +332,7 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
       // After responding (both to the current request and after serving the context in a subsequent request), theoretically the context
       // could be removed from  the context server.
       //
-      // It could be marked at "volatile" so that the context sewrver would know to remove it after servoing it the first (and only) time.
+      // It could be marked at "volatile" so that the context sewrver would know to remove it after serving it the first (and only) time.
       //
       // All of this only applies if:
       //   o The @context in the payload is not a simple URI string
@@ -338,7 +340,60 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
       //
       if ((contextNodeP != NULL) && (orionldState.acceptJsonld == false) && (orionldState.useLinkHeader == true) && (contextNodeP->type != KjString))
         contextToBeCreated = true;
-    }
+
+#if 0
+      //
+      // Now the entire @context must be removed from the payload tree
+      // After that, the entire context must be followed and downloaded, then instered into the cache
+      //
+      // 1. Create the context and add to the context-cache
+      // 2. Check the type of the context.
+      //    - If just a string, then all is done (step 1 takes care of it
+      //    - If inline context, then all is done (step 1 takes care of it
+      //    - If a vector of URLs: Download + Create each context and add to the context-cache
+      //
+      if (contextNodeP != NULL)
+      {
+        if (contextNodeP->type == KjString)
+        {
+          LM_TMP(("KZ: Context in payload is a String"));
+          if ((orionldState.contextP = orionldContextCreateFromUrl(ciP, contextNodeP->value.s, OrionldUserContext, &details)) == NULL)
+          {
+            orionldErrorResponseCreate(ciP, OrionldBadRequestData, "Failure to create context from URL", details, OrionldDetailsString);
+            ciP->httpStatusCode = SccBadRequest;
+            goto respond;
+          }
+
+        }
+        else if (contextNodeP->type == KjArray)
+        {
+          LM_TMP(("KZ: Context in payload is an array"));
+          LM_TMP(("KZ: ------------------------------"));
+          for (KjNode* arrayItemP = contextNodeP->value.firstChildP; arrayItemP != NULL; arrayItemP = arrayItemP->next)
+          {
+            if (arrayItemP->type == KjString)
+            {
+              char* details;
+
+              if (orionldContextCreateFromUrl(ciP, arrayItemP->value.s, OrionldUserContext, &details) == NULL)
+              {
+                LM_E(("Unable to create context from URL: '%s'", arrayItemP->value.s));
+                orionldErrorResponseCreate(ciP, OrionldBadRequestData, "Unable to create context from URL", arrayItemP->value.s, OrionldDetailsString);
+                ciP->httpStatusCode = SccBadRequest;
+                return false;
+              }
+            }
+            else
+            {
+              LM_E(("Sorry, only strings in arrays supported for now"));
+              orionldErrorResponseCreate(ciP, OrionldBadRequestData, "Only strings in arrays supported for now", NULL, OrionldDetailsString);
+              ciP->httpStatusCode = SccBadRequest;
+              return false;
+            }
+          }
+        }
+      }
+#endif
 
     if (contentTypeCheck(ciP, contextNodeP, &errorTitle, &details) == false)
     {
@@ -400,6 +455,7 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
       //
 
       // The Context tree must be cloned, as it is created inside the thread's kjson
+      LM_TMP(("KZ: Cloning Context tree - as the tree was created inside the thread's kjson"));
       KjNode* clonedTree = kjClone(contextNodeP);
 
       if (clonedTree == NULL)
@@ -453,6 +509,7 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
       char*            details;
       OrionldContext*  contextP;
 
+      LM_TMP(("KZ: Calling orionldContextAppend with the cloned tree. URL: %s", contextId));
       if ((contextP = orionldContextAppend(contextId, clonedTree, OrionldUserContext, &details)) == NULL)
       {
         kjFree(clonedTree);

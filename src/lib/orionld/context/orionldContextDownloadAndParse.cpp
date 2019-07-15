@@ -30,9 +30,11 @@ extern "C"
 #include "kjson/kjson.h"                                    // Kjson
 #include "kjson/KjNode.h"                                   // KjNode
 #include "kjson/kjParse.h"                                  // kjParse
+#include "kjson/kjClone.h"                                  // kjClone
 }
 
 #include "orionld/common/OrionldResponseBuffer.h"              // OrionldResponseBuffer
+#include "orionld/common/orionldState.h"                       // orionldState
 #include "orionld/common/orionldRequestSend.h"                 // orionldRequestSend
 #include "orionld/context/orionldCoreContext.h"                // orionldCoreContext
 #include "orionld/context/orionldContextDownloadAndParse.h"    // Own interface
@@ -76,7 +78,7 @@ static __thread OrionldResponseBuffer  httpResponse;
 //
 KjNode* orionldContextDownloadAndParse(Kjson* kjsonP, const char* url, bool useInternalBuffer, char** detailsPP)
 {
-  LM_TMP(("KZ: In orionldContextDownloadAndParse"));
+  LM_TMP(("KZ: In orionldContextDownloadAndParse: %s", url));
 
   //
   // Prepare the httpResponse buffer
@@ -111,6 +113,7 @@ KjNode* orionldContextDownloadAndParse(Kjson* kjsonP, const char* url, bool useI
     bool reqOk;
 
     reqOk = orionldRequestSend(&httpResponse, url, 10000, detailsPP, &tryAgain);
+    LM_TMP(("KZ: Back from orionldRequestSend"));
     if (reqOk == true)
     {
       ok = true;
@@ -133,7 +136,9 @@ KjNode* orionldContextDownloadAndParse(Kjson* kjsonP, const char* url, bool useI
   // Now parse the payload
   // LM_T(LmtContext, ("Got @context: %s", httpResponse.buf));
   // LM_T(LmtContext, ("Got @context - parsing it"));
-  KjNode* tree = kjParse(kjsonP, httpResponse.buf);
+  LM_TMP(("Calling kjParse: %s", httpResponse.buf));
+  KjNode* tree = kjParse(orionldState.kjsonP, httpResponse.buf);
+  LM_TMP(("After kjParse"));
   LM_T(LmtContext, ("Got @context - parsed it"));
 
   // <DEBUG>
@@ -162,6 +167,9 @@ KjNode* orionldContextDownloadAndParse(Kjson* kjsonP, const char* url, bool useI
     return NULL;
   }
 
+
+  LM_TMP(("KZ: Cloning @context tree"));
+  tree = kjClone(tree);
 
   //
   // Lastly, make sure the context is not shadowing any alias form the Core Context

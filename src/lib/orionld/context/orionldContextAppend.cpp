@@ -50,6 +50,7 @@ OrionldContext* orionldContextAppend(const char* url, KjNode* tree, OrionldConte
   if ((contextP = orionldContextLookup(url)) != NULL)
     return contextP;
 
+  LM_TMP(("KZ: Calling orionldContextCreateFromTree(%s)", url));
   contextP = orionldContextCreateFromTree(tree, url, contextType, detailsPP);
 
   if (contextP == NULL)

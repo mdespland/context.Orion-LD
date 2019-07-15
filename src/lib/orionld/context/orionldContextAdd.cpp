@@ -129,6 +129,7 @@ OrionldContext* orionldContextAdd
   }
 
   LM_T(LmtContext, ("Downloading and parsing context of URL '%s'", url));
+  LM_TMP(("KZ: Calling orionldContextDownloadAndParse for URL '%s' (using global kjson - not thread buffer)", url));
   KjNode* tree = orionldContextDownloadAndParse(kjsonP, url, true, detailsPP);
 
   if (tree == NULL)

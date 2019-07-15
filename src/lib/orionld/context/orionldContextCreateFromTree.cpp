@@ -82,5 +82,7 @@ OrionldContext* orionldContextCreateFromTree(KjNode* tree, const char* url, Orio
   else
     LM_T(LmtContext, ("Context '%s' is NOT ignored", contextP->url));
 
+  LM_TMP(("KZ: Perhaps here we should look at the @context and possibly download more contexts ???"));
+
   return contextP;
 }
