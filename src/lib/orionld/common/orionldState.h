@@ -149,6 +149,7 @@ extern Kjson     kjson;
 extern Kjson*    kjsonP;
 extern char*     hostname;
 extern uint16_t  portNo;
+extern bool      firstSubCacheRefresh;
 
 
 

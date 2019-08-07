@@ -40,7 +40,7 @@
 #include "cache/subCache.h"
 
 #ifdef ORIONLD
-#include "orionld/common/OrionldConnection.h"                  // orionldState
+#include "orionld/common/orionldState.h"                        // orionldState
 #endif
 
 #include "mongoBackend/MongoGlobal.h"
@@ -123,7 +123,7 @@ int mongoSubCacheItemInsert(const char* tenant, const BSONObj& sub)
   //        Should check whether the subscription was created with NGSI-LD or not
   //        I can always check idField.toString().c_str() ...
   //
-  if (orionldState.apiVersion == NGSI_LD_V1)
+  if ((orionldState.apiVersion == NGSI_LD_V1) || (firstSubCacheRefresh == true))
     cSubP->subscriptionId        = strdup(idField.toString().c_str());
   else
     cSubP->subscriptionId        = strdup(idField.OID().toString().c_str());
@@ -506,6 +506,7 @@ void mongoSubCacheRefresh(const std::string& database)
   }
   releaseMongoConnection(connection);
 
+  firstSubCacheRefresh = false;
   LM_T(LmtSubCache, ("Added %d subscriptions for database '%s'", subNo, database.c_str()));
 }
 

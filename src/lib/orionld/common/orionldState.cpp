@@ -35,7 +35,7 @@ extern "C"
 
 #include "orionld/context/orionldContextFree.h"                // orionldContextFree
 #include "orionld/common/QNode.h"                              // QNode
-#include "orionld/common/OrionldConnection.h"                  // OrionldConnectionState
+#include "orionld/common/orionldState.h"                       // Own interface
 
 
 
@@ -55,13 +55,14 @@ __thread OrionldConnectionState orionldState = { 0 };
 // orionldThreadState.cpp/h
 // orionldGlobalState.cpp/h
 //
-int             requestNo                = 0;             // Never mind protecting with semaphore. Just a debugging help
-char            kallocBuffer[32 * 1024];
-KAlloc          kalloc;
-Kjson           kjson;
-Kjson*          kjsonP;
-uint16_t        portNo                   = 0;
-char*           hostname                 = (char*) "localhost";
+int       requestNo                = 0;             // Never mind protecting with semaphore. Just a debugging help
+char      kallocBuffer[32 * 1024];
+KAlloc    kalloc;
+Kjson     kjson;
+Kjson*    kjsonP;
+uint16_t  portNo                   = 0;
+char*     hostname                 = (char*) "localhost";
+bool      firstSubCacheRefresh     = true;
 
 
 
