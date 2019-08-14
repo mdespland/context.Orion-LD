@@ -37,7 +37,7 @@ extern "C"
 //
 // DB_DRIVER_MONGO_CPP_LEGACY - Use the mongo C++ Legacy driver
 //
-#define DB_DRIVER_MONGO_CPP_LEGACY 1
+// #define DB_DRIVER_MONGO_CPP_LEGACY 1
 
 
 
@@ -45,7 +45,7 @@ extern "C"
 //
 // DB_DRIVER_MONGOC - Use the "newest" mongo C driver
 //
-// #define DB_DRIVER_MONGOC
+#define DB_DRIVER_MONGOC 1
 
 
 
@@ -54,13 +54,13 @@ extern "C"
 // Function pointers for the DB interface
 //
 typedef KjNode* (*DbEntityLookupFunction)(const char* entityId);
-typedef bool    (*DbEntityUpdateFunction)(char* entityId, KjNode* requestTree);
-typedef KjNode* (*DbDataToKjTreeFunction)(void* dbData, char** titleP, char** detailsP);
+typedef bool    (*DbEntityUpdateFunction)(const char* entityId, KjNode* requestTree);
+typedef KjNode* (*DbDataToKjTreeFunction)(const void* dbData, char** titleP, char** detailsP);
 typedef void    (*DbDataFromKjTreeFunction)(KjNode* nodeP, void* dbDataP);
 
-extern DbEntityLookupFunction   dbEntityLookup;
-extern DbEntityUpdateFunction   dbEntityUpdate;
-extern DbDataToKjTreeFunction   dbDataToKjTree;
-extern DbDataFromKjTreeFunction dbDataFromKjTree;
+extern DbEntityLookupFunction    dbEntityLookup;
+extern DbEntityUpdateFunction    dbEntityUpdate;
+extern DbDataToKjTreeFunction    dbDataToKjTree;
+extern DbDataFromKjTreeFunction  dbDataFromKjTree;
 
 #endif  // SRC_LIB_ORIONLD_DB_DBCONFIGURATION_H_

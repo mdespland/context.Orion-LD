@@ -63,7 +63,7 @@ void dbInit(const char* dbHost, const char* dbName)
 
   dbEntityLookup   = mongocEntityLookup;
   dbEntityUpdate   = mongocEntityUpdate;
-  dbDataToKjTree   = mongocKjTreeFromBsonObj;
+  dbDataToKjTree   = mongocKjTreeFromBson;
   dbDataFromKjTree = NULL;  // FIXME: Implement mongocKjTreeToBson
 
   mongocInit(dbHost, dbName);

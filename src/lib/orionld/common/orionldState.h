@@ -25,17 +25,33 @@
 *
 * Author: Ken Zangelin
 */
-#include "orionld/db/dbDriver.h"                               // database driver header
-#include "orionld/db/dbConfiguration.h"                        // DB_DRIVER_MONGOC
+
+//
+// FIXME: Regardless of what DB is selected in dbConfiguration.h, I need to include "mongo/client/dbclient.h"
+//        This is so because mongoBackend/MongoGlobal.cpp (entitiesQuery) uses orionldState.qMongoFilterP for the new NGSI-LD Q-filters.
+//        mongoBackend will ALWAYS use the old C++ Legacy driver so not sure this will ever be fixed.
+//        At least not while we still use mongoBackend - the idea is to one day stop using mongoBackend
+//
+#include "mongo/client/dbclient.h"                               // MongoDB C++ Client Legacy Driver
+
+//
+// To be able to compile the orionld/mongoc library even though the mongoc driver is not selected in dbConfiguration,
+// we include the mongoc header file here (and add the mongoc fields to orionldState)
+// Perhaps the mongoc fields should move to another thread variable inside the orionld/mongoc library ...
+//
+#include "mongoc/mongoc.h"                                       // MongoDB C Client Driver
+
+#include "orionld/db/dbDriver.h"                                 // database driver header
+#include "orionld/db/dbConfiguration.h"                          // DB_DRIVER_MONGOC
 
 extern "C"
 {
-#include "kjson/kjson.h"                                       // Kjson
-#include "kjson/KjNode.h"                                      // KjNode
+#include "kjson/kjson.h"                                         // Kjson
+#include "kjson/KjNode.h"                                        // KjNode
 }
-#include "common/globals.h"                                    // ApiVersion
-#include "orionld/common/QNode.h"                              // QNode
-#include "orionld/context/OrionldContext.h"                    // OrionldContext
+#include "common/globals.h"                                      // ApiVersion
+#include "orionld/common/QNode.h"                                // QNode
+#include "orionld/context/OrionldContext.h"                      // OrionldContext
 
 
 
@@ -129,14 +145,12 @@ typedef struct OrionldConnectionState
   mongo::BSONObj*         qMongoFilterP;
   char*                   jsonBuf;    // Used by kjTreeFromBsonObj
 
-#ifdef DB_DRIVER_MONGOC
   //
   // MongoDB stuff
   //
   mongoc_uri_t*           mongoUri;
   mongoc_client_t*        mongoClient;
   mongoc_database_t*      mongoDatabase;
-#endif
 } OrionldConnectionState;
 
 
@@ -169,13 +183,12 @@ extern char*     tenant;              // From orionld.cpp
 
 
 
-#ifdef DB_DRIVER_MONGOC
 //
 // Variables for Mongo C Driver
 //
 extern mongoc_collection_t*  mongoEntitiesCollectionP;
 extern mongoc_collection_t*  mongoRegistrationsCollectionP;
-#endif
+
 
 
 // -----------------------------------------------------------------------------

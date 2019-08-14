@@ -70,13 +70,13 @@ uint16_t        portNo                   = 0;
 char*           hostname                 = (char*) "localhost";
 int             dbNameLen;
 
-#ifdef DB_DRIVER_MONGOC
+
 //
 // Variables for Mongo C Driver
 //
 mongoc_collection_t*  mongoEntitiesCollectionP      = NULL;
 mongoc_collection_t*  mongoRegistrationsCollectionP = NULL;
-#endif
+
 
 
 // -----------------------------------------------------------------------------
