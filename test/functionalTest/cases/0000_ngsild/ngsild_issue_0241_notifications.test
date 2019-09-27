@@ -32,13 +32,13 @@ accumulatorStart --pretty-print
 --SHELL--
 
 #
-# 01. Create an Entity urn:ngsi-ld:Vehicle:A4501
+# 01. Create an Entity urn:ngsi-ld:Vehicle:A4501, with both Property and Relationship with metadata
 # 02. Create a subscription matching the entity
 # 03. Dump the accumulator to see the initial notification, then reset the accumulator
 #
 
-echo "01. Create an Entity urn:ngsi-ld:Vehicle:A4501"
-echo "=============================================="
+echo "01. Create an Entity urn:ngsi-ld:Vehicle:A4501, with both Property and Relationship with metadata"
+echo "================================================================================================="
 payload='{
   "id": "urn:ngsi-ld:Vehicle:A4501",
   "type": "Vehicle",
@@ -53,6 +53,22 @@ payload='{
     "providedBy": {
       "type": "Relationship",
       "object": "urn:ngsi-ld:Person:Bob"
+    },
+    "subProp": {
+      "type": "Property",
+      "value": "prop-subProp"
+    }
+  },
+  "prop": {
+    "type": "Property",
+    "value": "prop with sub-prop",
+    "providedBy": {
+      "type": "Relationship",
+      "object": "urn:ngsi-ld:Person:Bob2"
+    },
+    "subProp": {
+      "type": "Property",
+      "value": "prop-subProp"
     }
   },
   "@context": [
@@ -106,8 +122,8 @@ echo
 
 
 --REGEXPECT--
-01. Create an Entity urn:ngsi-ld:Vehicle:A4501
-==============================================
+01. Create an Entity urn:ngsi-ld:Vehicle:A4501, with both Property and Relationship with metadata
+=================================================================================================
 HTTP/1.1 201 Created
 Content-Length: 0
 Link: REGEX(.*)
@@ -129,7 +145,7 @@ Date: REGEX(.*)
 ====================================================================================
 POST http://REGEX(.*)/notify
 Fiware-Servicepath: /
-Content-Length: 539
+Content-Length: 773
 User-Agent: orion/REGEX(.*)
 Ngsiv2-Attrsformat: normalized
 Host: REGEX(.*)
@@ -152,7 +168,23 @@ Content-Type: application/ld+json
                     "object": "urn:ngsi-ld:Person:Bob",
                     "type": "Relationship"
                 },
+                "subProp": {
+                    "type": "Property", 
+                    "value": "prop-subProp"
+                }, 
                 "type": "Relationship"
+            }, 
+            "prop": {
+                "providedBy": {
+                    "object": "urn:ngsi-ld:Person:Bob2", 
+                    "type": "Relationship"
+                }, 
+                "subProp": {
+                    "type": "Property", 
+                    "value": "prop-subProp"
+                }, 
+                "type": "Property", 
+                "value": "prop with sub-prop"
             }, 
             "type": "Vehicle"
         }
@@ -178,7 +210,8 @@ MongoDB server version: REGEX(.*)
 	},
 	"attrNames" : [
 		"https://uri.etsi.org/ngsi-ld/default-context/brandName",
-		"https://uri.etsi.org/ngsi-ld/default-context/isParked"
+		"https://uri.etsi.org/ngsi-ld/default-context/isParked",
+		"https://uri.etsi.org/ngsi-ld/default-context/prop"
 	],
 	"attrs" : {
 		"https://uri=etsi=org/ngsi-ld/default-context/brandName" : {
@@ -200,11 +233,36 @@ MongoDB server version: REGEX(.*)
 				"https://uri=etsi=org/ngsi-ld/default-context/providedBy" : {
 					"type" : "Relationship",
 					"value" : "urn:ngsi-ld:Person:Bob"
+				},
+				"https://uri=etsi=org/ngsi-ld/default-context/subProp" : {
+					"type" : "Property",
+					"value" : "prop-subProp"
 				}
 			},
 			"mdNames" : [
 				"observedAt",
-				"https://uri.etsi.org/ngsi-ld/default-context/providedBy"
+				"https://uri.etsi.org/ngsi-ld/default-context/providedBy",
+				"https://uri.etsi.org/ngsi-ld/default-context/subProp"
+			]
+		},
+		"https://uri=etsi=org/ngsi-ld/default-context/prop" : {
+			"type" : "Property",
+			"creDate" : REGEX(.*),
+			"modDate" : REGEX(.*),
+			"value" : "prop with sub-prop",
+			"md" : {
+				"https://uri=etsi=org/ngsi-ld/default-context/providedBy" : {
+					"type" : "Relationship",
+					"value" : "urn:ngsi-ld:Person:Bob2"
+				},
+				"https://uri=etsi=org/ngsi-ld/default-context/subProp" : {
+					"type" : "Property",
+					"value" : "prop-subProp"
+				}
+			},
+			"mdNames" : [
+				"https://uri.etsi.org/ngsi-ld/default-context/providedBy",
+				"https://uri.etsi.org/ngsi-ld/default-context/subProp"
 			]
 		}
 	},
