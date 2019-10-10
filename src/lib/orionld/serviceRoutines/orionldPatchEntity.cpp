@@ -124,13 +124,6 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
         orionldValueExpand(attrNodeP);
     }
 
-    LM_TMP(("PATCH: attrArrayP is a '%s'", kjValueType(attrNamesArrayP->type)));
-    LM_TMP(("PATCH: Looking for attribute '%s'", attrNameP));
-    for (KjNode* current = attrNamesArrayP->value.firstChildP; current != NULL; current = current->next)
-    {
-      LM_TMP(("PATCH: Comparing with '%s'", current->name));
-    }
-    
     if (kjStringValueLookupInArray(attrNamesArrayP, attrNameP) == NULL)
     {
       ciP->httpStatusCode = SccNotFound;
