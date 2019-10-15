@@ -73,6 +73,7 @@
 extern "C"
 {
 #include "kalloc/kaBufferReset.h"                           // kaBufferReset
+#include "kalloc/kalloc.h"                                  // kalloc
 #include "kjson/kjFree.h"                                   // kjFree
 }
 
@@ -117,6 +118,7 @@ extern "C"
 #include "orionld/orionRestServices.h"
 #include "orionld/orionldRestServices.h"
 #include "orionld/context/orionldContextList.h"             // orionldContextHead
+#include "orionld/context/orionldAltContext.h"              // New @context implementation
 
 using namespace orion;
 
@@ -974,7 +976,8 @@ int main(int argC, char* argV[])
   //
   char hname[128];
   gethostname(hname, sizeof(hname));
-  hostname = hname;
+  hostname    = kaStrdup(&kalloc, hname);
+  hostnameLen = strlen(hostname);
 
   //
   // Set portNo
@@ -1136,6 +1139,24 @@ int main(int argC, char* argV[])
   }
 
   LM_F(("Initialization Ready - Accepting Requests on Port %d", port));
+
+  // <DEBUG>
+#if 1
+  OrionldContextItem* ctxItemP = orionldAltContextItemLookup(orionldAltCoreContextP, (char*) "modifiedAt");
+
+  if (ctxItemP != NULL)
+    LM_TMP(("ALT: modifiedAt: %s", ctxItemP->id));
+  else
+    LM_TMP(("ALT: modifiedAt NOT FOUND in Core Context!!!"));
+
+  ctxItemP = orionldAltContextItemValueLookup(orionldAltCoreContextP, (char*) "https://uri.etsi.org/ngsi-ld/Property");
+  if (ctxItemP != NULL)
+    LM_TMP(("ALT: short name for 'https://uri.etsi.org/ngsi-ld/Property': '%s'", ctxItemP->name));
+  else
+    LM_TMP(("ALT: short name for 'https://uri.etsi.org/ngsi-ld/Property' NOT FOUND in Core Context!!!"));
+
+#endif
+  // </DEBUG>
 
   while (1)
   {

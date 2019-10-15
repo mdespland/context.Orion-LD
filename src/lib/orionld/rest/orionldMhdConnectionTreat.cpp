@@ -44,6 +44,7 @@ extern "C"
 #include "rest/restReply.h"                                      // restReply
 
 #include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate
+#include "orionld/common/OrionldProblemDetails.h"                // OrionldProblemDetails
 #include "orionld/common/linkCheck.h"                            // linkCheck
 #include "orionld/common/SCOMPARE.h"                             // SCOMPARE
 #include "orionld/common/CHECK.h"                                // CHECK
@@ -55,6 +56,7 @@ extern "C"
 #include "orionld/context/orionldContextAppend.h"                // orionldContextAppend
 #include "orionld/context/orionldContextTreat.h"                 // orionldContextTreat
 #include "orionld/context/orionldContextListInsert.h"            // orionldContextListInsert
+#include "orionld/context/orionldAltContext.h"                   // New @context implementation
 #include "orionld/serviceRoutines/orionldBadVerb.h"              // orionldBadVerb
 #include "orionld/rest/orionldServiceInit.h"                     // orionldRestServiceV
 #include "orionld/rest/orionldServiceLookup.h"                   // orionldServiceLookup
@@ -539,6 +541,11 @@ static bool payloadParseAndExtractSpecialFields(ConnectionInfo* ciP, bool* conte
 
 
 
+static void orionldErrorResponseCreate2(OrionldProblemDetails* pdP)
+{
+  orionldErrorResponseCreate(pdP->type, pdP->title, pdP->detail);
+}
+
 // -----------------------------------------------------------------------------
 //
 // linkHeaderCheck -
@@ -568,6 +575,15 @@ static bool linkHeaderCheck(ConnectionInfo* ciP)
   {
     orionldErrorResponseCreate(OrionldBadRequestData, "Failure to create context from URL", details);
     ciP->httpStatusCode = SccBadRequest;
+    return false;
+  }
+
+  OrionldProblemDetails pd;
+  orionldState.altContextP = orionldAltContextCreateFromUrl(orionldState.link, &pd);
+  if (orionldState.altContextP == NULL)
+  {
+    orionldErrorResponseCreate2(&pd);
+    ciP->httpStatusCode = (HttpStatusCode) pd.status;  // FIXME: Stop using ciP->httpStatusCode!!!
     return false;
   }
 
@@ -828,6 +844,7 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
   serviceRoutineResult = orionldState.serviceP->serviceRoutine(ciP);
   LM_T(LmtServiceRoutine, ("service routine '%s %s' done", orionldState.verbString, orionldState.serviceP->url));
 
+  LM_TMP(("ALT: contextToBeCashed==%s", FT(contextToBeCashed)));
   //
   // If the service routine failed (returned FALSE), but no HTTP status ERROR code is set,
   // the HTTP status code defaults to 400
@@ -838,8 +855,14 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
       ciP->httpStatusCode = SccBadRequest;
   }
   else if ((contextToBeCashed == true) && (contextToCache(ciP) == false))
-    goto respond;  // Yes, I know, the label 'respond' comes right after this statement ...
+    goto respond;
 
+  // Adding inline context to ALT context list
+  if (orionldState.payloadContextNode != NULL)
+  {
+    LM_TMP(("ALT: Calling orionldAltContextInlineInsert"));
+    orionldAltContextInlineInsert(orionldState.payloadContextNode);
+  }
 
  respond:
   //

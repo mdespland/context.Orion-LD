@@ -69,6 +69,7 @@ Kjson           kjson;
 Kjson*          kjsonP;
 uint16_t        portNo                   = 0;
 char*           hostname                 = (char*) "localhost";
+int             hostnameLen;
 int             dbNameLen;
 
 

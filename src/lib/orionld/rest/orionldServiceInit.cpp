@@ -48,6 +48,7 @@ extern "C"
 #include "orionld/context/orionldContextDownloadAndParse.h"    // orionldContextDownloadAndParse
 #include "orionld/context/orionldCoreContext.h"                // orionldCoreContext, ORIONLD_CORE_CONTEXT_URL
 #include "orionld/context/orionldContextListInsert.h"          // orionldContextListInit, orionldContextListInsert
+#include "orionld/context/orionldAltContext.h"                 // New @context implementation
 #include "orionld/rest/OrionLdRestService.h"                   // OrionLdRestService, ORION_LD_SERVICE_PREFIX_LEN
 #include "orionld/rest/temporaryErrorPayloads.h"               // Temporary Error Payloads
 #include "orionld/serviceRoutines/orionldPostEntities.h"       // orionldPostEntities
@@ -394,6 +395,8 @@ void orionldServiceInit(OrionLdRestServiceSimplifiedVector* restServiceVV, int v
   int    svIx;    // Service Vector Index
   char*  details;
 
+  LM_TMP(("ALT: In orionldServiceInit"));
+
   bzero(orionldRestServiceV, sizeof(orionldRestServiceV));
 
   for (svIx = 0; svIx < vecItems; svIx++)
@@ -560,4 +563,15 @@ void orionldServiceInit(OrionLdRestServiceSimplifiedVector* restServiceVV, int v
 
   if (urlCheck(orionldDefaultUrl, &details) == false)
     LM_X(1, ("Invalid Core Context - the value (%s) of the member '@vocab' must be a valid URL: %s", orionldDefaultUrl, details));
+
+  //
+  // Testing the new @context implementation
+  //
+  OrionldProblemDetails pd;
+
+  LM_TMP(("ALT: orionldServiceInit calling orionldAltContextInit"));
+  if (orionldAltContextInit(&pd) == false)
+  {
+    LM_X(1, ("orionldAltContextInit failed: %s %s", pd.title, pd.detail));
+  }
 }

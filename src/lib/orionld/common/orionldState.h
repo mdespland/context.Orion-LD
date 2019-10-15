@@ -137,6 +137,7 @@ typedef struct OrionldConnectionState
   bool                    useLinkHeader;
   OrionldContext          inlineContext;
   OrionldContext*         contextP;
+  OrionldAltContext*      altContextP;
   bool                    contextToBeFreed;
   ApiVersion              apiVersion;
   int                     requestNo;
@@ -209,6 +210,7 @@ extern KAlloc    kalloc;
 extern Kjson     kjson;
 extern Kjson*    kjsonP;
 extern char*     hostname;
+extern int       hostnameLen;
 extern uint16_t  portNo;
 extern char      dbName[];                 // From orionld.cpp
 extern int       dbNameLen;

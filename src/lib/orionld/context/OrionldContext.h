@@ -28,6 +28,7 @@
 extern "C"
 {
 #include "kjson/kjson.h"
+#include "khash/khash.h"
 }
 
 
@@ -62,5 +63,53 @@ typedef struct OrionldContext
   struct OrionldContext*  next;
 } OrionldContext;
 
+
+
+// -----------------------------------------------------------------------------
+//
+// OrionldAltContextHashTables -
+//
+typedef struct OrionldAltContextHashTables
+{
+  KHashTable*  nameHashTable;
+  KHashTable*  valueHashTable;
+} OrionldAltContextHashTables;
+
+
+
+struct OrionldAltContext;
+typedef struct OrionldAltContextArray
+{
+  int                        items;
+  struct OrionldAltContext** vector;
+} OrionldAltContextArray;
+
+
+
+// -----------------------------------------------------------------------------
+//
+// OrionldAltContextValue
+//
+typedef union OrionldAltContextValue
+{
+  OrionldAltContextHashTables  hash;
+  OrionldAltContextArray       array;
+} OrionldAltContextValue;
+
+
+
+// ----------------------------------------------------------------------------
+//
+// OrionldAltContext -
+//
+// The context is either an array of contexts or "the real thing" - a list of key-values in
+// a hash-list
+//
+typedef struct OrionldAltContext
+{
+  char*                  url;
+  bool                   keyValues;
+  OrionldAltContextValue context;
+} OrionldAltContext;
 
 #endif  // SRC_LIB_ORIONLD_CONTEXT_ORIONLDCONTEXT_H_
