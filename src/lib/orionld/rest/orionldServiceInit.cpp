@@ -62,15 +62,6 @@ extern "C"
 
 // -----------------------------------------------------------------------------
 //
-// orionldHostName
-//
-char orionldHostName[1024];
-int  orionldHostNameLen = -1;
-
-
-
-// -----------------------------------------------------------------------------
-//
 // libLogBuffer -
 //
 thread_local char libLogBuffer[1024 * 32];
@@ -394,8 +385,6 @@ void orionldServiceInit(OrionLdRestServiceSimplifiedVector* restServiceVV, int v
 {
   int    svIx;    // Service Vector Index
   char*  details;
-
-  LM_TMP(("ALT: In orionldServiceInit"));
 
   bzero(orionldRestServiceV, sizeof(orionldRestServiceV));
 

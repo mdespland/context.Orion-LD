@@ -38,6 +38,7 @@ extern "C"
 #include "common/MimeType.h"                                     // MimeType
 #include "orionld/common/QNode.h"                                // QNode
 #include "orionld/types/OrionldGeoJsonType.h"                    // OrionldGeoJsonType
+#include "orionld/types/OrionldPrefixCache.h"                    // OrionldPrefixCache
 #include "orionld/context/OrionldContext.h"                      // OrionldContext
 
 
@@ -179,6 +180,7 @@ typedef struct OrionldConnectionState
   int                     notificationRecords;
   OrionldNotificationInfo notificationInfo[100];
   bool                    notify;
+  OrionldPrefixCache      prefixCache;
 
 #ifdef DB_DRIVER_MONGOC
   //
@@ -204,13 +206,13 @@ extern __thread OrionldConnectionState orionldState;
 //
 // Global state
 //
+extern char      orionldHostName[128];
+extern int       orionldHostNameLen;
 extern char      kallocBuffer[32 * 1024];
 extern int       requestNo;                // Never mind protecting with semaphore. Just a debugging help
 extern KAlloc    kalloc;
 extern Kjson     kjson;
 extern Kjson*    kjsonP;
-extern char*     hostname;
-extern int       hostnameLen;
 extern uint16_t  portNo;
 extern char      dbName[];                 // From orionld.cpp
 extern int       dbNameLen;
@@ -221,8 +223,11 @@ extern char*     tenant;                   // From orionld.cpp
 extern int       contextDownloadAttempts;  // From orionld.cpp
 extern int       contextDownloadTimeout;   // From orionld.cpp
 
+
+
+// -----------------------------------------------------------------------------
 //
-// Variables for Mongo C Driver
+// Global variables for Mongo C Driver
 //
 #ifdef DB_DRIVER_MONGOC
 extern mongoc_collection_t*  mongoEntitiesCollectionP;

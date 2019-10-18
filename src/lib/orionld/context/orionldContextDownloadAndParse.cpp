@@ -27,6 +27,7 @@
 
 extern "C"
 {
+#include "kbase/kMacros.h"                                       // K_FT
 #include "kjson/kjson.h"                                         // Kjson
 #include "kjson/KjNode.h"                                        // KjNode
 #include "kjson/kjParse.h"                                       // kjParse

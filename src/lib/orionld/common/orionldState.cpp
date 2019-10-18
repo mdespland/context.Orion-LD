@@ -36,6 +36,7 @@ extern "C"
 
 #include "orionld/db/dbConfiguration.h"                        // DB_DRIVER_MONGOC
 #include "orionld/context/orionldContextFree.h"                // orionldContextFree
+#include "orionld/context/orionldAltContext.h"                 // orionldAltCoreContext
 #include "orionld/common/QNode.h"                              // QNode
 #include "orionld/common/orionldState.h"                       // Own interface
 
@@ -68,9 +69,9 @@ KAlloc          kalloc;
 Kjson           kjson;
 Kjson*          kjsonP;
 uint16_t        portNo                   = 0;
-char*           hostname                 = (char*) "localhost";
-int             hostnameLen;
 int             dbNameLen;
+char            orionldHostName[128];
+int             orionldHostNameLen       = -1;
 
 
 //
@@ -125,6 +126,7 @@ void orionldStateInit(void)
   orionldState.prettyPrint                 = false;
   orionldState.locationAttributeP          = NULL;
   orionldState.contextP                    = NULL;
+  orionldState.altContextP                 = orionldAltCoreContextP;
   orionldState.payloadContextNode          = NULL;
   orionldState.payloadIdNode               = NULL;
   orionldState.payloadTypeNode             = NULL;
@@ -139,15 +141,18 @@ void orionldStateInit(void)
   //            bzero(orionldState.qNodeV, sizeof(orionldState.qNodeV));
   //
   bzero(orionldState.qNodeV, sizeof(orionldState.qNodeV));
-  orionldState.qNodeIx       = 0;
-  orionldState.jsonBuf       = NULL;
+  orionldState.qNodeIx               = 0;
+  orionldState.jsonBuf               = NULL;
 
   bzero(orionldState.delayedKjFreeVec, sizeof(orionldState.delayedKjFreeVec));
   orionldState.delayedKjFreeVecIndex = 0;
   orionldState.delayedKjFreeVecSize  = sizeof(orionldState.delayedKjFreeVec) / sizeof(orionldState.delayedKjFreeVec[0]);
 
-  orionldState.notify              = false;
-  orionldState.notificationRecords = 0;
+  orionldState.notify                = false;
+  orionldState.notificationRecords   = 0;
+
+  orionldState.prefixCache.index     = 0;
+  orionldState.prefixCache.items     = 0;
 }
 
 

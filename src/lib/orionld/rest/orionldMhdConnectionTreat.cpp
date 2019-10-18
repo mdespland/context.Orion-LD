@@ -48,7 +48,7 @@ extern "C"
 #include "orionld/common/linkCheck.h"                            // linkCheck
 #include "orionld/common/SCOMPARE.h"                             // SCOMPARE
 #include "orionld/common/CHECK.h"                                // CHECK
-#include "orionld/common/orionldState.h"                         // orionldState
+#include "orionld/common/orionldState.h"                         // orionldState, orionldHostName
 #include "orionld/common/uuidGenerate.h"                         // uuidGenerate
 #include "orionld/common/orionldEntityPayloadCheck.h"            // orionldValidName  - FIXME: Own file for "orionldValidName()"!
 #include "orionld/context/orionldCoreContext.h"                  // ORIONLD_CORE_CONTEXT_URL
@@ -532,7 +532,7 @@ static bool payloadParseAndExtractSpecialFields(ConnectionInfo* ciP, bool* conte
     char uuid[37];
 
     uuidGenerate(uuid);
-    snprintf(orionldState.linkBuffer, sizeof(orionldState.linkBuffer), "http://%s:%d/ngsi-ld/contexts/%s", hostname, portNo, uuid);
+    snprintf(orionldState.linkBuffer, sizeof(orionldState.linkBuffer), "http://%s:%d/ngsi-ld/contexts/%s", orionldHostName, portNo, uuid);
     orionldState.link = orionldState.linkBuffer;
   }
 
@@ -545,6 +545,8 @@ static void orionldErrorResponseCreate2(OrionldProblemDetails* pdP)
 {
   orionldErrorResponseCreate(pdP->type, pdP->title, pdP->detail);
 }
+
+
 
 // -----------------------------------------------------------------------------
 //
@@ -836,6 +838,18 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
     goto respond;
 
 
+  // Adding inline context to ALT context list
+  if (orionldState.payloadContextNode != NULL)
+  {
+    OrionldProblemDetails pd;
+
+    LM_TMP(("ALT: Calling orionldAltContextInlineInsert"));
+    orionldState.altContextP = orionldAltContextInlineInsert(orionldState.payloadContextNode, &pd);
+    
+    if (orionldState.altContextP == NULL)
+      ciP->httpStatusCode = (HttpStatusCode) pd.status;
+  }
+
   // ********************************************************************************************
   //
   // Call the SERVICE ROUTINE
@@ -855,14 +869,7 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
       ciP->httpStatusCode = SccBadRequest;
   }
   else if ((contextToBeCashed == true) && (contextToCache(ciP) == false))
-    goto respond;
-
-  // Adding inline context to ALT context list
-  if (orionldState.payloadContextNode != NULL)
-  {
-    LM_TMP(("ALT: Calling orionldAltContextInlineInsert"));
-    orionldAltContextInlineInsert(orionldState.payloadContextNode);
-  }
+    goto respond;  // Yes, I know, the label 'respond' comes right after this statement ...
 
  respond:
   //

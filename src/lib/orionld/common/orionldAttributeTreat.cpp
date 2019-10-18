@@ -1,4 +1,3 @@
-
 /*
 *
 * Copyright 2019 Telefonica Investigacion y Desarrollo, S.A.U
@@ -25,6 +24,7 @@
 */
 extern "C"
 {
+#include "kbase/kTime.h"                                         // kTimeGet, kTimeDiff
 #include "kjson/KjNode.h"                                        // KjNode
 #include "kalloc/kaAlloc.h"                                      // kaAlloc
 }
@@ -42,8 +42,10 @@ extern "C"
 #include "orionld/common/CHECK.h"                                // CHECK
 #include "orionld/common/urlCheck.h"                             // urlCheck
 #include "orionld/common/urnCheck.h"                             // urnCheck
+#include "orionld/context/orionldCoreContext.h"                  // orionldCoreContext
 #include "orionld/context/orionldUriExpand.h"                    // orionldUriExpand
 #include "orionld/context/orionldValueExpand.h"                  // orionldValueExpand
+#include "orionld/context/orionldAltContext.h"                   // orionldAltContextItemExpand
 #include "orionld/common/orionldAttributeTreat.h"                // Own interface
 
 
@@ -453,6 +455,11 @@ bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute
 
   *detailP = (char*) "unknown error";
 
+  if (orionldState.contextP == NULL)
+    orionldState.contextP = &orionldCoreContext;
+  if (orionldState.altContextP == NULL)
+    orionldState.altContextP = orionldAltCoreContextP;
+
   LM_T(LmtPayloadCheck, ("Treating attribute '%s' (KjNode at %p)", caName, kNodeP));
 
 #if 0
@@ -490,24 +497,40 @@ bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute
     char*  longName            = kaAlloc(&orionldState.kalloc, 512);
     bool   valueMayBeExpanded  = false;
     char*  detail;
-
+    struct timespec  start;
+    struct timespec  end;
+    struct timespec  diff;
+    float            diffAsFloat;
+    
     LM_TMP(("VEX: ------------------------------------------------------------------------------------------"));
     LM_TMP(("VEX: Calling orionldUriExpand for node '%s' is of type '%s'", kNodeP->name, kjValueType(kNodeP->type)));
+
+    kTimeGet(&start);
     if (orionldUriExpand(orionldState.contextP, kNodeP->name, longName, 512, &valueMayBeExpanded, &detail) == false)
     {
-      LM_E(("VEX: orionldUriExpand failed for '%s': %s", kNodeP->name, detail));
+      LM_E(("orionldUriExpand failed for '%s': %s", kNodeP->name, detail));
       *detailP = (char*) "orionldUriExpand failed";
       orionldErrorResponseCreate(OrionldBadRequestData, detail, kNodeP->name);
       return false;
     }
-    LM_TMP(("VEX: valueMayBeExpanded: %s", FT(valueMayBeExpanded)));
+    kTimeGet(&end);
+    kTimeDiff(&start, &end, &diff, &diffAsFloat);
+
+    // <DEBUG>
+    LM_TMP(("ALT2: orionldUriExpand expanded            '%s' to '%s' using context '%s' (took %f seconds)", kNodeP->name, longName, orionldState.contextP->url, diffAsFloat));
+    kTimeGet(&start);
+    char* expanded = orionldAltContextItemExpand(orionldState.altContextP, kNodeP->name, NULL, true, NULL);
+    kTimeGet(&end);
+    kTimeDiff(&start, &end, &diff, &diffAsFloat);
+    LM_TMP(("ALT2: orionldAltContextItemExpand expanded '%s' to '%s' using context '%s' (took %f seconds)", kNodeP->name, expanded, orionldState.altContextP->url, diffAsFloat));
+    // </DEBUG>
+
 
     if (valueMayBeExpanded)
       orionldValueExpand(kNodeP);
 
     kNodeP->name = longName;
     caP->name    = longName;
-    LM_TMP(("EXPAND: After orionldUriExpand, node name is: '%s'", kNodeP->name));
   }
   else
     caP->name = kNodeP->name;

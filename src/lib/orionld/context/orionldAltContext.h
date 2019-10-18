@@ -25,8 +25,61 @@
 *
 * Author: Ken Zangelin
 */
-#include "orionld/context/OrionldContext.h"             // OrionldAltContext
+extern "C"
+{
+#include "khash/khash.h"
+}
+
 #include "orionld/common/OrionldProblemDetails.h"       // OrionldProblemDetails
+
+
+
+// -----------------------------------------------------------------------------
+//
+// OrionldAltContextHashTables -
+//
+typedef struct OrionldAltContextHashTables
+{
+  KHashTable*  nameHashTable;
+  KHashTable*  valueHashTable;
+} OrionldAltContextHashTables;
+
+
+
+struct OrionldAltContext;
+typedef struct OrionldAltContextArray
+{
+  int                        items;
+  struct OrionldAltContext** vector;
+} OrionldAltContextArray;
+
+
+
+// -----------------------------------------------------------------------------
+//
+// OrionldAltContextValue
+//
+typedef union OrionldAltContextValue
+{
+  OrionldAltContextHashTables  hash;
+  OrionldAltContextArray       array;
+} OrionldAltContextValue;
+
+
+
+// ----------------------------------------------------------------------------
+//
+// OrionldAltContext -
+//
+// The context is either an array of contexts or "the real thing" - a list of key-values in
+// a hash-list
+//
+typedef struct OrionldAltContext
+{
+  char*                  url;
+  bool                   keyValues;
+  OrionldAltContextValue context;
+} OrionldAltContext;
 
 
 
@@ -42,7 +95,7 @@ extern OrionldAltContext* orionldAltCoreContextP;
 //
 // orionldAltContextCreateFromUrl -
 //
-extern OrionldAltContext* orionldAltContextCreateFromUrl(char* url, OrionldProblemDetails* pdP);
+extern OrionldAltContext* orionldAltContextCreateFromUrl(const char* url, OrionldProblemDetails* pdP);
 
 
 
@@ -58,13 +111,13 @@ extern bool orionldAltContextInit(OrionldProblemDetails* pdP);
 //
 // orionldAltContextInlineInsert -
 //
-extern void orionldAltContextInlineInsert(KjNode* contextTree);
+extern OrionldAltContext* orionldAltContextInlineInsert(KjNode* contextNodeP, OrionldProblemDetails* pdP);
 
 
 
 // -----------------------------------------------------------------------------
 //
-// OrionldContextItem - Change name to ... OrionldContextItem
+// OrionldContextItem -
 //
 typedef struct OrionldContextItem
 {
@@ -79,7 +132,7 @@ typedef struct OrionldContextItem
 //
 // orionldAltContextItemLookup - lookup an item in a context
 //
-extern OrionldContextItem* orionldAltContextItemLookup(OrionldAltContext* contextP, char* name);
+extern OrionldContextItem* orionldAltContextItemLookup(OrionldAltContext* contextP, const char* name);
 
 
 
@@ -87,6 +140,55 @@ extern OrionldContextItem* orionldAltContextItemLookup(OrionldAltContext* contex
 //
 // orionldAltContextItemValueLookup -
 //
-extern OrionldContextItem* orionldAltContextItemValueLookup(OrionldAltContext* contextP, char* longname);
+extern OrionldContextItem* orionldAltContextItemValueLookup(OrionldAltContext* contextP, const char* longname);
+
+
+
+// -----------------------------------------------------------------------------
+//
+// orionldAltContextItemExpand -
+//
+// PARAMETERS
+//   contextP                the context
+//   shortName               the name to expand
+//   valueMayBeExpandedP     pointer to a bool that is set to true if @type == @vocab
+//   contextItemPP           to give the caller the complete result of the lookup
+//
+// RETURN VALUE
+//   orionldAltContextItemExpand returns a pointer to the expanded value of 'shortName'
+//
+// NOTE
+//   If no expansion is found, and the default URL has been used, then room is allocated using
+//   kaAlloc, allocating on orionldState.kallocP, the connection buffer that lives only during
+//   the current request. It is liberated "automatically" when the thread exits.
+//
+//   If the expansion IS found, then a pointer to the longname (that is part of the context where it was found)
+//   is returned and we save some time by not copying anything.
+//
+extern char* orionldAltContextItemExpand
+(
+  OrionldAltContext*      contextP,
+  const char*             shortName,
+  bool*                   valueMayBeExpandedP,
+  bool                    useDefaultUrlIfNotFound,
+  OrionldContextItem**    contextItemPP
+);
+
+
+
+// -----------------------------------------------------------------------------
+//
+// This function looks for a ':' inside 'name' and if found, treats what's before rthe ':' as a prefix.
+// This prefix is looked up in the context and if found, the name is expanded, replacing the prefix (and the colon)
+// with the value of the context item found in the lookup.
+// 
+// NOTE
+//   * URIs contain ':' but we don't want to expand 'urn', not' http', etc.
+//     So, if 'name' starts with 'urn:', or if "://" is found in 'name, then no prefix expansion is performed.
+//
+//   * Normally, just a few prefixes are used, so a "prefix cache" of 10 values is maintained.
+//     This cache is local to the thread, so no semaphores are needed
+//
+extern const char* orionldAltContextPrefixExpand(OrionldAltContext* contextP, const char* str);
 
 #endif  // SRC_LIB_ORIONLD_CONTEXT_ORIONLDALTCONTEXT_H_
