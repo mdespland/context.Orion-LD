@@ -62,6 +62,8 @@ extern "C"
 #include "orionld/context/orionldContextPresent.h"                         // orionldContextPresent
 #include "orionld/context/orionldUserContextKeyValuesCheck.h"              // orionldUserContextKeyValuesCheck
 #include "orionld/context/orionldUriExpand.h"                              // orionldUriExpand
+#include "orionld/mongoCppLegacy/mongoCppLegacyEntityBatchDelete.h"        // mongoCppLegacyEntityBatchDelete
+#include "orionld/serviceRoutines/orionldPostBatchDeleteEntities.h"        // orionldPostBatchDeleteEntities
 #include "orionld/kjTree/kjStringValueLookupInArray.h"                     // kjStringValueLookupInArray
 #include "orionld/serviceRoutines/orionldPostBatchUpsert.h"                // Own Interface
 
@@ -220,7 +222,18 @@ static void entityErrorPush(KjNode* errorsArrayP, const char* entityId, OrionldR
   kjChildAdd(errorsArrayP, objP);
 }
 
+// ----------------------------------------------------------------------------
+//
+// entityIdPush - The function objective is add ID field from payload entities,
+//                for delete the respective entities (if them existis) and
+//                replace for entities from payload.
+//
+static void entityIdPush(KjNode* entityIdsArrayP, const char* entityId)
+{
+  KjNode* eIdP = kjString(orionldState.kjsonP, "id", entityId);
 
+  kjChildAdd(entityIdsArrayP, eIdP);
+}
 
 // ----------------------------------------------------------------------------
 //
@@ -254,10 +267,10 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
     return false;
   }
 
-  if (orionldState.uriParamOptions.update == false)
+  if ((orionldState.uriParamOptions.update == false) && (orionldState.uriParamOptions.replace == false))
   {
-    orionldErrorResponseCreate(OrionldOperationNotSupported, "Not Implemented", "Batch Upsert without URI param update");
-    ciP->httpStatusCode = SccNotImplemented;
+    orionldErrorResponseCreate(OrionldBadRequestData, "URI Param Error", "options: /update/ or /replace/ must be present");
+    ciP->httpStatusCode = SccBadRequest;
     return false;
   }
 
@@ -271,6 +284,7 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
   KjNode*                modifiedAtP      = NULL;
   KjNode*                successArrayP    = kjArray(orionldState.kjsonP, "success");
   KjNode*                errorsArrayP     = kjArray(orionldState.kjsonP, "errors");
+  KjNode*                entityIdsArrayP  = kjArray(orionldState.kjsonP, "entityIds");
   char*                  detail;
 
   ciP->httpStatusCode = SccOk;
@@ -292,6 +306,7 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
     KjNode*   entityTypeNodeP = NULL;
     bool      duplicatedType  = false;
     bool      duplicatedId    = false;
+    bool      correctId       = true;
 
     //
     // We only check for duplicated entries in this loop.
@@ -327,6 +342,7 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
     // Entity ID is mandatory
     if (entityIdNodeP == NULL)
     {
+      correctId = false;
       LM_W(("Bad Input (mandatory field missing: entity::id)"));
       entityErrorPush(errorsArrayP, "no entity::id", OrionldBadRequestData, "mandatory field missing", "entity::id", 400);
       continue;
@@ -335,6 +351,7 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
     // Entity ID must be a string
     if (entityIdNodeP->type != KjString)
     {
+      correctId = false;
       LM_W(("Bad Input (entity::id not a string)"));
       entityErrorPush(errorsArrayP, "invalid entity::id", OrionldBadRequestData, "field with invalid type", "entity::id", 400);
       continue;
@@ -343,6 +360,7 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
     // Entity ID must be a valid URI
     if (!urlCheck(entityIdNodeP->value.s, &detail) && !urnCheck(entityIdNodeP->value.s, &detail))
     {
+      correctId = false;
       LM_W(("Bad Input (entity::id is a string but not a valid URI)"));
       entityErrorPush(errorsArrayP, entityIdNodeP->value.s, OrionldBadRequestData, "Not a URI", entityIdNodeP->value.s, 400);
       continue;
@@ -360,6 +378,7 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
     // Entity TYPE is mandatory
     if (entityTypeNodeP == NULL)
     {
+      correctId = false;
       LM_W(("Bad Input (mandatory field missing: entity::type)"));
       entityErrorPush(errorsArrayP, entityIdNodeP->value.s, OrionldBadRequestData, "mandatory field missing", "entity::type", 400);
       continue;
@@ -412,10 +431,16 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
 
     if (kjTreeToContextElementAttributes(ciP, entityNodeP, createdAtP, modifiedAtP, ceP, &detail) == false)
     {
+      correctId = false;
       LM_W(("kjTreeToContextElementAttributes flags error '%s' for entity '%s'", detail, entityId));
       entityErrorPush(errorsArrayP, entityId, OrionldBadRequestData, "", detail, 400);
       delete ceP;
       continue;
+    }
+
+    if ((orionldState.uriParamOptions.replace == true) && (correctId == true))
+    {
+      entityIdPush(entityIdsArrayP, entityId);
     }
 
     mongoRequest.contextElementVector.push_back(ceP);
@@ -424,6 +449,25 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
     orionldState.payloadTypeNode = NULL;
   }
 
+  for (KjNode* entityNodeP = entityIdsArrayP->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
+  {
+    LM_TMP(("ENTITY ID: %s", entityNodeP->value.s));
+  }
+
+  if (orionldState.uriParamOptions.replace == true)
+  {
+    if (entityIdsArrayP != NULL)
+    {
+      if (mongoCppLegacyEntityBatchDelete(entityIdsArrayP) == false)
+      {
+        LM_E(("mongoCppLegacyEntityBatchDelete returned false"));
+        ciP->httpStatusCode = SccBadRequest;
+        if (orionldState.responseTree == NULL)
+          orionldErrorResponseCreate(OrionldBadRequestData, "Database Error", "mongoCppLegacyEntityBatchDelete");
+        return false;
+      }
+    }
+  }
 
   //
   // Call mongoBackend
