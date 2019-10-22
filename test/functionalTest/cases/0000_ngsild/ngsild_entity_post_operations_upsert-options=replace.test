@@ -34,7 +34,7 @@ brokerStart CB 212-249
 # 01. Create entities E1 and E2 using POST /ngsi-ld/v1/entityOperations/upsert?options=replace
 # 02. GET the entities
 # 03. Modify E2 and add E3 using POST /ngsi-ld/v1/entityOperations/upsert?options=replace
-# 04. GET all entities - see E1 as it was and E2 changed by step 3, and the new E3
+# 04. GET all entities - see all entities replaced and with new creDate and modDate fields
 #
 
 
@@ -65,7 +65,8 @@ echo
 
 echo "02. GET the entities"
 echo "===================="
-orionCurl --url '/ngsi-ld/v1/entities?type=Vehicle&prettyPrint=yes&spaces=2&options=keyValues' --noPayloadCheck
+mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})'
+mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})'
 echo
 echo
 
@@ -95,10 +96,11 @@ echo
 echo
 
 
-echo "04. GET all entities - see E1 as it was and E2 changed by step 3, and the new E3"
-echo "================================================================================"
-orionCurl --url '/ngsi-ld/v1/entities?type=Vehicle&prettyPrint=yes&spaces=2&options=keyValues' --noPayloadCheck
-echo
+echo "04. GET all entities - see all entities replaced and with new creDate and modDate fields"
+echo "========================================================================================"
+mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})'
+mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})'
+mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E3"})'
 echo
 
 
@@ -122,25 +124,58 @@ Date: REGEX(.*)
 
 02. GET the entities
 ====================
-HTTP/1.1 200 OK
-Content-Length: 177
-Content-Type: application/json
-Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
-Date: REGEX(.*)
-
-[
-  {
-    "id": "urn:ngsi-ld:entity:E1",
-    "type": "Vehicle",
-    "P1": "STEP 01"
-  },
-  {
-    "id": "urn:ngsi-ld:entity:E2",
-    "type": "Vehicle",
-    "P1": "STEP 01"
-  }
-]
-
+MongoDB shell version REGEX(.*)
+connecting to: REGEX(.*)
+MongoDB server version: REGEX(.*)
+{
+	"_id" : {
+		"id" : "urn:ngsi-ld:entity:E1",
+		"type" : "https://uri.etsi.org/ngsi-ld/default-context/Vehicle",
+		"servicePath" : "/"
+	},
+	"attrNames" : [
+		"https://uri.etsi.org/ngsi-ld/default-context/P1"
+	],
+	"attrs" : {
+		"https://uri=etsi=org/ngsi-ld/default-context/P1" : {
+			"type" : "Property",
+			"creDate" : REGEX(.*),
+			"modDate" : REGEX(.*),
+			"value" : "STEP 01",
+			"mdNames" : [ ]
+		}
+	},
+	"creDate" : REGEX(.*),
+	"modDate" : REGEX(.*),
+	"lastCorrelator" : ""
+}
+bye
+MongoDB shell version REGEX(.*)
+connecting to: REGEX(.*)
+MongoDB server version: REGEX(.*)
+{
+	"_id" : {
+		"id" : "urn:ngsi-ld:entity:E2",
+		"type" : "https://uri.etsi.org/ngsi-ld/default-context/Vehicle",
+		"servicePath" : "/"
+	},
+	"attrNames" : [
+		"https://uri.etsi.org/ngsi-ld/default-context/P1"
+	],
+	"attrs" : {
+		"https://uri=etsi=org/ngsi-ld/default-context/P1" : {
+			"type" : "Property",
+			"creDate" : REGEX(.*),
+			"modDate" : REGEX(.*),
+			"value" : "STEP 01",
+			"mdNames" : [ ]
+		}
+	},
+	"creDate" : REGEX(.*),
+	"modDate" : REGEX(.*),
+	"lastCorrelator" : ""
+}
+bye
 
 
 03. Modify E2 and add E3 using POST /ngsi-ld/v1/entityOperations/upsert?options=replace
@@ -160,33 +195,86 @@ Date: REGEX(.*)
 }
 
 
-04. GET all entities - see E1 as it was and E2 changed by step 3, and the new E3
-================================================================================
-HTTP/1.1 200 OK
-Content-Length: 264
-Content-Type: application/json
-Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
-Date: REGEX(.*)
-
-[
-  {
-    "id": "urn:ngsi-ld:entity:E1",
-    "type": "Vehicle",
-    "P1": "STEP 01"
-  },
-  {
-    "id": "urn:ngsi-ld:entity:E2",
-    "type": "Vehicle",
-    "P1": "STEP 03"
-  },
-  {
-    "id": "urn:ngsi-ld:entity:E3",
-    "type": "Vehicle",
-    "P1": "STEP 03"
-  }
-]
-
-
+04. GET all entities - see all entities replaced and with new creDate and modDate fields
+========================================================================================
+MongoDB shell version REGEX(.*)
+connecting to: REGEX(.*)
+MongoDB server version: REGEX(.*)
+{
+	"_id" : {
+		"id" : "urn:ngsi-ld:entity:E1",
+		"type" : "https://uri.etsi.org/ngsi-ld/default-context/Vehicle",
+		"servicePath" : "/"
+	},
+	"attrNames" : [
+		"https://uri.etsi.org/ngsi-ld/default-context/P1"
+	],
+	"attrs" : {
+		"https://uri=etsi=org/ngsi-ld/default-context/P1" : {
+			"type" : "Property",
+			"creDate" : REGEX(.*),
+			"modDate" : REGEX(.*),
+			"value" : "STEP 01",
+			"mdNames" : [ ]
+		}
+	},
+	"creDate" : REGEX(.*),
+	"modDate" : REGEX(.*),
+	"lastCorrelator" : ""
+}
+bye
+MongoDB shell version REGEX(.*)
+connecting to: REGEX(.*)
+MongoDB server version: REGEX(.*)
+{
+	"_id" : {
+		"id" : "urn:ngsi-ld:entity:E2",
+		"type" : "https://uri.etsi.org/ngsi-ld/default-context/Vehicle",
+		"servicePath" : "/"
+	},
+	"attrNames" : [
+		"https://uri.etsi.org/ngsi-ld/default-context/P1"
+	],
+	"attrs" : {
+		"https://uri=etsi=org/ngsi-ld/default-context/P1" : {
+			"type" : "Property",
+			"creDate" : REGEX(.*),
+			"modDate" : REGEX(.*),
+			"value" : "STEP 03",
+			"mdNames" : [ ]
+		}
+	},
+	"creDate" : REGEX(.*),
+	"modDate" : REGEX(.*),
+	"lastCorrelator" : ""
+}
+bye
+MongoDB shell version REGEX(.*)
+connecting to: REGEX(.*)
+MongoDB server version: REGEX(.*)
+{
+	"_id" : {
+		"id" : "urn:ngsi-ld:entity:E3",
+		"type" : "https://uri.etsi.org/ngsi-ld/default-context/Vehicle",
+		"servicePath" : "/"
+	},
+	"attrNames" : [
+		"https://uri.etsi.org/ngsi-ld/default-context/P1"
+	],
+	"attrs" : {
+		"https://uri=etsi=org/ngsi-ld/default-context/P1" : {
+			"type" : "Property",
+			"creDate" : REGEX(.*),
+			"modDate" : REGEX(.*),
+			"value" : "STEP 03",
+			"mdNames" : [ ]
+		}
+	},
+	"creDate" : REGEX(.*),
+	"modDate" : REGEX(.*),
+	"lastCorrelator" : ""
+}
+bye
 
 --TEARDOWN--
 brokerStop CB
