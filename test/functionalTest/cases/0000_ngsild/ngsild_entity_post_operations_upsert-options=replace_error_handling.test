@@ -186,7 +186,6 @@ echo "==================================================================="
 payload='[
   {
     "id": "urn:ngsi-ld:Vehicle:301",
-    "type": "Vehicle",
     "brandName": {
       "type": "Property",
       "value": "Mercedes"
