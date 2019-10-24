@@ -71,13 +71,19 @@ echo
 echo
 
 
+#
+# Sleep 2 secs to provoke a different modDate - creDate should stay intact
+#
+sleep 2
+
+
 echo "03. Modify E2 and add E3 using POST /ngsi-ld/v1/entityOperations/upsert?options=replace"
-echo "======================================================================================="
+echo "======================================================================================"
 payload='[
   {
     "id": "urn:ngsi-ld:entity:E2",
     "type": "Vehicle",
-    "P1": {
+    "P2": {
       "type": "Property",
       "value": "STEP 03"
     }
@@ -85,7 +91,7 @@ payload='[
   {
     "id": "urn:ngsi-ld:entity:E3",
     "type": "Vehicle",
-    "P1": {
+    "P2": {
       "type": "Property",
       "value": "STEP 03"
     }
@@ -233,15 +239,15 @@ MongoDB server version: REGEX(.*)
 		"servicePath" : "/"
 	},
 	"attrNames" : [
-		"https://uri.etsi.org/ngsi-ld/default-context/P1"
+		"https://uri.etsi.org/ngsi-ld/default-context/P2"
 	],
 	"attrs" : {
-		"https://uri=etsi=org/ngsi-ld/default-context/P1" : {
-			"value" : "STEP 03",
+		"https://uri=etsi=org/ngsi-ld/default-context/P2" : {
 			"type" : "Property",
-			"mdNames" : [ ],
 			"creDate" : REGEX(.*),
-			"modDate" : REGEX(.*)
+			"modDate" : REGEX(.*),
+			"value" : "STEP 03",
+			"mdNames" : [ ]
 		}
 	},
 	"creDate" : REGEX(.*),
@@ -259,10 +265,10 @@ MongoDB server version: REGEX(.*)
 		"servicePath" : "/"
 	},
 	"attrNames" : [
-		"https://uri.etsi.org/ngsi-ld/default-context/P1"
+		"https://uri.etsi.org/ngsi-ld/default-context/P2"
 	],
 	"attrs" : {
-		"https://uri=etsi=org/ngsi-ld/default-context/P1" : {
+		"https://uri=etsi=org/ngsi-ld/default-context/P2" : {
 			"type" : "Property",
 			"creDate" : REGEX(.*),
 			"modDate" : REGEX(.*),
