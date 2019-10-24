@@ -440,7 +440,11 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
 
     if ((orionldState.uriParamOptions.replace == true) && (correctId == true))
     {
-      entityIdPush(entityIdsArrayP, entityId);
+      if (mongoEntityExists(entityId, orionldState.tenant) == true)
+      {
+        LM_TMP(("HI HI"));
+        entityIdPush(entityIdsArrayP, entityId);
+      }
     }
 
     mongoRequest.contextElementVector.push_back(ceP);
@@ -456,7 +460,7 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
 
   if (orionldState.uriParamOptions.replace == true)
   {
-    if (entityIdsArrayP != NULL)
+    if (entityIdsArrayP->value.firstChildP != NULL)
     {
       if (mongoCppLegacyEntityBatchDelete(entityIdsArrayP) == false)
       {
