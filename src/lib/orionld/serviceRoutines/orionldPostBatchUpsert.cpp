@@ -44,6 +44,7 @@ extern "C"
 #include "mongoBackend/mongoEntityExists.h"                                // mongoEntityExists
 #include "mongoBackend/mongoUpdateContext.h"                               // mongoUpdateContext
 #include "rest/uriParamNames.h"                                            // URI_PARAM_PAGINATION_OFFSET, URI_PARAM_PAGINATION_LIMIT
+#include "mongoBackend/MongoGlobal.h"                                      // getMongoConnection()
 
 #include "orionld/rest/orionldServiceInit.h"                               // orionldHostName, orionldHostNameLen
 #include "orionld/common/orionldErrorResponse.h"                           // orionldErrorResponseCreate
@@ -67,7 +68,12 @@ extern "C"
 #include "orionld/kjTree/kjStringValueLookupInArray.h"                     // kjStringValueLookupInArray
 #include "orionld/serviceRoutines/orionldPostBatchUpsert.h"                // Own Interface
 
-
+// -----------------------------------------------------------------------------
+//
+// USING
+//
+using mongo::DBClientBase;
+using mongo::BSONObj;
 
 // ----------------------------------------------------------------------------
 //
@@ -286,6 +292,7 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
   KjNode*                errorsArrayP     = kjArray(orionldState.kjsonP, "errors");
   KjNode*                entityIdsArrayP  = kjArray(orionldState.kjsonP, "entityIds");
   char*                  detail;
+  DBClientBase*          connection       = getMongoConnection();
 
   ciP->httpStatusCode = SccOk;
 
@@ -442,7 +449,12 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
     {
       if (mongoEntityExists(entityId, orionldState.tenant) == true)
       {
-        LM_TMP(("HI HI"));
+        BSONObj ent;
+        ent = connection->findOne("orion.entities", BSON("_id.id" << entityId));
+        LM_TMP(("ENTITY CRE_DATE: %d", ent.getIntField("creDate")));
+        entityIdP->creDate = (double) ent.getIntField("creDate");
+        ceP->entityId.creDate = entityIdP->creDate;
+        LM_TMP(("ENTITY CRE_DATE: %d", ceP->entityId.creDate));
         entityIdPush(entityIdsArrayP, entityId);
       }
     }
