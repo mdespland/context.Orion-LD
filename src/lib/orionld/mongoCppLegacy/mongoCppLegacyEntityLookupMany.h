@@ -1,3 +1,6 @@
+#ifndef SRC_LIB_ORIONLD_MONGOCPPLEGACY_MONGOCPPLEGACYENTITYLOOKUPMANY_H_
+#define SRC_LIB_ORIONLD_MONGOCPPLEGACY_MONGOCPPLEGACYENTITYLOOKUPMANY_H_
+
 /*
 *
 * Copyright 2019 FIWARE Foundation e.V.
@@ -20,7 +23,7 @@
 * For those usages not covered by this license please contact with
 * orionld at fiware dot org
 *
-* Author: Ken Zangelin
+* Author: Gabriel Quaresma
 */
 
 extern "C"
@@ -28,19 +31,12 @@ extern "C"
 #include "kjson/KjNode.h"                                        // KjNode
 }
 
-#include "orionld/db/dbConfiguration.h"                          // Own interface
-
 
 
 // -----------------------------------------------------------------------------
 //
-// Function pointers for the DB interface
+// mongoCppLegacyEntityLookupMany -
 //
-DbEntityLookupFunction                    dbEntityLookup;
-DbEntityLookupManyFunction                dbEntityLookupMany;
-DbEntityUpdateFunction                    dbEntityUpdate;
-DbEntityBatchDeleteFunction               dbEntityBatchDelete;
-DbDataToKjTreeFunction                    dbDataToKjTree;
-DbDataFromKjTreeFunction                  dbDataFromKjTree;
-DbEntityOperationsUpsertFunction          dbEntityOperationsUpsert;
-DbSubscriptionMatchEntityIdAndAttributes  dbSubscriptionMatchEntityIdAndAttributes;
+extern KjNode* mongoCppLegacyEntityLookupMany(KjNode* requestTree);
+
+#endif  // SRC_LIB_ORIONLD_MONGOCPPLEGACY_MONGOCPPLEGACYENTITYLOOKUPMANY_H_
