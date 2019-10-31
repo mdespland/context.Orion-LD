@@ -220,6 +220,7 @@ static char* orionldContextDownload(const char* url, bool* downloadFailedP, Orio
     return NULL;
   }
 
+  LM_TMP(("ALT: Downloaded context"));
   return httpResponse.buf;
 }
 
@@ -406,8 +407,8 @@ OrionldAltContext* orionldAltContextCreateFromTree(const char* url, KjNode* cont
   {
     contextP->keyValues = true;
 
-    contextP->context.hash.nameHashTable  = khashTableCreate(&orionldState.kalloc, hashCode, nameCompareFunction,  1024);
-    contextP->context.hash.valueHashTable = khashTableCreate(&orionldState.kalloc, hashCode, valueCompareFunction, 1024);
+    contextP->context.hash.nameHashTable  = khashTableCreate(&kalloc, hashCode, nameCompareFunction,  1024);
+    contextP->context.hash.valueHashTable = khashTableCreate(&kalloc, hashCode, valueCompareFunction, 1024);
 
     LM_TMP(("HASH: nameHashTable  at %p", contextP->context.hash.nameHashTable));
     LM_TMP(("HASH: valueHashTable at %p", contextP->context.hash.valueHashTable));
@@ -696,7 +697,7 @@ OrionldContextItem* orionldAltContextItemValueLookup(OrionldAltContext* contextP
 //
 // NOTE
 //   If no expansion is found, and the default URL has been used, then room is allocated using
-//   kaAlloc, allocating on orionldState.kallocP, the connection buffer that lives only during
+//   kaAlloc, allocating on orionldState.kalloc, the connection buffer that lives only during
 //   the current request. It is liberated "automatically" when the thread exits.
 //
 //   If the expansion IS found, then a pointer to the longname (that is part of the context where it was found)

@@ -457,6 +457,7 @@ bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute
 
   if (orionldState.contextP == NULL)
     orionldState.contextP = &orionldCoreContext;
+
   if (orionldState.altContextP == NULL)
     orionldState.altContextP = orionldAltCoreContextP;
 
@@ -501,7 +502,7 @@ bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute
     struct timespec  end;
     struct timespec  diff;
     float            diffAsFloat;
-    
+
     LM_TMP(("VEX: ------------------------------------------------------------------------------------------"));
     LM_TMP(("VEX: Calling orionldUriExpand for node '%s' is of type '%s'", kNodeP->name, kjValueType(kNodeP->type)));
 
@@ -524,7 +525,6 @@ bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute
     kTimeDiff(&start, &end, &diff, &diffAsFloat);
     LM_TMP(("ALT2: orionldAltContextItemExpand expanded '%s' to '%s' using context '%s' (took %f seconds)", kNodeP->name, expanded, orionldState.altContextP->url, diffAsFloat));
     // </DEBUG>
-
 
     if (valueMayBeExpanded)
       orionldValueExpand(kNodeP);

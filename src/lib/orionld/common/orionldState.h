@@ -39,6 +39,7 @@ extern "C"
 #include "orionld/common/QNode.h"                                // QNode
 #include "orionld/types/OrionldGeoJsonType.h"                    // OrionldGeoJsonType
 #include "orionld/types/OrionldPrefixCache.h"                    // OrionldPrefixCache
+#include "orionld/context/orionldAltContext.h"                   // OrionldAltContext
 #include "orionld/context/OrionldContext.h"                      // OrionldContext
 
 
