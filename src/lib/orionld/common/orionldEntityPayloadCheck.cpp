@@ -240,7 +240,11 @@ bool orionldEntityPayloadCheck
     }
     else  // Property/Relationshiop - must check chars in the name of the attribute
     {
-      LM_TMP(("Name: %s | Value: %s", kNodeP->name, kNodeP->value.s));
+      if (kNodeP->type == KjString)
+        LM_TMP(("Name: %s | Value: %s", kNodeP->name, kNodeP->value.s));
+      else
+        LM_TMP(("Name: %s | Type: %s", kNodeP->name, kjValueType(kNodeP->type)));
+
       if (strcmp(kNodeP->name, "@context") != 0)
       {
         if (orionldValidName(kNodeP->name, &detailsP) == false)

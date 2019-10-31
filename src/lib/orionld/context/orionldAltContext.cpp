@@ -22,6 +22,14 @@
 *
 * Author: Ken Zangelin
 */
+#ifdef DEBUG
+#include <sys/types.h>                                           // DIR, dirent
+#include <fcntl.h>                                               // O_RDONLY
+#include <dirent.h>                                              // opendir(), readdir(), closedir()
+#include <sys/stat.h>                                            // statbuf
+#include <unistd.h>                                              // stat()
+#endif
+
 #include <semaphore.h>                                           // sem_t, sem_init, sem_wait, sem_post
 
 extern "C"
@@ -173,9 +181,9 @@ static __thread OrionldResponseBuffer  httpResponse;
 
 // -----------------------------------------------------------------------------
 //
-// orionldContextDownload -
+// orionldAltContextDownload -
 //
-static char* orionldContextDownload(const char* url, bool* downloadFailedP, OrionldProblemDetails* pdP)
+static char* orionldAltContextDownload(const char* url, bool* downloadFailedP, OrionldProblemDetails* pdP)
 {
   bool ok = false;
 
@@ -318,6 +326,8 @@ OrionldAltContext* orionldAltContextLookup(const char* url)
     }
   }
 
+  orionldAltContextListPresent(url);
+
   LM_TMP(("ALT: Did not find context '%s'", url));
   return NULL;
 }
@@ -453,6 +463,26 @@ OrionldAltContext* orionldAltContextCreateFromTree(const char* url, KjNode* cont
 
 // -----------------------------------------------------------------------------
 //
+// orionldAltContextCreateFromBuffer -
+//
+OrionldAltContext* orionldAltContextCreateFromBuffer(const char* url, char* buf, OrionldProblemDetails* pdP)
+{
+  KjNode*  tree;
+  KjNode*  contextNodeP;
+
+  if ((tree = kjParse(kjsonP, buf)) == NULL)
+    LM_X(1, ("error parsing the context"));
+
+  if ((contextNodeP = contextMemberGet(tree, pdP)) == NULL)
+    LM_X(1, ("Can't find the value of @context"));
+
+  return orionldAltContextCreateFromTree(url, contextNodeP, pdP);
+}
+
+
+
+// -----------------------------------------------------------------------------
+//
 // orionldAltContextCreateFromUrl -
 //
 OrionldAltContext* orionldAltContextCreateFromUrl(const char* url, OrionldProblemDetails* pdP)
@@ -484,8 +514,6 @@ OrionldAltContext* orionldAltContextCreateFromUrl(const char* url, OrionldProble
   if ((contextP = orionldAltContextLookup(url)) != NULL)
     return contextP;
 
-  KjNode*  tree;
-  KjNode*  contextNodeP;
   char*    buf;
   bool     downloadFailed;
 
@@ -504,20 +532,12 @@ OrionldAltContext* orionldAltContextCreateFromUrl(const char* url, OrionldProble
     return orionldAltCoreContextP;
   }
 
-  if ((buf = orionldContextDownload(url, &downloadFailed, pdP)) == NULL)
+  if ((buf = orionldAltContextDownload(url, &downloadFailed, pdP)) == NULL)
   {
-    LM_X(1, ("orionldContextDownload(%s) failed", url));
+    LM_X(1, ("orionldAltContextDownload(%s) failed", url));
   }
 
-  if ((tree = kjParse(kjsonP, buf)) == NULL)
-    LM_X(1, ("error parsing the context"));
-
-  if ((contextNodeP = contextMemberGet(tree, pdP)) == NULL)
-  {
-    LM_X(1, ("Can't find the value of @context"));
-  }
-
-  return orionldAltContextCreateFromTree(url, contextNodeP, pdP);
+  return orionldAltContextCreateFromBuffer(url, buf, pdP);
 }
 
 
@@ -536,6 +556,185 @@ void orionldAltContextListInit(void)
 
 
 
+#if DEBUG
+// -----------------------------------------------------------------------------
+//
+// contextFileParse -
+//
+int contextFileParse(char* fileBuffer, int bufLen, char** urlP, char** jsonP, OrionldProblemDetails* pdP)
+{
+  //
+  // 1. Skip initial whitespace
+  // Note: 0xD (13) is the Windows 'carriage ret' character
+  //
+  while ((*fileBuffer != 0) && ((*fileBuffer == ' ') || (*fileBuffer == '\t') || (*fileBuffer == '\n') || (*fileBuffer == 0xD)))
+    ++fileBuffer;
+
+  if (*fileBuffer == 0)
+  {
+    pdP->detail = (char*) "empty context file (or, only whitespace)";
+    return -1;
+  }
+
+
+  //
+  // 2. The URL is on the first line of the buffer
+  //
+  *urlP = fileBuffer;
+  LM_T(LmtPreloadedContexts, ("Parsing fileBuffer. URL is %s", *urlP));
+
+
+  //
+  // 3. Find the '\n' that ends the URL
+  //
+  while ((*fileBuffer != 0) && (*fileBuffer != '\n'))
+    ++fileBuffer;
+
+  if (*fileBuffer == 0)
+  {
+    pdP->detail = (char*) "can't find the end of the URL line";
+    return -1;
+  }
+
+
+  //
+  // 4. Zero-terminate URL
+  //
+  *fileBuffer = 0;
+
+
+  //
+  // 5. Jump over the \n and onto the first char of the next line
+  //
+  ++fileBuffer;
+
+
+  //
+  // 1. Skip initial whitespace
+  // Note: 0xD (13) is the Windows 'carriage ret' character
+  //
+  while ((*fileBuffer != 0) && ((*fileBuffer == ' ') || (*fileBuffer == '\t') || (*fileBuffer == '\n') || (*fileBuffer == 0xD)))
+    ++fileBuffer;
+
+  if (*fileBuffer == 0)
+  {
+    pdP->detail = (char*) "no JSON Context found";
+    return -1;
+  }
+
+  *jsonP = fileBuffer;
+  LM_T(LmtPreloadedContexts, ("Parsing fileBuffer. JSON is %s", *jsonP));
+
+  return 0;
+}
+
+
+
+// -----------------------------------------------------------------------------
+//
+// contextFileTreat -
+//
+static void contextFileTreat(char* dir, struct dirent* dirItemP)
+{
+  char*                  fileBuffer;
+  struct stat            statBuf;
+  char                   path[512];
+  OrionldProblemDetails  pd;
+
+  snprintf(path, sizeof(path), "%s/%s", dir, dirItemP->d_name);
+  LM_T(LmtPreloadedContexts, ("Treating 'preloaded' context file '%s'", path));
+
+  if (stat(path, &statBuf) != 0)
+    LM_X(1, ("stat(%s): %s", path, strerror(errno)));
+
+  fileBuffer = (char*) malloc(statBuf.st_size + 1);
+  if (fileBuffer == NULL)
+    LM_X(1, ("Out of memory"));
+
+  int fd = open(path, O_RDONLY);
+  if (fd == -1)
+    LM_X(1, ("open(%s): %s", path, strerror(errno)));
+
+  int nb;
+  nb = read(fd, fileBuffer, statBuf.st_size);
+  if (nb != statBuf.st_size)
+    LM_X(1, ("read(%s): %s", path, strerror(errno)));
+  fileBuffer[statBuf.st_size] = 0;
+  close(fd);
+
+
+  //
+  // OK, the entire buffer is in 'fileBuffer'
+  // Now let's parse the buffer to extract URL (first line)
+  // and the "payload" that is the JSON of the context
+  //
+  char* url;
+  char* json;
+
+  if (contextFileParse(fileBuffer, statBuf.st_size, &url, &json, &pd) != 0)
+    LM_X(1, ("error parsing the context file '%s': %s", path, pd.detail));
+
+  //
+  // We have both the URL and the 'JSON Context'.
+  // Time to parse the 'JSON Context', create the OrionldContext, and insert it into the list of contexts
+  //
+
+  OrionldAltContext*     contextP = orionldAltContextCreateFromBuffer(url, json, &pd);
+
+  if (strcmp(url, ORIONLD_CORE_CONTEXT_URL) == 0)
+  {
+    if (contextP == NULL)
+      LM_X(1, ("error creating the core context from file system file '%s'", path));
+    orionldAltCoreContextP = contextP;
+  }
+  else
+  {
+    if (contextP == NULL)
+      LM_E(("error creating context from file system file '%s'", path));
+    else
+      orionldAltContextListInsert(contextP);
+  }
+}
+
+
+
+// -----------------------------------------------------------------------------
+//
+// fileSystemContexts -
+//
+static bool fileSystemContexts(char* cacheContextDir)
+{
+  DIR*            dirP;
+  struct  dirent  dirItem;
+  struct  dirent* result;
+
+  dirP = opendir(cacheContextDir);
+  if (dirP == NULL)
+  {
+    //
+    // FIXME PR: Should the broker die here (Cache Context Directory given but it doesn't exist)
+    //           or should the broker continue (downloading the core context) ???
+    //           Continue, by returning false.
+    LM_X(1, ("opendir(%s): %s", cacheContextDir, strerror(errno)));
+  }
+
+  while (readdir_r(dirP, &dirItem, &result) == 0)
+  {
+    if (result == NULL)
+      break;
+
+    if (dirItem.d_name[0] == '.')  // skip hidden files and '.'/'..'
+      continue;
+
+    contextFileTreat(cacheContextDir, &dirItem);
+  }
+  closedir(dirP);
+  return true;
+}
+#endif
+
+
+
 // -----------------------------------------------------------------------------
 //
 // orionldAltContextInit -
@@ -544,13 +743,31 @@ bool orionldAltContextInit(OrionldProblemDetails* pdP)
 {
   LM_TMP(("ALT: Initializing ALT Context list"));
   orionldAltContextListInit();
-  LM_TMP(("ALT: Downloading and processing Core Context"));
-  orionldAltCoreContextP = orionldAltContextCreateFromUrl(ORIONLD_CORE_CONTEXT_URL, pdP);
 
-  if (orionldAltCoreContextP == NULL)
+  char* cacheContextDir = getenv("ORIONLD_CACHED_CONTEXT_DIRECTORY");
+  bool  gotCoreContext  = false;
+
+#if DEBUG
+  if (cacheContextDir != NULL)
   {
-    LM_TMP(("ALT: orionldAltContextCreateFromUrl: %s %s", pdP->title, pdP->detail));
-    return false;
+    LM_TMP(("ALT: Getting initial contexts from '%s'", cacheContextDir));
+    gotCoreContext = fileSystemContexts(cacheContextDir);
+    if (gotCoreContext == false)
+      LM_E(("Unable to cache pre-loaded contexts from '%s'", cacheContextDir));
+    orionldAltContextListPresent("After loading initial cached contexts");
+  }
+#endif
+
+  if (gotCoreContext == false)
+  {
+    LM_TMP(("ALT: Downloading and processing Core Context"));
+    orionldAltCoreContextP = orionldAltContextCreateFromUrl(ORIONLD_CORE_CONTEXT_URL, pdP);
+
+    if (orionldAltCoreContextP == NULL)
+    {
+      LM_TMP(("ALT: orionldAltContextCreateFromUrl: %s %s", pdP->title, pdP->detail));
+      return false;
+    }
   }
 
   OrionldContextItem* vocabP = orionldAltContextItemLookup(orionldAltCoreContextP, "@vocab");

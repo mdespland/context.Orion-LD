@@ -191,4 +191,12 @@ extern char* orionldAltContextItemExpand
 //
 extern const char* orionldAltContextPrefixExpand(OrionldAltContext* contextP, const char* str);
 
+
+
+// -----------------------------------------------------------------------------
+//
+// orionldAltContextListPresent -
+//
+extern void orionldAltContextListPresent(const char* info);
+
 #endif  // SRC_LIB_ORIONLD_CONTEXT_ORIONLDALTCONTEXT_H_

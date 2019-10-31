@@ -55,7 +55,7 @@ char* orionldAliasLookup(OrionldContext* contextP, const char* longName, bool* v
   }
 
   LM_T(LmtAlias, ("VAL: Calling orionldContextValueLookup for long-name '%s'", longName));
-  LM_T(LmtContextValueLookup, ("VAL:"));
+  LM_T(LmtContextValueLookup, ("VAL: (contextP at %p)", contextP));
   LM_T(LmtContextValueLookup, ("VAL: =============================== Calling orionldContextValueLookup for '%s'", longName));
   KjNode* aliasNodeP     = orionldContextValueLookup(contextP, longName);
   LM_T(LmtContextValueLookup, ("VAL: =================================================================================================="));

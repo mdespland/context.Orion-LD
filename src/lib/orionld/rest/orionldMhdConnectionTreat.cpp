@@ -837,7 +837,6 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
   if ((orionldState.payloadContextNode != NULL) && (orionldContextTreat(ciP, orionldState.payloadContextNode) == false))
     goto respond;
 
-
   // Adding inline context to ALT context list
   if (orionldState.payloadContextNode != NULL)
   {
@@ -848,13 +847,16 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
     
     if (orionldState.altContextP == NULL)
       ciP->httpStatusCode = (HttpStatusCode) pd.status;
+
+    orionldAltContextListPresent("After creating context from payload");
   }
 
   // ********************************************************************************************
   //
   // Call the SERVICE ROUTINE
   //
-  LM_T(LmtServiceRoutine, ("Calling Service Routine %s", orionldState.serviceP->url));
+  LM_T(LmtServiceRoutine, ("Calling Service Routine %s (context at %p)", orionldState.serviceP->url, orionldState.contextP));
+
   serviceRoutineResult = orionldState.serviceP->serviceRoutine(ciP);
   LM_T(LmtServiceRoutine, ("service routine '%s %s' done", orionldState.verbString, orionldState.serviceP->url));
 
