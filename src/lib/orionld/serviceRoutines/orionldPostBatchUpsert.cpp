@@ -390,35 +390,52 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
 
   if (orionldState.uriParamOptions.replace == true)
   {
-    for (KjNode *entityNodeP = entityIdsArrayP->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
+    for (KjNode* entityNodeP = entityIdsArrayP->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
     {
       LM_TMP(("UPSERT: Entity id (to be removed): %s", entityNodeP->value.s));
     }
 
     if (entityIdsArrayP->value.firstChildP != NULL)
     {
-      KjNode *entitiesFromDB = dbEntityLookupMany(entityIdsArrayP);
+      LM_TMP(("UPSERT: Calling dbEntityLookupMany"));
+      KjNode* entitiesFromDbP = dbEntityLookupMany(entityIdsArrayP);
+      LM_TMP(("UPSERT: back from dbEntityLookupMany"));
 
-      for (KjNode *entityNodeP = entitiesFromDB->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
+      if (entitiesFromDbP == NULL)
+        LM_TMP(("UPSERT: dbEntityLookupMany found no entities - nothing to remove - we're done here"));
+      else
       {
-        KjNode *itemFromDBP = entityNodeP->value.firstChildP;
-        while (itemFromDBP != NULL)
+        int entityIx = 0;
+
+        LM_TMP(("UPSERT: Looping over the entities to be replaced"));
+        for (KjNode* entityNodeP = entitiesFromDbP->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
         {
-          if (SCOMPARE8(itemFromDBP->name, 'c', 'r', 'e', 'D', 'a', 't', 'e', 0))
+          KjNode* itemFromDbP = entityNodeP->value.firstChildP;
+          while (itemFromDbP != NULL)
           {
-            LM_TMP(("CRETED_DATE: %s", itemFromDBP->value.s));
-            itemFromDBP = itemFromDBP->next;
+            LM_TMP(("UPSERT: Got item '%s' of entity %d", itemFromDbP->name, entityIx));
+            if (SCOMPARE8(itemFromDbP->name, 'c', 'r', 'e', 'D', 'a', 't', 'e', 0))
+            {
+              LM_TMP(("UPSERT: creDate: %d", itemFromDbP->value.i));
+              break;
+            }
+            itemFromDbP = itemFromDbP->next;
           }
+          ++entityIx;
         }
-      }
 
-      if (dbEntityBatchDelete(entityIdsArrayP) == false)
-      {
-        LM_E(("mongoCppLegacyEntityBatchDelete returned false"));
-        ciP->httpStatusCode = SccBadRequest;
-        if (orionldState.responseTree == NULL)
-          orionldErrorResponseCreate(OrionldBadRequestData, "Database Error", "mongoCppLegacyEntityBatchDelete");
-        return false;
+        //
+        // FIXME: Calling dbEntityBatchDelete with ALL entities, not just withthose that actually existed ...
+        //        We could extract those that actually exist from 'entitiesFromDbP' and send only those to dbEntityBatchDelete.
+        //
+        if (dbEntityBatchDelete(entityIdsArrayP) == false)
+        {
+          LM_E(("mongoCppLegacyEntityBatchDelete returned false"));
+          ciP->httpStatusCode = SccBadRequest;
+          if (orionldState.responseTree == NULL)
+            orionldErrorResponseCreate(OrionldBadRequestData, "Database Error", "mongoCppLegacyEntityBatchDelete");
+          return false;
+        }
       }
     }
   }

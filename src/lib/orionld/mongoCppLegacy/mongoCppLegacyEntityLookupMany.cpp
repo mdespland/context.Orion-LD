@@ -27,7 +27,7 @@
 extern "C"
 {
 #include "kjson/KjNode.h"                                        // KjNode
-#include "kjson/kjRender.h"                                      // kjRender - TMP
+#include "kjson/kjBuilder.h"                                     // kjArray
 }
 
 #include "logMsg/logMsg.h"                                       // LM_*
@@ -48,7 +48,7 @@ extern "C"
 KjNode* mongoCppLegacyEntityLookupMany(KjNode* requestTree)
 {
   char                        collectionPath[256];
-  KjNode*                     kjTree = NULL;
+  KjNode*                     resultArray = kjArray(orionldState.kjsonP, NULL);
   mongo::BSONObjBuilder       queryBuilderP;
   mongo::BSONObjBuilder       bsonInExpression;
   mongo::BSONArrayBuilder     bsonArray;
@@ -80,22 +80,20 @@ KjNode* mongoCppLegacyEntityLookupMany(KjNode* requestTree)
     mongo::BSONObj  bsonObj;
     char*           title;
     char*           details;
+    KjNode*         kjTree;
 
     bsonObj = cursorP->nextSafe();
 
-    LM_TMP(("MERGE: Creating a kjTree from BSONObj '%s'", bsonObj.toString().c_str()));
+    LM_TMP(("UPSERT: Creating a kjTree from BSONObj '%s'", bsonObj.toString().c_str()));
+
     kjTree = dbDataToKjTree(&bsonObj, &title, &details);
     if (kjTree == NULL)
       LM_E(("%s: %s", title, details));
-
-#if 0
-    char tmpBuffer[2048];
-    kjRender(orionldState.kjsonP, kjTree, tmpBuffer, sizeof(tmpBuffer));
-    LM_TMP(("MERGE: json III: %s", tmpBuffer));
-#endif
+    else
+      kjChildAdd(resultArray, kjTree);
   }
 
   releaseMongoConnection(connectionP);
   // semGive()
-  return  kjTree;
+  return  resultArray;
 }
