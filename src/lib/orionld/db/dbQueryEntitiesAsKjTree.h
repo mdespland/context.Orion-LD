@@ -1,3 +1,6 @@
+#ifndef SRC_LIB_ORIONLD_DB_DBQUERYENTITIESASKJTREE_H
+#define SRC_LIB_ORIONLD_DB_DBQUERYENTITIESASKJTREE_H
+
 /*
 *
 * Copyright 2019 FIWARE Foundation e.V.
@@ -20,27 +23,21 @@
 * For those usages not covered by this license please contact with
 * orionld at fiware dot org
 *
-* Author: Ken Zangelin
+* Author: Larysse Savanna
 */
-
 extern "C"
 {
 #include "kjson/KjNode.h"                                        // KjNode
 }
 
-#include "orionld/db/dbConfiguration.h"                          // Own interface
+#include "orionld/db/dbConfiguration.h"                          // DbQueryEntitiesAsKjTree
 
 
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 //
-// Function pointers for the DB interface
+// DbQueryEntitiesAsKjTree -
 //
-DbEntityLookupFunction                    dbEntityLookup;
-DbEntityUpdateFunction                    dbEntityUpdate;
-DbEntityBatchDeleteFunction               dbEntityBatchDelete;
-DbDataToKjTreeFunction                    dbDataToKjTree;
-DbDataFromKjTreeFunction                  dbDataFromKjTree;
-DbEntityOperationsUpsertFunction          dbEntityOperationsUpsert;
-DbSubscriptionMatchEntityIdAndAttributes  dbSubscriptionMatchEntityIdAndAttributes;
-DbQueryEntitiesAsKjTree                   dbQueryEntitiesAsKjTree;
+extern DbQueryEntitiesAsKjTree dbQueryEntitiesAsKjTree;
+
+#endif  // SRC_LIB_ORIONLD_DB_DBQUERYENTITIESASKJTREE_H
