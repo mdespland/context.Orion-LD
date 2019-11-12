@@ -30,6 +30,7 @@ SET (SOURCES
     mongoCppLegacyKjTreeToBsonObj.cpp
     mongoCppLegacyEntityOperationsUpsert.cpp
     mongoCppLegacySubscriptionMatchEntityIdAndAttributes.cpp
+    mongoCppLegacyQueryEntitiesAsKjTree.cpp
 )
 
 # Include directories
