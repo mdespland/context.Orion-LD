@@ -85,7 +85,7 @@ bool orionldPostBatchDeleteEntities(ConnectionInfo* ciP)
       return false;
     }
   }
-
+/*
   if (mongoCppLegacyQueryEntitiesAsKjTree(orionldState.requestTree) == NULL)
   {
     LM_E(("mongoCppLegacyQueryEntitiesAsKjTree returned NULL"));
@@ -94,7 +94,7 @@ bool orionldPostBatchDeleteEntities(ConnectionInfo* ciP)
       orionldErrorResponseCreate(OrionldBadRequestData, "Database Error", "mongoCppLegacyQueryEntitiesAsKjTree");
     return false;
   }
-/*
+*/
   if (mongoCppLegacyEntityBatchDelete(orionldState.requestTree) == false)
   {
     LM_E(("mongoCppLegacyEntityBatchDelete returned false"));
@@ -102,7 +102,7 @@ bool orionldPostBatchDeleteEntities(ConnectionInfo* ciP)
     if (orionldState.responseTree == NULL)
       orionldErrorResponseCreate(OrionldBadRequestData, "Database Error", "mongoCppLegacyEntityBatchDelete");
     return false;
-  }*/
+  }
   else
     ciP->httpStatusCode = SccOk;
 
