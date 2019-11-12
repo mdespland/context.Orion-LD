@@ -524,19 +524,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Vehicle:302"
+    ],
     "errors": [
         {
             "entityId": "invalid entity::id",
             "error": {
-                "detail": "entity::id",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "field with invalid type",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::id",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Vehicle:302"
     ]
 }
 
@@ -550,19 +550,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Vehicle:302"
+    ],
     "errors": [
         {
             "entityId": "no entity::id",
             "error": {
-                "detail": "entity::id",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "mandatory field missing",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::id",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Vehicle:302"
     ]
 }
 
@@ -576,19 +576,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Vehicle:302"
+    ],
     "errors": [
         {
             "entityId": "ABC_123456",
             "error": {
-                "detail": "ABC_123456",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "Not a URI",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "ABC_123456",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Vehicle:302"
     ]
 }
 
@@ -602,19 +602,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Vehicle:301"
+    ],
     "errors": [
         {
             "entityId": "urn:ngsi-ld:Vehicle:302",
             "error": {
-                "detail": "entity::type",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "field with invalid type",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::type",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Vehicle:301"
     ]
 }
 
@@ -628,27 +628,27 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [],
     "errors": [
         {
             "entityId": "urn:ngsi-ld:Vehicle:301",
             "error": {
-                "detail": "entity::type",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "mandatory field missing",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::type",
+                "status": 400
             }
         },
         {
             "entityId": "urn:ngsi-ld:Vehicle:302",
             "error": {
-                "detail": "entity::type",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "field with invalid type",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::type",
+                "status": 400
             }
         }
-    ],
-    "success": []
+    ]
 }
 
 
@@ -661,19 +661,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Motocycle:402"
+    ],
     "errors": [
         {
             "entityId": "urn:ngsi-ld:Vehicle:301",
             "error": {
-                "detail": "entity::id",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "Duplicated field",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::id",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Motocycle:402"
     ]
 }
 
@@ -687,19 +687,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Bicycle:502"
+    ],
     "errors": [
         {
             "entityId": "urn:ngsi-ld:Vehicle:301",
             "error": {
-                "detail": "entity::type",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "Duplicated field",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::type",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Bicycle:502"
     ]
 }
 
@@ -713,19 +713,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Vehicle:302"
+    ],
     "errors": [
         {
             "entityId": "no entity::id",
             "error": {
-                "detail": "entity::id",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "mandatory field missing",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::id",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Vehicle:302"
     ]
 }
 
@@ -739,19 +739,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Vehicle:302"
+    ],
     "errors": [
         {
             "entityId": "urn:ngsi-ld:Vehicle:301",
             "error": {
-                "detail": "entity::type",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "mandatory field missing",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::type",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Vehicle:302"
     ]
 }
 
@@ -764,9 +764,9 @@ Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "[]",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/InvalidRequest",
     "title": "Empty Array",
-    "type": "https://uri.etsi.org/ngsi-ld/errors/InvalidRequest"
+    "detail": "[]"
 }
 
 
@@ -779,13 +779,13 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
-    "errors": [],
     "success": [
         "urn:ngsi-ld:Vehicle:00001",
         "urn:ngsi-ld:Vehicle:00002",
         "urn:ngsi-ld:Vehicle:00003",
         "urn:ngsi-ld:Vehicle:00004"
-    ]
+    ],
+    "errors": []
 }
 
 
@@ -798,13 +798,13 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
-    "errors": [],
     "success": [
         "urn:ngsi-ld:Vehicle:00001",
         "urn:ngsi-ld:Vehicle:00002",
         "urn:ngsi-ld:Vehicle:00003",
         "urn:ngsi-ld:Vehicle:00004"
-    ]
+    ],
+    "errors": []
 }
 
 

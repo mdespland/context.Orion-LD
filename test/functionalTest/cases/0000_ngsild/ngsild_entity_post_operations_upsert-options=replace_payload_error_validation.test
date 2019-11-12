@@ -41,8 +41,6 @@ brokerStart CB 0-255
 # 08. Attempt to upsert with an entity with ID typed wrong - see error
 # 09. Attempt to upsert with an entity with TYPE typed wrong - see error
 # 10. Attempt to upsert with an empty array - see error
-# 11. POST /ngsi-ld/v1/entityOperations/upsert?options=replace - 4 entities
-# 12. POST /ngsi-ld/v1/entityOperations/upsert?options=replace - 4 same entities from step 11
 #
 
 
@@ -369,160 +367,6 @@ echo
 echo
 
 
-echo "11. POST /ngsi-ld/v1/entityOperations/upsert?options=replace - 4 entities"
-echo "========================================================================="
-payload='[
-    {
-        "id": "urn:ngsi-ld:Vehicle:00001",
-        "type": "Vehicle",
-        "brandName": {
-            "type": "Property",
-            "value": "Mercedes"
-        },
-        "isParked": {
-            "type": "Relationship",
-            "object": "urn:ngsi-ld:OffStreetParking:Downtown1",
-            "observedAt": "2017-07-29T12:00:04Z",
-            "providedBy": {
-                "type": "Relationship",
-                "object": "urn:ngsi-ld:Person:Bob"
-            }
-        }
-    },
-    {
-        "id": "urn:ngsi-ld:Vehicle:00002",
-        "type": "Vehicle",
-        "brandName": {
-            "type": "Property",
-            "value": "Mercedes"
-        },
-        "isParked": {
-            "type": "Relationship",
-            "object": "urn:ngsi-ld:OffStreetParking:Downtown1",
-            "observedAt": "2017-07-29T12:00:04Z",
-            "providedBy": {
-                "type": "Relationship",
-                "object": "urn:ngsi-ld:Person:Bob"
-            }
-        }
-    },
-    {
-        "id": "urn:ngsi-ld:Vehicle:00003",
-        "type": "Vehicle",
-        "brandName": {
-            "type": "Property",
-            "value": "Mercedes"
-        },
-        "isParked": {
-            "type": "Relationship",
-            "object": "urn:ngsi-ld:OffStreetParking:Downtown1",
-            "observedAt": "2017-07-29T12:00:04Z",
-            "providedBy": {
-                "type": "Relationship",
-                "object": "urn:ngsi-ld:Person:Bob"
-            }
-        }
-    },
-    {
-        "id": "urn:ngsi-ld:Vehicle:00004",
-        "type": "Vehicle",
-        "brandName": {
-            "type": "Property",
-            "value": "Mercedes"
-        },
-        "isParked": {
-            "type": "Relationship",
-            "object": "urn:ngsi-ld:OffStreetParking:Downtown1",
-            "observedAt": "2017-07-29T12:00:04Z",
-            "providedBy": {
-                "type": "Relationship",
-                "object": "urn:ngsi-ld:Person:Bob"
-            }
-        }
-    }
-]'
-orionCurl --url '/ngsi-ld/v1/entityOperations/upsert?options=replace' --payload "$payload"
-echo
-echo
-
-
-echo "12. POST /ngsi-ld/v1/entityOperations/upsert?options=replace - 4 same entities from step 11"
-echo "==========================================================================================="
-payload='[
-    {
-        "id": "urn:ngsi-ld:Vehicle:00001",
-        "type": "Vehicle",
-        "brandName": {
-            "type": "Property",
-            "value": "Mercedes"
-        },
-        "isParked": {
-            "type": "Relationship",
-            "object": "urn:ngsi-ld:OffStreetParking:Downtown1",
-            "observedAt": "2017-07-29T12:00:04Z",
-            "providedBy": {
-                "type": "Relationship",
-                "object": "urn:ngsi-ld:Person:Bob"
-            }
-        }
-    },
-    {
-        "id": "urn:ngsi-ld:Vehicle:00002",
-        "type": "Vehicle",
-        "brandName": {
-            "type": "Property",
-            "value": "Mercedes"
-        },
-        "isParked": {
-            "type": "Relationship",
-            "object": "urn:ngsi-ld:OffStreetParking:Downtown1",
-            "observedAt": "2017-07-29T12:00:04Z",
-            "providedBy": {
-                "type": "Relationship",
-                "object": "urn:ngsi-ld:Person:Bob"
-            }
-        }
-    },
-    {
-        "id": "urn:ngsi-ld:Vehicle:00003",
-        "type": "Vehicle",
-        "brandName": {
-            "type": "Property",
-            "value": "Mercedes"
-        },
-        "isParked": {
-            "type": "Relationship",
-            "object": "urn:ngsi-ld:OffStreetParking:Downtown1",
-            "observedAt": "2017-07-29T12:00:04Z",
-            "providedBy": {
-                "type": "Relationship",
-                "object": "urn:ngsi-ld:Person:Bob"
-            }
-        }
-    },
-    {
-        "id": "urn:ngsi-ld:Vehicle:00004",
-        "type": "Vehicle",
-        "brandName": {
-            "type": "Property",
-            "value": "Mercedes"
-        },
-        "isParked": {
-            "type": "Relationship",
-            "object": "urn:ngsi-ld:OffStreetParking:Downtown1",
-            "observedAt": "2017-07-29T12:00:04Z",
-            "providedBy": {
-                "type": "Relationship",
-                "object": "urn:ngsi-ld:Person:Bob"
-            }
-        }
-    }
-]'
-orionCurl --url '/ngsi-ld/v1/entityOperations/upsert?options=replace' --payload "$payload"
-echo
-echo
-
-
 --REGEXPECT--
 01. Attempt to upsert with an entity having an id that is not a string - see error
 ==================================================================================
@@ -533,19 +377,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Vehicle:302"
+    ],
     "errors": [
         {
             "entityId": "invalid entity::id",
             "error": {
-                "detail": "entity::id",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "field with invalid type",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::id",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Vehicle:302"
     ]
 }
 
@@ -559,19 +403,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Vehicle:302"
+    ],
     "errors": [
         {
             "entityId": "no entity::id",
             "error": {
-                "detail": "entity::id",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "mandatory field missing",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::id",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Vehicle:302"
     ]
 }
 
@@ -585,19 +429,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Vehicle:302"
+    ],
     "errors": [
         {
             "entityId": "ABC_123456",
             "error": {
-                "detail": "ABC_123456",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "Not a URI",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "ABC_123456",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Vehicle:302"
     ]
 }
 
@@ -611,19 +455,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Vehicle:301"
+    ],
     "errors": [
         {
             "entityId": "urn:ngsi-ld:Vehicle:302",
             "error": {
-                "detail": "entity::type",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "field with invalid type",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::type",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Vehicle:301"
     ]
 }
 
@@ -637,27 +481,27 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [],
     "errors": [
         {
             "entityId": "urn:ngsi-ld:Vehicle:301",
             "error": {
-                "detail": "entity::type",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "mandatory field missing",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::type",
+                "status": 400
             }
         },
         {
             "entityId": "urn:ngsi-ld:Vehicle:302",
             "error": {
-                "detail": "entity::type",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "field with invalid type",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::type",
+                "status": 400
             }
         }
-    ],
-    "success": []
+    ]
 }
 
 
@@ -670,19 +514,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Motocycle:402"
+    ],
     "errors": [
         {
             "entityId": "urn:ngsi-ld:Vehicle:301",
             "error": {
-                "detail": "entity::id",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "Duplicated field",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::id",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Motocycle:402"
     ]
 }
 
@@ -696,19 +540,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Bicycle:502"
+    ],
     "errors": [
         {
             "entityId": "urn:ngsi-ld:Vehicle:301",
             "error": {
-                "detail": "entity::type",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "Duplicated field",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::type",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Bicycle:502"
     ]
 }
 
@@ -722,19 +566,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Vehicle:302"
+    ],
     "errors": [
         {
             "entityId": "no entity::id",
             "error": {
-                "detail": "entity::id",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "mandatory field missing",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::id",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Vehicle:302"
     ]
 }
 
@@ -748,19 +592,19 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "success": [
+        "urn:ngsi-ld:Vehicle:302"
+    ],
     "errors": [
         {
             "entityId": "urn:ngsi-ld:Vehicle:301",
             "error": {
-                "detail": "entity::type",
-                "status": 400,
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
                 "title": "mandatory field missing",
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+                "detail": "entity::type",
+                "status": 400
             }
         }
-    ],
-    "success": [
-        "urn:ngsi-ld:Vehicle:302"
     ]
 }
 
@@ -773,47 +617,9 @@ Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "[]",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/InvalidRequest",
     "title": "Empty Array",
-    "type": "https://uri.etsi.org/ngsi-ld/errors/InvalidRequest"
-}
-
-
-11. POST /ngsi-ld/v1/entityOperations/upsert?options=replace - 4 entities
-=========================================================================
-HTTP/1.1 200 OK
-Content-Length: 137
-Content-Type: application/json
-Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
-Date: REGEX(.*)
-
-{
-    "errors": [],
-    "success": [
-        "urn:ngsi-ld:Vehicle:00001",
-        "urn:ngsi-ld:Vehicle:00002",
-        "urn:ngsi-ld:Vehicle:00003",
-        "urn:ngsi-ld:Vehicle:00004"
-    ]
-}
-
-
-12. POST /ngsi-ld/v1/entityOperations/upsert?options=replace - 4 same entities from step 11
-===========================================================================================
-HTTP/1.1 200 OK
-Content-Length: 137
-Content-Type: application/json
-Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
-Date: REGEX(.*)
-
-{
-    "errors": [],
-    "success": [
-        "urn:ngsi-ld:Vehicle:00001",
-        "urn:ngsi-ld:Vehicle:00002",
-        "urn:ngsi-ld:Vehicle:00003",
-        "urn:ngsi-ld:Vehicle:00004"
-    ]
+    "detail": "[]"
 }
 
 

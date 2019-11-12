@@ -78,7 +78,7 @@ sleep 2
 
 
 echo "03. Modify E2 and add E3 using POST /ngsi-ld/v1/entityOperations/upsert?options=replace"
-echo "======================================================================================"
+echo "======================================================================================="
 payload='[
   {
     "id": "urn:ngsi-ld:entity:E2",
@@ -120,11 +120,11 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
-    "errors": [],
     "success": [
         "urn:ngsi-ld:entity:E1",
         "urn:ngsi-ld:entity:E2"
-    ]
+    ],
+    "errors": []
 }
 
 
@@ -193,11 +193,11 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
-    "errors": [],
     "success": [
         "urn:ngsi-ld:entity:E2",
         "urn:ngsi-ld:entity:E3"
-    ]
+    ],
+    "errors": []
 }
 
 

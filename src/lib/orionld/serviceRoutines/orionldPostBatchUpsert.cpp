@@ -64,6 +64,7 @@ extern "C"
 #include "orionld/context/orionldContextPresent.h"             // orionldContextPresent
 #include "orionld/context/orionldUserContextKeyValuesCheck.h"  // orionldUserContextKeyValuesCheck
 #include "orionld/context/orionldUriExpand.h"                  // orionldUriExpand
+#include "orionld/context/orionldAliasLookup.h"                // orionldAliasLookup
 #include "orionld/kjTree/kjStringValueLookupInArray.h"         // kjStringValueLookupInArray
 #include "orionld/serviceRoutines/orionldPostBatchUpsert.h"    // Own Interface
 
@@ -233,7 +234,7 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
   KjNode *successArrayP = kjArray(orionldState.kjsonP, "success");
   KjNode *errorsArrayP = kjArray(orionldState.kjsonP, "errors");
   KjNode *entityIdsArrayP = kjArray(orionldState.kjsonP, "entityIds");
-  char *detail;
+  char   *detail;
 
   ciP->httpStatusCode = SccOk;
 
@@ -390,51 +391,93 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
 
   if (orionldState.uriParamOptions.replace == true)
   {
-    for (KjNode* entityNodeP = entityIdsArrayP->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
-    {
-      LM_TMP(("UPSERT: Entity id (to be removed): %s", entityNodeP->value.s));
-    }
-
     if (entityIdsArrayP->value.firstChildP != NULL)
     {
       LM_TMP(("UPSERT: Calling dbEntityLookupMany"));
-      KjNode* entitiesFromDbP = dbEntityLookupMany(entityIdsArrayP);
+      KjNode* entitiesFromDbP = dbQueryEntitiesAsKjTree(entityIdsArrayP);
+
       LM_TMP(("UPSERT: back from dbEntityLookupMany"));
+      
+      entityIdsArrayP = kjArray(orionldState.kjsonP, "entityIds");
 
       if (entitiesFromDbP == NULL)
         LM_TMP(("UPSERT: dbEntityLookupMany found no entities - nothing to remove - we're done here"));
       else
       {
-        int entityIx = 0;
-
-        LM_TMP(("UPSERT: Looping over the entities to be replaced"));
-        for (KjNode* entityNodeP = entitiesFromDbP->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
+        for (unsigned int ix = 0; ix < mongoRequest.contextElementVector.vec.size(); ix++)
         {
-          KjNode* itemFromDbP = entityNodeP->value.firstChildP;
-          while (itemFromDbP != NULL)
+          int entityIx = 0;
+          std::vector<ContextElement*> ceMongoReqVecP  = mongoRequest.contextElementVector.vec;
+          const char* typeMongoReqAlias;
+          const char *entityIdMongoReq                 = ceMongoReqVecP[ix]->entityId.id.c_str();
+          const char *typeMongoReq                     = ceMongoReqVecP[ix]->entityId.type.c_str();
+          typeMongoReqAlias                            = orionldAliasLookup(orionldState.contextP, typeMongoReq, NULL);
+          LM_TMP(("EntityId: %s", entityIdMongoReq));
+          LM_TMP(("Type: %s", typeMongoReqAlias));
+          LM_TMP(("UPSERT: Looping over the entities to be replaced"));
+          for (KjNode* entityNodeP = entitiesFromDbP->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
           {
-            LM_TMP(("UPSERT: Got item '%s' of entity %d", itemFromDbP->name, entityIx));
-            if (SCOMPARE8(itemFromDbP->name, 'c', 'r', 'e', 'D', 'a', 't', 'e', 0))
+            KjNode* itemFromDbP = entityNodeP->value.firstChildP;     
+            char *id     = NULL;
+            char *type   = NULL;
+            int  creDate = 0;
+            while (itemFromDbP != NULL)
             {
-              LM_TMP(("UPSERT: creDate: %d", itemFromDbP->value.i));
-              break;
+              LM_TMP(("UPSERT: Got item '%s' of entity %d", itemFromDbP->name, entityIx));
+              
+              if (SCOMPARE4(itemFromDbP->name, '_', 'i', 'd', 0))
+              {
+                KjNode* _idContentP = itemFromDbP->value.firstChildP;
+                while (_idContentP != NULL)
+                {
+                  if (SCOMPARE3(_idContentP->name, 'i', 'd', 0))
+                  {
+                    id = _idContentP->value.s;
+                    LM_TMP(("UPSERT: id: %s", id));
+                    entityIdPush(entityIdsArrayP, id);
+                  }
+                  else if (SCOMPARE5(_idContentP->name, 't', 'y', 'p', 'e', 0))
+                  {
+                    char* alias;
+                    alias = orionldAliasLookup(orionldState.contextP, _idContentP->value.s, NULL);
+                    type = alias;
+                    LM_TMP(("UPSERT: type: %s", type));
+                  }
+                  _idContentP = _idContentP->next;
+                }
+              }
+              else if (SCOMPARE8(itemFromDbP->name, 'c', 'r', 'e', 'D', 'a', 't', 'e', 0))
+              {
+                creDate = itemFromDbP->value.i;
+                LM_TMP(("UPSERT: creDate: %d", creDate));
+              }
+              itemFromDbP = itemFromDbP->next;
+            } 
+            if (strcmp(entityIdMongoReq, id) == false)
+            {
+              if (strcmp(typeMongoReqAlias, type) != false)
+              {
+                LM_TMP(("TYPE DIFFIRENT!!! -> index: %d", ix));
+                LM_TMP(("entityIdMongoReq:  %s | id:   %s", entityIdMongoReq,  id)); 
+                LM_TMP(("typeMongoReqAlias: %s | type: %s", typeMongoReqAlias, type));
+                entityErrorPush(errorsArrayP, entityIdMongoReq, OrionldBadRequestData, "incoming type must be equal to type from DB", "entity::type", 400);
+                mongoRequest.contextElementVector.vec.erase(mongoRequest.contextElementVector.vec.begin()+ix);
+              }
             }
-            itemFromDbP = itemFromDbP->next;
+            ++entityIx;
           }
-          ++entityIx;
         }
 
-        //
-        // FIXME: Calling dbEntityBatchDelete with ALL entities, not just withthose that actually existed ...
-        //        We could extract those that actually exist from 'entitiesFromDbP' and send only those to dbEntityBatchDelete.
-        //
-        if (dbEntityBatchDelete(entityIdsArrayP) == false)
+        if (entitiesFromDbP->value.firstChildP != NULL)
         {
-          LM_E(("mongoCppLegacyEntityBatchDelete returned false"));
-          ciP->httpStatusCode = SccBadRequest;
-          if (orionldState.responseTree == NULL)
-            orionldErrorResponseCreate(OrionldBadRequestData, "Database Error", "mongoCppLegacyEntityBatchDelete");
-          return false;
+          if (dbEntityBatchDelete(entityIdsArrayP) == false)
+          {
+            LM_E(("mongoCppLegacyEntityBatchDelete returned false"));
+            ciP->httpStatusCode = SccBadRequest;
+            if (orionldState.responseTree == NULL)
+              orionldErrorResponseCreate(OrionldBadRequestData, "Database Error", "mongoCppLegacyEntityBatchDelete");
+            return false;
+          }
         }
       }
     }
