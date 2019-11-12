@@ -22,6 +22,8 @@
 *
 * Author: Gabriel Quaresma and Ken Zangelin
 */
+#include <vector>                // vector
+
 #include "logMsg/logMsg.h"       // LM_*
 #include "logMsg/traceLevels.h"  // Lmt*
 
@@ -397,7 +399,7 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
       KjNode* entitiesFromDbP = dbQueryEntitiesAsKjTree(entityIdsArrayP);
 
       LM_TMP(("UPSERT: back from dbEntityLookupMany"));
-      
+
       entityIdsArrayP = kjArray(orionldState.kjsonP, "entityIds");
 
       if (entitiesFromDbP == NULL)
@@ -417,14 +419,14 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
           LM_TMP(("UPSERT: Looping over the entities to be replaced"));
           for (KjNode* entityNodeP = entitiesFromDbP->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
           {
-            KjNode* itemFromDbP = entityNodeP->value.firstChildP;     
+            KjNode* itemFromDbP = entityNodeP->value.firstChildP;
             char *id     = NULL;
             char *type   = NULL;
             int  creDate = 0;
             while (itemFromDbP != NULL)
             {
               LM_TMP(("UPSERT: Got item '%s' of entity %d", itemFromDbP->name, entityIx));
-              
+
               if (SCOMPARE4(itemFromDbP->name, '_', 'i', 'd', 0))
               {
                 KjNode* _idContentP = itemFromDbP->value.firstChildP;
@@ -452,13 +454,13 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
                 LM_TMP(("UPSERT: creDate: %d", creDate));
               }
               itemFromDbP = itemFromDbP->next;
-            } 
+            }
             if (strcmp(entityIdMongoReq, id) == false)
             {
               if (strcmp(typeMongoReqAlias, type) != false)
               {
                 LM_TMP(("TYPE DIFFIRENT!!! -> index: %d", ix));
-                LM_TMP(("entityIdMongoReq:  %s | id:   %s", entityIdMongoReq,  id)); 
+                LM_TMP(("entityIdMongoReq:  %s | id:   %s", entityIdMongoReq,  id));
                 LM_TMP(("typeMongoReqAlias: %s | type: %s", typeMongoReqAlias, type));
                 entityErrorPush(errorsArrayP, entityIdMongoReq, OrionldBadRequestData, "incoming type must be equal to type from DB", "entity::type", 400);
                 mongoRequest.contextElementVector.vec.erase(mongoRequest.contextElementVector.vec.begin()+ix);

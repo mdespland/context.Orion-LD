@@ -32,17 +32,17 @@ extern "C"
 #include "logMsg/logMsg.h"                                              // LM_*
 #include "logMsg/traceLevels.h"                                         // Lmt*
 
-#include "rest/ConnectionInfo.h"                                        // ConnectionInfo
-#include "ngsi10/UpdateContextRequest.h"                                // UpdateContextRequest
-#include "ngsi10/UpdateContextResponse.h"                               // UpdateContextResponse
-#include "orionld/common/urlCheck.h"                                    // urlCheck
-#include "orionld/common/urnCheck.h"                                    // urnCheck
-#include "orionld/common/orionldState.h"                                // orionldState
-#include "orionld/common/orionldErrorResponse.h"                        // orionldErrorResponseCreate
-#include "orionld/db/dbEntityBatchDelete.h"                             // dbEntityBatchDelete.h
-#include "orionld/mongoCppLegacy/mongoCppLegacyEntityBatchDelete.h"     // mongoCppLegacyEntityBatchDelete
-#include "orionld/mongoCppLegacy/mongoCppLegacyQueryEntitiesAsKjTree.h" // mongoCppLegacyQueryEntitiesAsKjTree
-#include "orionld/serviceRoutines/orionldPostBatchDeleteEntities.h"     // Own interface
+#include "rest/ConnectionInfo.h"                                         // ConnectionInfo
+#include "ngsi10/UpdateContextRequest.h"                                 // UpdateContextRequest
+#include "ngsi10/UpdateContextResponse.h"                                // UpdateContextResponse
+#include "orionld/common/urlCheck.h"                                     // urlCheck
+#include "orionld/common/urnCheck.h"                                     // urnCheck
+#include "orionld/common/orionldState.h"                                 // orionldState
+#include "orionld/common/orionldErrorResponse.h"                         // orionldErrorResponseCreate
+#include "orionld/db/dbEntityBatchDelete.h"                              // dbEntityBatchDelete.h
+#include "orionld/mongoCppLegacy/mongoCppLegacyEntityBatchDelete.h"      // mongoCppLegacyEntityBatchDelete
+#include "orionld/mongoCppLegacy/mongoCppLegacyQueryEntitiesAsKjTree.h"  // mongoCppLegacyQueryEntitiesAsKjTree
+#include "orionld/serviceRoutines/orionldPostBatchDeleteEntities.h"      // Own interface
 
 
 
