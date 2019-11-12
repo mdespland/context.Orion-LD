@@ -59,6 +59,7 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
 
   // LM_TMP(("Collection Path: %s", collectionPath));
 
+  // Build the filter for the query
   mongo::BSONObjBuilder    filter;
   mongo::BSONObjBuilder    inObj;
   mongo::BSONArrayBuilder  idList;
@@ -70,6 +71,15 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
   inObj.append("$in", idList.arr());
   filter.append("_id.id", inObj.obj());
 
+  // Especify the filds to return
+  mongo::BSONObjBuilder    fields;
+  fields.append("_id.id", 1);
+  fields.append("type", 1);
+  fields.append("creDate", 1);
+
+  mongo::BSONObj fieldsToReturn = fields.obj();
+
+
   mongo::DBClientBase* connectionP = getMongoConnection();
   std::auto_ptr<mongo::DBClientCursor>  cursorP;
   mongo::Query         query(filter.obj());
@@ -77,7 +87,7 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
   // Debugging
   // LM_TMP(("LARYQUERY: filter: %s", query.toString().c_str()));
 
-  cursorP = connectionP->query(collectionPath, query);
+  cursorP = connectionP->query(collectionPath, query, 0, 0, &fieldsToReturn);
 
   // Now convert bson result to kjtree
   KjNode* entitiesTree = kjArray(orionldState.kjsonP, NULL);
@@ -114,7 +124,7 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
     }
     
   }
-
+  /*
   for (KjNode* resultP = entitiesTree->value.firstChildP; resultP != NULL; resultP = resultP->next)
   {
     //LM_TMP(("LARYTREE: entitiesTree: %s", resultP->value.s));
@@ -122,7 +132,7 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
     kjRender(orionldState.kjsonP, resultP, buf, sizeof(buf));
     LM_TMP(("LARYTYPE: entitiesTree: %s", buf));
   }
-
+*/
   //releaseMongoConnection(connectionP);
   return entitiesTree;
 }
