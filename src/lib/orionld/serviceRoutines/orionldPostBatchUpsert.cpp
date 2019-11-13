@@ -408,15 +408,18 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
       {
         for (unsigned int ix = 0; ix < mongoRequest.contextElementVector.vec.size(); ix++)
         {
-          int entityIx = 0;
+          int entityIx                                 = 0;
+          bool isAbleToPushIntoEntityIdsArray          = true;
           std::vector<ContextElement*> ceMongoReqVecP  = mongoRequest.contextElementVector.vec;
-          const char* typeMongoReqAlias;
           const char *entityIdMongoReq                 = ceMongoReqVecP[ix]->entityId.id.c_str();
           const char *typeMongoReq                     = ceMongoReqVecP[ix]->entityId.type.c_str();
+          const char* typeMongoReqAlias;
           typeMongoReqAlias                            = orionldAliasLookup(orionldState.contextP, typeMongoReq, NULL);
+
           LM_TMP(("EntityId: %s", entityIdMongoReq));
           LM_TMP(("Type: %s", typeMongoReqAlias));
           LM_TMP(("UPSERT: Looping over the entities to be replaced"));
+
           for (KjNode* entityNodeP = entitiesFromDbP->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
           {
             KjNode* itemFromDbP = entityNodeP->value.firstChildP;
@@ -436,7 +439,6 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
                   {
                     id = _idContentP->value.s;
                     LM_TMP(("UPSERT: id: %s", id));
-                    entityIdPush(entityIdsArrayP, id);
                   }
                   else if (SCOMPARE5(_idContentP->name, 't', 'y', 'p', 'e', 0))
                   {
@@ -459,6 +461,7 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
             {
               if (strcmp(typeMongoReqAlias, type) != false)
               {
+                isAbleToPushIntoEntityIdsArray = false;
                 LM_TMP(("TYPE DIFFIRENT!!! -> index: %d", ix));
                 LM_TMP(("entityIdMongoReq:  %s | id:   %s", entityIdMongoReq,  id));
                 LM_TMP(("typeMongoReqAlias: %s | type: %s", typeMongoReqAlias, type));
@@ -468,6 +471,8 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
             }
             ++entityIx;
           }
+          if (isAbleToPushIntoEntityIdsArray)
+            entityIdPush(entityIdsArrayP, entityIdMongoReq);
         }
 
         if (entitiesFromDbP->value.firstChildP != NULL)
