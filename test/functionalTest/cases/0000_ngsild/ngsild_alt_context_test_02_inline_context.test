@@ -127,7 +127,7 @@ payload='{
   }
 }'
 orionCurl --url /ngsi-ld/v1/entities --payload "$payload" -H "Content-Type: application/ld+json" --linkHeaderFix
-contextId=$(cat /tmp/httpHeaders.out | grep 'Link:' | awk -F/ '{ print $6}' | awk -F\> '{ print $1 }')
+contextId=$(cat /tmp/httpHeaders.out | grep 'Link:' | awk -F/ '{ print $8}' | awk -F\> '{ print $1 }')
 echo
 echo
 
@@ -150,7 +150,7 @@ echo
 echo "04. Get E1 with the context of the entity creation in Step 01 - see all three attributes in compact form"
 echo "========================================================================================================"
 HOST=$(hostname)
-orionCurl --url '/ngsi-ld/v1/entities/http://a.b.c/entity/E1?prettyPrint=yes&spaces=2' -H 'Link: <http://'$HOST:$CB_PORT'/ngsi-ld/contexts/'$contextId'>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
+orionCurl --url '/ngsi-ld/v1/entities/http://a.b.c/entity/E1?prettyPrint=yes&spaces=2' -H 'Link: <http://'$HOST:$CB_PORT'/ngsi-ld/ex/v1/contexts/'$contextId'>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' --linkHeaderFix
 echo
 echo
 
@@ -198,7 +198,7 @@ echo
 ===========================================================
 HTTP/1.1 201 Created
 Content-Length: 0
-Link: REGEX(.*)
+Link: REGEX(<http://IP:PORT/ngsi-ld/ex/v1/contexts/.*)
 Location: /ngsi-ld/v1/entities/http://a.b.c/entity/E1
 Date: REGEX(.*)
 
@@ -216,12 +216,12 @@ MongoDB server version: REGEX(.*)
 		"servicePath" : "/"
 	},
 	"attrNames" : [
-		"http://from.inline.context/attributes/name",
+		"https://uri.etsi.org/ngsi-ld/name",
 		"http://from.inline.context/attributes/name2",
 		"https://uri.etsi.org/ngsi-ld/default-context/name3"
 	],
 	"attrs" : {
-		"http://from=inline=context/attributes/name" : {
+		"https://uri=etsi=org/ngsi-ld/name" : {
 			"type" : "Property",
 			"creDate" : REGEX(.*),
 			"modDate" : REGEX(.*),
@@ -253,21 +253,21 @@ bye
 03. Get E1 with only Core Context - see name and name3 compacted, name2 as long name from the inline context in step 1
 ======================================================================================================================
 HTTP/1.1 200 OK
-Content-Length: 428
+Content-Length: 390
 Content-Type: application/json
 Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
 Date: REGEX(.*)
 
 {
-    "http://from.inline.context/attributes/name": {
-        "type": "Property",
-        "value": "John 2"
-    },
     "http://from.inline.context/attributes/name2": {
         "type": "Property",
         "value": "name2 is part of the inline context"
     },
     "id": "http://a.b.c/entity/E1",
+    "name": {
+        "type": "Property",
+        "value": "John 2"
+    },
     "name3": {
         "type": "Property",
         "value": "name3 is not in any context - default URL from @vocab"
@@ -281,7 +281,7 @@ Date: REGEX(.*)
 HTTP/1.1 200 OK
 Content-Length: 319
 Content-Type: application/json
-Link: REGEX(.*:9999/ngsi-ld/contexts/.*)
+Link: REGEX(<http://IP:PORT/ngsi-ld/ex/v1/contexts/.*)
 Date: REGEX(.*)
 
 {
@@ -306,7 +306,7 @@ Date: REGEX(.*)
 ===========================================================================================================
 HTTP/1.1 201 Created
 Content-Length: 0
-Link: REGEX(.*)
+Link: REGEX(<http://IP:PORT/ngsi-ld/ex/v1/contexts/.*)
 Location: /ngsi-ld/v1/entities/http://a.b.c/entity/E2
 Date: REGEX(.*)
 
@@ -324,12 +324,12 @@ MongoDB server version: REGEX(.*)
 		"servicePath" : "/"
 	},
 	"attrNames" : [
-		"http://from.inline.context2/attributes/name",
+		"https://uri.etsi.org/ngsi-ld/name",
 		"http://from.inline.context2/attributes/name2",
 		"https://uri.etsi.org/ngsi-ld/default-context/name3"
 	],
 	"attrs" : {
-		"http://from=inline=context2/attributes/name" : {
+		"https://uri=etsi=org/ngsi-ld/name" : {
 			"type" : "Property",
 			"creDate" : REGEX(.*),
 			"modDate" : REGEX(.*),

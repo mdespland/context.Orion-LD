@@ -35,7 +35,7 @@ extern "C"
 #include "mongoBackend/mongoQueryContext.h"                      // mongoQueryContext
 #include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate
 #include "orionld/common/orionldState.h"                         // orionldState
-#include "orionld/context/orionldContextLookup.h"                // orionldContextLookup
+#include "orionld/context/orionldContext.h"                      // orionldContextLookup
 #include "orionld/kjTree/kjTreeFromContextContextAttribute.h"    // kjTreeFromContextContextAttribute
 #include "orionld/serviceRoutines/orionldGetContext.h"           // Own Interface
 
@@ -49,10 +49,10 @@ bool orionldGetContext(ConnectionInfo* ciP)
 {
   LM_T(LmtServiceRoutine, ("In orionldGetContext - looking up context '%s'", orionldState.wildcard[0]));
 
-  OrionldContext* contextP    = orionldContextLookup(orionldState.wildcard[0]);
-  KjNode*         contextTree = NULL;
+  OrionldAltContext* contextP    = orionldContextLookup(orionldState.wildcard[0]);
+  KjNode*            contextTree = NULL;
 
-  orionldState.useLinkHeader = false;  // We don't want the Link header for context requests
+  orionldState.noLinkHeader = true;  // We don't want the Link header for context requests
 
   if (contextP != NULL)
   {

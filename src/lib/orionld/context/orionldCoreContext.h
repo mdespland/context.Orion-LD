@@ -30,7 +30,7 @@ extern "C"
 #include "kjson/KjNode.h"                               // KjNode
 }
 
-#include "orionld/context/OrionldContext.h"             // OrionldContext
+#include "orionld/context/orionldContext.h"             // OrionldAltContext
 
 
 
@@ -46,7 +46,7 @@ extern "C"
 //
 // orionldCoreContext
 //
-extern OrionldContext orionldCoreContext;
+extern OrionldAltContext* orionldCoreContextP;
 
 
 

@@ -217,14 +217,14 @@ void orionldNotify(void)
       ioVec[2].iov_len  = 35;
 
       // Add @context to payload
-      if (orionldState.contextP == NULL)
+      if (orionldState.altContextP == NULL)
       {
         // Core Context
         KjNode* contextNodeP = kjString(orionldState.kjsonP, "@context", ORIONLD_CORE_CONTEXT_URL);
         kjChildAdd(notificationTree, contextNodeP);
       }
       else
-        kjChildAdd(notificationTree, orionldState.contextP->tree);
+        kjChildAdd(notificationTree, orionldState.altContextP->tree);
     }
     else
     {
@@ -242,8 +242,8 @@ void orionldNotify(void)
       ioVec[4].iov_len  = ioVec[3].iov_len;
 
       // Now ioVec[3] is free for the Link header
-      ioVec[3].iov_base = orionldState.contextP->url;
-      ioVec[3].iov_len  = strlen(orionldState.contextP->url);
+      ioVec[3].iov_base = orionldState.altContextP->url;
+      ioVec[3].iov_len  = strlen(orionldState.altContextP->url);
     }
 
     //

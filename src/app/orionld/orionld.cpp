@@ -116,8 +116,7 @@ extern "C"
 #include "orionld/version.h"
 #include "orionld/orionRestServices.h"
 #include "orionld/orionldRestServices.h"
-#include "orionld/context/orionldContextList.h"             // orionldContextHead
-#include "orionld/context/orionldAltContext.h"              // New @context implementation
+#include "orionld/context/orionldContext.h"                 // New @context implementation
 
 using namespace orion;
 
@@ -555,26 +554,9 @@ void exitFunc(void)
   curl_global_cleanup();
 
   //
-  // Free the context cache
+  // Free the context cache ?
+  // Or, is freeing up the global KAlloc instance sufficient ... ?
   //
-  OrionldContext* contextP = orionldContextHead;
-  OrionldContext* next;
-  while (contextP != NULL)
-  {
-    if (contextP == &orionldCoreContext)
-    {
-      contextP = contextP->next;
-      continue;
-    }
-
-    next = contextP->next;
-
-    kjFree(contextP->tree);   // Always cloned using kjClone ???
-    // free(contextP);  - the context is allocated using kaAlloc(&kalloc) - to free this, kaBufferReset is used (a few lines down)
-
-    contextP = next;
-  }
-
 
   //
   // Free the kalloc buffer
@@ -586,12 +568,14 @@ void exitFunc(void)
     LM_T(LmtSoftError, ("error removing PID file '%s': %s", pidPath, strerror(errno)));
   }
 
-  if ((orionldState.contextP != NULL) && (orionldState.contextP->temporary == true))
+#if 0
+  if (orionldState.altContextP != NULL)
   {
-    free(orionldState.contextP->url);  // Always allocated using 'malloc' ???
-    free(orionldState.contextP);       // Always cloned using kjClone ???
-    orionldState.contextP = NULL;
+    free(orionldState.altContextP->url);  // Always allocated using 'malloc' ???
+    free(orionldState.altContextP);       // Always cloned using kjClone ???
+    orionldState.altContextP = NULL;
   }
+#endif
 }
 
 
@@ -1134,15 +1118,15 @@ int main(int argC, char* argV[])
   LM_F(("Initialization Ready - Accepting Requests on Port %d", port));
 
   // <DEBUG>
-#if 1
-  OrionldContextItem* ctxItemP = orionldAltContextItemLookup(orionldAltCoreContextP, "modifiedAt");
+#if 0
+  OrionldContextItem* ctxItemP = orionldContextItemLookup(orionldCoreContextP, "modifiedAt", NULL);
 
   if (ctxItemP != NULL)
     LM_TMP(("ALT: modifiedAt: %s", ctxItemP->id));
   else
     LM_TMP(("ALT: modifiedAt NOT FOUND in Core Context!!!"));
 
-  ctxItemP = orionldAltContextItemValueLookup(orionldAltCoreContextP, "https://uri.etsi.org/ngsi-ld/Property");
+  ctxItemP = orionldContextItemValueLookup(orionldCoreContextP, "https://uri.etsi.org/ngsi-ld/Property");
   if (ctxItemP != NULL)
     LM_TMP(("ALT: short name for 'https://uri.etsi.org/ngsi-ld/Property': '%s'", ctxItemP->name));
   else

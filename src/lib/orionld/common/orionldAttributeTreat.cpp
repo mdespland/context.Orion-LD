@@ -35,6 +35,9 @@ extern "C"
 #include "ngsi/ContextAttribute.h"                               // ContextAttribute
 #include "rest/ConnectionInfo.h"                                 // ConnectionInfo
 #include "common/string.h"                                       // FT
+
+#include "orionld/context/orionldCoreContext.h"                  // orionldCoreContext
+#include "orionld/context/orionldContext.h"                      // orionldContextItemExpand, orionldValueExpand, orionldCoreContextP
 #include "orionld/common/geoJsonCheck.h"                         // geoJsonCheck
 #include "orionld/common/orionldState.h"                         // orionldState
 #include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate
@@ -42,10 +45,6 @@ extern "C"
 #include "orionld/common/CHECK.h"                                // CHECK
 #include "orionld/common/urlCheck.h"                             // urlCheck
 #include "orionld/common/urnCheck.h"                             // urnCheck
-#include "orionld/context/orionldCoreContext.h"                  // orionldCoreContext
-#include "orionld/context/orionldUriExpand.h"                    // orionldUriExpand
-#include "orionld/context/orionldValueExpand.h"                  // orionldValueExpand
-#include "orionld/context/orionldAltContext.h"                   // orionldAltContextItemExpand
 #include "orionld/common/orionldAttributeTreat.h"                // Own interface
 
 
@@ -452,14 +451,11 @@ static bool atValueCheck(KjNode* atTypeNodeP, KjNode* atValueNodeP, char** title
 bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute* caP, KjNode** typeNodePP, char** detailP)
 {
   char* caName = kNodeP->name;
-
+  
   *detailP = (char*) "unknown error";
 
-  if (orionldState.contextP == NULL)
-    orionldState.contextP = &orionldCoreContext;
-
   if (orionldState.altContextP == NULL)
-    orionldState.altContextP = orionldAltCoreContextP;
+    orionldState.altContextP = orionldCoreContextP;
 
   LM_T(LmtPayloadCheck, ("Treating attribute '%s' (KjNode at %p)", caName, kNodeP));
 
@@ -482,7 +478,7 @@ bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute
   if (kNodeP->type != KjObject)
   {
     *detailP = (char*) "Attribute must be a JSON object";
-    orionldErrorResponseCreate(OrionldBadRequestData, "Attribute must be a JSON object", kNodeP->name);
+    orionldErrorResponseCreate(OrionldBadRequestData, "Attribute must be a JSON object", caName);
     ciP->httpStatusCode = SccBadRequest;
     return false;
   }
@@ -495,36 +491,13 @@ bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute
       (strcmp(kNodeP->name, "observationSpace") != 0) &&
       (strcmp(kNodeP->name, "operationSpace")   != 0))
   {
-    char*  longName            = kaAlloc(&orionldState.kalloc, 512);
+    char*  longName;
     bool   valueMayBeExpanded  = false;
-    char*  detail;
-    struct timespec  start;
-    struct timespec  end;
-    struct timespec  diff;
-    float            diffAsFloat;
 
     LM_TMP(("VEX: ------------------------------------------------------------------------------------------"));
     LM_TMP(("VEX: Calling orionldUriExpand for node '%s' is of type '%s'", kNodeP->name, kjValueType(kNodeP->type)));
 
-    kTimeGet(&start);
-    if (orionldUriExpand(orionldState.contextP, kNodeP->name, longName, 512, &valueMayBeExpanded, &detail) == false)
-    {
-      LM_E(("orionldUriExpand failed for '%s': %s", kNodeP->name, detail));
-      *detailP = (char*) "orionldUriExpand failed";
-      orionldErrorResponseCreate(OrionldBadRequestData, detail, kNodeP->name);
-      return false;
-    }
-    kTimeGet(&end);
-    kTimeDiff(&start, &end, &diff, &diffAsFloat);
-
-    // <DEBUG>
-    LM_TMP(("ALT2: orionldUriExpand expanded            '%s' to '%s' using context '%s' (took %f seconds)", kNodeP->name, longName, orionldState.contextP->url, diffAsFloat));
-    kTimeGet(&start);
-    char* expanded = orionldAltContextItemExpand(orionldState.altContextP, kNodeP->name, NULL, true, NULL);
-    kTimeGet(&end);
-    kTimeDiff(&start, &end, &diff, &diffAsFloat);
-    LM_TMP(("ALT2: orionldAltContextItemExpand expanded '%s' to '%s' using context '%s' (took %f seconds)", kNodeP->name, expanded, orionldState.altContextP->url, diffAsFloat));
-    // </DEBUG>
+    longName = orionldContextItemExpand(orionldState.altContextP, kNodeP->name, &valueMayBeExpanded, true, NULL);
 
     if (valueMayBeExpanded)
       orionldValueExpand(kNodeP);
@@ -716,19 +689,9 @@ bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute
       //
       // Expand sub-attribute name
       //
-      char* expandedName        = kaAlloc(&orionldState.kalloc, 512);
-      char* detail;
       bool  valueMayBeExpanded  = false;
 
-      LM_TMP(("VEX: Calling orionldUriExpand"));
-      if (orionldUriExpand(orionldState.contextP, nodeP->name, expandedName, 512, &valueMayBeExpanded, &detail) == false)
-      {
-        orionldErrorResponseCreate(OrionldBadRequestData, "Error expanding Attribute Name", nodeP->name);
-        *detailP = (char*) "Error expanding Attribute Name";
-        return false;
-      }
-      nodeP->name = expandedName;
-
+      nodeP->name = orionldContextItemExpand(orionldState.altContextP, nodeP->name, &valueMayBeExpanded, true, NULL);
       LM_TMP(("VEX: valueMayBeExpanded: %s", FT(valueMayBeExpanded)));
 
       if (valueMayBeExpanded == true)
@@ -766,7 +729,7 @@ bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute
   if (typeP == NULL)  // Attr Type is mandatory!
   {
     LM_E(("type missing for attribute '%s'", kNodeP->name));
-    orionldErrorResponseCreate(OrionldBadRequestData, "Attribute found, but the type field is missing", kNodeP->name);
+    orionldErrorResponseCreate(OrionldBadRequestData, "Attribute found, but the type field is missing", caName);
     *detailP = (char*) "Attr Type is mandatory";
     return false;
   }
@@ -781,19 +744,19 @@ bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute
       if (isGeoProperty == true)
       {
         LM_E(("value missing for GeoProperty '%s'", kNodeP->name));
-        orionldErrorResponseCreate(OrionldBadRequestData, "Attribute with type GeoProperty found, but the associated value field is missing", kNodeP->name);
+        orionldErrorResponseCreate(OrionldBadRequestData, "Attribute with type GeoProperty found, but the associated value field is missing", caName);
         *detailP = (char*) "value missing for GeoProperty";
       }
       else if (isTemporalProperty == true)
       {
         LM_E(("value missing for TemporalProperty '%s'", kNodeP->name));
-        orionldErrorResponseCreate(OrionldBadRequestData, "Attribute with type TemporalProperty found, but the associated value field is missing", kNodeP->name);
+        orionldErrorResponseCreate(OrionldBadRequestData, "Attribute with type TemporalProperty found, but the associated value field is missing", caName);
         *detailP = (char*) "value missing for TemporalProperty";
       }
       else
       {
         LM_E(("value missing for Property '%s'", kNodeP->name));
-        orionldErrorResponseCreate(OrionldBadRequestData, "Attribute with type Property found, but the associated value field is missing", kNodeP->name);
+        orionldErrorResponseCreate(OrionldBadRequestData, "Attribute with type Property found, but the associated value field is missing", caName);
         *detailP = (char*) "value missing for Property";
       }
 
@@ -803,7 +766,7 @@ bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute
     if (valueP->type == KjNull)
     {
       LM_E(("NULL value for Property '%s'", kNodeP->name));
-      orionldErrorResponseCreate(OrionldBadRequestData, "Attributes with type Property cannot be given the value NULL", kNodeP->name);
+      orionldErrorResponseCreate(OrionldBadRequestData, "Attributes with type Property cannot be given the value NULL", caName);
       *detailP = (char*) "NULL value for Property";
       return NULL;
     }

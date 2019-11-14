@@ -72,8 +72,8 @@ bool orionldPostRegistrations(ConnectionInfo* ciP)
   //
   // Fix context
   //
-  if (orionldState.contextP != NULL)
-    reg.ldContext = orionldState.contextP->url;
+  if (orionldState.altContextP != NULL)
+    reg.ldContext = orionldState.altContextP->url;
   else
     reg.ldContext = ORIONLD_CORE_CONTEXT_URL;
 

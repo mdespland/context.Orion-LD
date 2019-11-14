@@ -84,8 +84,8 @@ bool orionldPostSubscriptions(ConnectionInfo* ciP)
   std::string          subId;
   OrionError           oError;
 
-  if (orionldState.contextP != NULL)
-    sub.ldContext = orionldState.contextP->url;
+  if (orionldState.altContextP != NULL)
+    sub.ldContext = orionldState.altContextP->url;
   else
     sub.ldContext = ORIONLD_CORE_CONTEXT_URL;
 

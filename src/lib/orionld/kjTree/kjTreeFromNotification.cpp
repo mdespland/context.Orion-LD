@@ -38,10 +38,8 @@ extern "C"
 #include "orionld/common/OrionldConnection.h"                  // orionldState
 #include "orionld/common/numberToDate.h"                       // numberToDate
 #include "orionld/common/SCOMPARE.h"                           // SCOMPAREx
-#include "orionld/context/OrionldContext.h"                    // OrionldContext
-#include "orionld/context/orionldContextLookup.h"              // orionldContextLookup
-#include "orionld/context/orionldAliasLookup.h"                // orionldAliasLookup
 #include "orionld/context/orionldCoreContext.h"                // ORIONLD_CORE_CONTEXT_URL
+#include "orionld/context/orionldContext.h"                    // orionldContextItemAliasLookup, orionldContextLookup
 #include "orionld/kjTree/kjTreeFromContextAttribute.h"         // kjTreeFromContextAttribute
 #include "orionld/kjTree/kjTreeFromNotification.h"             // Own interface
 
@@ -86,12 +84,12 @@ void debugContextElement(ContextElement* ceP)
 //
 KjNode* kjTreeFromNotification(NotifyContextRequest* ncrP, const char* context, MimeType mimeType, RenderFormat renderFormat, char** detailsP)
 {
-  KjNode*          nodeP;
-  char             buf[32];
-  KjNode*          rootP      = kjObject(orionldState.kjsonP, NULL);
-  char*            id         = mongoIdentifier(buf);
-  char             idBuffer[] = "urn:ngsi-ld:Notification:012345678901234567890123";  // The 012345678901234567890123 will be overwritten
-  OrionldContext*  contextP   = orionldContextLookup(context);
+  KjNode*             nodeP;
+  char                buf[32];
+  KjNode*             rootP      = kjObject(orionldState.kjsonP, NULL);
+  char*               id         = mongoIdentifier(buf);
+  char                idBuffer[] = "urn:ngsi-ld:Notification:012345678901234567890123";  // The 012345678901234567890123 will be overwritten
+  OrionldAltContext*  contextP   = orionldContextLookup(context);
 
   LM_TMP(("NOTIF: In kjTreeFromNotification"));
   // id
@@ -160,7 +158,7 @@ KjNode* kjTreeFromNotification(NotifyContextRequest* ncrP, const char* context, 
     kjChildAdd(objectP, nodeP);
 
     // entity type - Mandatory URI
-    alias = orionldAliasLookup(contextP, ceP->entityId.type.c_str(), NULL);
+    alias = orionldContextItemAliasLookup(contextP, ceP->entityId.type.c_str(), NULL, NULL);
     nodeP = kjString(orionldState.kjsonP, "type", alias);
     kjChildAdd(objectP, nodeP);
 

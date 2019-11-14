@@ -36,10 +36,9 @@ extern "C"
 #include "orionld/common/urlCheck.h"                           // urlCheck
 #include "orionld/common/urnCheck.h"                           // urnCheck
 #include "orionld/common/OrionldConnection.h"                  // orionldState
-#include "orionld/context/orionldContextAdd.h"                 // Add a context to the context list
-#include "orionld/kjTree/kjTreeFromQueryContextResponse.h"     // kjTreeFromQueryContextResponse
 #include "orionld/common/orionldErrorResponse.h"               // orionldErrorResponseCreate
-#include "orionld/context/orionldUriExpand.h"                  // orionldUriExpand
+#include "orionld/context/orionldContext.h"                    // orionldContextPresent
+#include "orionld/kjTree/kjTreeFromQueryContextResponse.h"     // kjTreeFromQueryContextResponse
 #include "orionld/serviceRoutines/orionldGetEntity.h"          // Own Interface
 
 
@@ -61,8 +60,11 @@ bool orionldGetEntity(ConnectionInfo* ciP)
   EntityId              entityId(orionldState.wildcard[0], "", "false", false);
   char*                 details;
 
+  LM_TMP(("BUG: context: %s", orionldState.altContextP->url));
+  orionldContextPresent("BUG", orionldState.altContextP);
+  
   LM_T(LmtServiceRoutine, ("In orionldGetEntity: %s", orionldState.wildcard[0]));
-
+  
   request.entityIdVector.push_back(&entityId);
 
   //

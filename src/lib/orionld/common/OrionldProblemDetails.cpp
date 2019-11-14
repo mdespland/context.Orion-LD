@@ -1,9 +1,6 @@
-#ifndef SRC_LIB_ORIONLD_CONTEXT_ORIONLDALIASLOOKUP_H_
-#define SRC_LIB_ORIONLD_CONTEXT_ORIONLDALIASLOOKUP_H_
-
 /*
 *
-* Copyright 2018 FIWARE Foundation e.V.
+* Copyright 2019 FIWARE Foundation e.V.
 *
 * This file is part of Orion-LD Context Broker.
 *
@@ -25,19 +22,27 @@
 *
 * Author: Ken Zangelin
 */
-extern "C"
-{
-#include "kjson/KjNode.h"                               // KjNode
-}
-
-#include "orionld/context/OrionldContext.h"             // OrionldContext
+#include "orionld/common/orionldErrorResponse.h"               // OrionldResponseErrorType
+#include "orionld/common/OrionldProblemDetails.h"              // Own interface
 
 
 
 // -----------------------------------------------------------------------------
 //
-// orionldAliasLookup -
+// orionldProblemDetailsFill -
 //
-extern char* orionldAliasLookup(OrionldContext* contextP, const char* longName, bool* valueMayBeContractedP);
+void orionldProblemDetailsFill
+(
+  OrionldProblemDetails*   pdP,
+  OrionldResponseErrorType type,
+  const char*              title,
+  const char*              detail,
+  int                      status
+)
+{
+  pdP->type   = type;
+  pdP->title  = (char*) title;
+  pdP->detail = (char*) detail;
+  pdP->status = status;
 
-#endif  // SRC_LIB_ORIONLD_CONTEXT_ORIONLDALIASLOOKUP_H_
+}

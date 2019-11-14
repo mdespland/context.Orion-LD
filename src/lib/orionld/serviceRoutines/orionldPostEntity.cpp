@@ -52,9 +52,7 @@ extern "C"
 #include "orionld/common/eqForDot.h"                             // eqForDot
 #include "orionld/db/dbEntityLookup.h"                           // dbEntityLookup
 #include "orionld/db/dbEntityUpdate.h"                           // dbEntityUpdate
-#include "orionld/context/orionldUriExpand.h"                    // orionldUriExpand
-#include "orionld/context/orionldAliasLookup.h"                  // orionldAliasLookup
-#include "orionld/context/orionldValueExpand.h"                  // orionldValueExpand
+#include "orionld/context/orionldContext.h"                      // orionldContextItemExpand, orionldValueExpand, orionldContextItemAliasLookup
 #include "orionld/serviceRoutines/orionldPostEntity.h"           // Own Interface
 
 
@@ -588,8 +586,6 @@ static bool expandAttrNames(KjNode* treeP, char** detailsP)
 {
   for (KjNode* attrP = treeP->value.firstChildP; attrP != NULL; attrP = attrP->next)
   {
-    char expanded[512];  // Can't use kaAlloc until I know the length of the expanded name ...
-
     if (strcmp(attrP->name, "type") == 0)
       continue;
     if (strcmp(attrP->name, "value") == 0)   // FIXME: Only if "Property"
@@ -602,13 +598,11 @@ static bool expandAttrNames(KjNode* treeP, char** detailsP)
     //
 
 
-    bool  valueToBeExpanded  = false;
 
     LM_TMP(("NFY: expanding name of attribute '%s'", attrP->name));
-    if (orionldUriExpand(orionldState.contextP, attrP->name, expanded, sizeof(expanded), &valueToBeExpanded, detailsP) == false)
-      return false;
+    bool  valueToBeExpanded  = false;
 
-    attrP->name = kaStrdup(&orionldState.kalloc, expanded);
+    attrP->name = orionldContextItemExpand(orionldState.altContextP, attrP->name, &valueToBeExpanded, true, NULL);
 
     //
     // Expand the value, if necessary (if the @context says so)
@@ -633,10 +627,7 @@ static bool expandAttrNames(KjNode* treeP, char** detailsP)
         continue;
 
       LM_TMP(("NFY: expanding name of sub-attribute '%s' of '%s'", subAttrP->name, attrP->name));
-      if (orionldUriExpand(orionldState.contextP, subAttrP->name, expanded, sizeof(expanded), &valueToBeExpanded, detailsP) == false)
-        return false;
-      subAttrP->name = kaStrdup(&orionldState.kalloc, expanded);
-
+      subAttrP->name = orionldContextItemExpand(orionldState.altContextP, subAttrP->name, &valueToBeExpanded, true, NULL);
       LM_TMP(("NFY: expanded name of sub-attribute '%s' of '%s'", subAttrP->name, attrP->name));
 
       //
@@ -843,12 +834,12 @@ static bool subscriptionMatchCallback
     //
     // Lookup alias for attribute name in the context
     //
-    char* alias = orionldAliasLookup(orionldState.contextP, aP->name, NULL);
+    const char* alias = orionldContextItemAliasLookup(orionldState.altContextP, aP->name, NULL, NULL);
 
     if (alias != NULL)
     {
       LM_TMP(("NFY2: Changing longname '%s' for shortname '%s'", aP->name, alias));
-      aP->name = alias;
+      aP->name = (char*) alias;  // Death to C++
     }
     else
       LM_TMP(("NFY2: No alias found for longname'%s'", aP->name));

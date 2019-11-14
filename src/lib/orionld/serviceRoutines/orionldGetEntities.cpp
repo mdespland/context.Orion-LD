@@ -46,9 +46,8 @@ extern "C"
 #include "orionld/common/orionldState.h"                       // orionldState
 #include "orionld/kjTree/kjTreeFromQueryContextResponse.h"     // kjTreeFromQueryContextResponse
 #include "orionld/context/orionldCoreContext.h"                // orionldDefaultUrl
-#include "orionld/context/orionldUriExpand.h"                  // orionldUriExpand
 #include "orionld/common/orionldErrorResponse.h"               // orionldErrorResponseCreate
-#include "orionld/context/orionldAltContext.h"
+#include "orionld/context/orionldContext.h"                    // orionldContextItemExpand
 #include "orionld/serviceRoutines/orionldGetEntities.h"        // Own Interface
 
 
@@ -97,7 +96,7 @@ bool orionldGetEntities(ConnectionInfo* ciP)
   bool         isTypePattern  = (*type != 0)? false : true;
 
   EntityId*    entityIdP;
-  char         typeExpanded[256];
+  char*        typeExpanded = NULL;
   char*        detail;
   char*        idVector[32];
   char*        typeVector[32];
@@ -279,29 +278,10 @@ bool orionldGetEntities(ConnectionInfo* ciP)
   {
     char* detail;
 
-    if (((strncmp(type, "http://", 7) == 0) || (strncmp(type, "https://", 8) == 0)) && (urlCheck(type, &detail) == true))
-    {
-      // No expansion desired, the type is already a FQN
-      strncpy(typeExpanded, type, sizeof(typeExpanded));
-    }
-    else
-    {
-      if (orionldUriExpand(orionldState.contextP, type, typeExpanded, sizeof(typeExpanded), NULL, &detail) == false)
-      {
-        LM_E(("Internal Error (Error during URI expansion of entity type: %s)", detail));
-        orionldErrorResponseCreate(OrionldBadRequestData, "Error during URI expansion of entity type", detail);
-        return false;
-      }
+    // No expansion desired if the type is already a FQN
+    if (urlCheck(type, &detail) == false)
+      type = orionldContextItemExpand(orionldState.altContextP, type, NULL, true, NULL);
 
-      // <DEBUG>
-      char*  expanded;
-      LM_TMP(("ALT2: orionldUriExpand gave expansion '%s' for '%s'", typeExpanded, type));
-      expanded = orionldAltContextItemExpand(orionldState.altContextP, type, NULL, false, NULL);
-      LM_TMP(("ALT2: orionldAltContextPrefixExpand gave expansion '%s' for '%s'", expanded, type));
-      // </DEBUG>
-    }
-
-    type          = typeExpanded;
     isTypePattern = false;  // Just in case ...
   }
 
@@ -317,13 +297,10 @@ bool orionldGetEntities(ConnectionInfo* ciP)
   {
     for (int ix = 0; ix < typeVecItems; ix++)
     {
-      // FIXME: Check for FQN HERE TOO (once it is decided by ETSI)
-      if (orionldUriExpand(orionldState.contextP, typeVector[ix], typeExpanded, sizeof(typeExpanded), NULL, &detail) == false)
-      {
-        LM_E(("Internal Error (Error during URI expansion of entity type; %s)", detail));
-        orionldErrorResponseCreate(OrionldBadRequestData, "Error during URI expansion of entity type", detail);
-        return false;
-      }
+      if (urlCheck(typeVector[ix], &detail) == false)
+        typeExpanded = orionldContextItemExpand(orionldState.altContextP, typeVector[ix], NULL, true, NULL);
+      else
+        typeExpanded = typeVector[ix];
 
       entityIdP = new EntityId(idString, typeExpanded, isIdPattern, false);
       parseData.qcr.res.entityIdVector.push_back(entityIdP);
@@ -337,27 +314,16 @@ bool orionldGetEntities(ConnectionInfo* ciP)
 
   if (attrs != NULL)
   {
-    char  longName[256];
-    char* detail;
-    char* shortName;
-    char* shortNameVector[32];
+    char* shortNameVector[100];
     int   vecItems = (int) sizeof(shortNameVector) / sizeof(shortNameVector[0]);
 
     vecItems = kStringSplit(attrs, ',', (char**) shortNameVector, vecItems);
 
     for (int ix = 0; ix < vecItems; ix++)
     {
-      shortName = shortNameVector[ix];
+      const char* longName = orionldContextItemExpand(orionldState.altContextP, shortNameVector[ix], NULL, true, NULL);
 
-      if (orionldUriExpand(orionldState.contextP, shortName, longName, sizeof(longName), NULL, &detail) == true)
-        parseData.qcr.res.attributeList.push_back(longName);
-      else
-      {
-        LM_E(("Internal Error (Error during URI expansion of attribute '%s')", shortName));
-        orionldErrorResponseCreate(OrionldBadRequestData, "Error during URI expansion of attribute", shortName);
-        parseData.qcr.res.release();
-        return false;
-      }
+      parseData.qcr.res.attributeList.push_back(longName);
     }
   }
 

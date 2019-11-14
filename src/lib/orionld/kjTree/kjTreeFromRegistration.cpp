@@ -33,10 +33,9 @@ extern "C"
 #include "logMsg/traceLevels.h"                                // Lmt*
 
 #include "rest/ConnectionInfo.h"                               // ConnectionInfo
-#include "rest/httpHeaderAdd.h"                                // httpHeaderAdd, httpHeaderLinkAdd
+#include "rest/httpHeaderAdd.h"                                // httpHeaderAdd
 #include "apiTypesV2/Registration.h"                           // Registration
-#include "orionld/context/orionldContextLookup.h"              // orionldContextLookup
-#include "orionld/context/orionldAliasLookup.h"                // orionldAliasLookup
+#include "orionld/context/orionldContext.h"                    // orionldContextLookup, orionldContextItemAliasLookup
 #include "orionld/common/numberToDate.h"                       // numberToDate
 #include "orionld/common/orionldErrorResponse.h"               // orionldErrorResponseCreate, OrionldInternalError
 #include "orionld/common/OrionldConnection.h"                  // orionldState
@@ -50,16 +49,16 @@ extern "C"
 //
 KjNode* kjTreeFromRegistration(ConnectionInfo* ciP, ngsiv2::Registration* registrationP)
 {
-  KjNode*          topP = kjObject(orionldState.kjsonP, NULL);
-  KjNode*          objectP;
-  KjNode*          objectP2;
-  KjNode*          arrayP;
-  KjNode*          arrayP2;
-  KjNode*          nodeP;
-  char             date[128];
-  char*            details;
-  unsigned int     infoSize;
-  OrionldContext*  contextP = orionldContextLookup(registrationP->ldContext.c_str());
+  KjNode*             topP = kjObject(orionldState.kjsonP, NULL);
+  KjNode*             objectP;
+  KjNode*             objectP2;
+  KjNode*             arrayP;
+  KjNode*             arrayP2;
+  KjNode*             nodeP;
+  char                date[128];
+  char*               details;
+  unsigned int        infoSize;
+  OrionldAltContext*  contextP = orionldContextLookup(registrationP->ldContext.c_str());
 
   // id
   nodeP = kjString(orionldState.kjsonP, "id", registrationP->id.c_str());
@@ -169,7 +168,7 @@ KjNode* kjTreeFromRegistration(ConnectionInfo* ciP, ngsiv2::Registration* regist
           kjChildAdd(objectP2, nodeP);
         }
 
-        char* alias = orionldAliasLookup(contextP, eP->type.c_str(), NULL);
+        char* alias = orionldContextItemAliasLookup(contextP, eP->type.c_str(), NULL, NULL);
 
         nodeP = kjString(orionldState.kjsonP, "type", alias);
         kjChildAdd(objectP2, nodeP);
@@ -187,7 +186,7 @@ KjNode* kjTreeFromRegistration(ConnectionInfo* ciP, ngsiv2::Registration* regist
 
       for (unsigned int pIx = 0; pIx < size; pIx++)
       {
-        char* alias = orionldAliasLookup(contextP, registrationP->dataProvided.propertyV[pIx].c_str(), NULL);
+        char* alias = orionldContextItemAliasLookup(contextP, registrationP->dataProvided.propertyV[pIx].c_str(), NULL, NULL);
         nodeP = kjString(orionldState.kjsonP, NULL, alias);
         kjChildAdd(arrayP2, nodeP);
       }
@@ -202,7 +201,7 @@ KjNode* kjTreeFromRegistration(ConnectionInfo* ciP, ngsiv2::Registration* regist
 
       for (unsigned int rIx = 0; rIx < size; rIx++)
       {
-        char* alias = orionldAliasLookup(contextP, registrationP->dataProvided.relationshipV[rIx].c_str(), NULL);
+        char* alias = orionldContextItemAliasLookup(contextP, registrationP->dataProvided.relationshipV[rIx].c_str(), NULL, NULL);
         nodeP = kjString(orionldState.kjsonP, NULL, alias);
         kjChildAdd(arrayP2, nodeP);
       }
@@ -329,7 +328,7 @@ KjNode* kjTreeFromRegistration(ConnectionInfo* ciP, ngsiv2::Registration* regist
     //
     for (KjNode* nodeP = registrationP->properties->value.firstChildP; nodeP != NULL; nodeP = nodeP->next)
     {
-      char* alias = orionldAliasLookup(orionldState.contextP, nodeP->name, NULL);
+      char* alias = orionldContextItemAliasLookup(orionldState.altContextP, nodeP->name, NULL, NULL);
 
       if (alias != NULL)
         nodeP->name = alias;

@@ -28,6 +28,7 @@
 extern "C"
 {
 #include "khash/khash.h"
+#include "kjson/KjNode.h"
 }
 
 #include "orionld/common/OrionldProblemDetails.h"       // OrionldProblemDetails
@@ -76,8 +77,13 @@ typedef union OrionldAltContextValue
 //
 typedef struct OrionldAltContext
 {
+  char*                  nickname;
   char*                  url;
+  char*                  id;         // For contexts that were created by the broker itself
+  KjNode*                tree;
   bool                   keyValues;
+  bool                   local;      // To Be Removed
+  bool                   served;
   OrionldAltContextValue context;
 } OrionldAltContext;
 
@@ -132,7 +138,7 @@ typedef struct OrionldContextItem
 //
 // orionldAltContextItemLookup - lookup an item in a context
 //
-extern OrionldContextItem* orionldAltContextItemLookup(OrionldAltContext* contextP, const char* name);
+extern OrionldContextItem* orionldAltContextItemLookup(OrionldAltContext* contextP, const char* name, bool* valueMayBeCompactedP);
 
 
 
@@ -189,7 +195,23 @@ extern char* orionldAltContextItemExpand
 //   * Normally, just a few prefixes are used, so a "prefix cache" of 10 values is maintained.
 //     This cache is local to the thread, so no semaphores are needed
 //
-extern const char* orionldAltContextPrefixExpand(OrionldAltContext* contextP, const char* str);
+extern char* orionldAltContextPrefixExpand(OrionldAltContext* contextP, const char* str);
+
+
+
+// -----------------------------------------------------------------------------
+//
+// orionldAltContextPresentTree -
+//
+extern void orionldAltContextPresentTree(const char* prefix, KjNode* contextNodeP);
+
+
+
+// -----------------------------------------------------------------------------
+//
+// orionldAltContextPresent -
+//
+extern void orionldAltContextPresent(const char* prefix, OrionldAltContext* contextP);
 
 
 
@@ -197,6 +219,71 @@ extern const char* orionldAltContextPrefixExpand(OrionldAltContext* contextP, co
 //
 // orionldAltContextListPresent -
 //
-extern void orionldAltContextListPresent(const char* info);
+extern void orionldAltContextListPresent(const char* prefix, const char* info);
+
+
+
+// -----------------------------------------------------------------------------
+//
+// orionldAltContextLookup -
+//
+extern OrionldAltContext* orionldAltContextLookup(const char* url);
+
+
+
+// -----------------------------------------------------------------------------
+//
+// orionldAltContextCreateFromTree -
+//
+extern OrionldAltContext* orionldAltContextCreateFromTree
+(
+  const char*             url,
+  KjNode*                 contextNodeP,
+  OrionldProblemDetails*  pdP
+);
+
+
+
+// -----------------------------------------------------------------------------
+//
+// orionldAltContextItemAliasLookup -
+//
+// PARAMETERS
+//
+// RETURN VALUE
+//
+extern char* orionldAltContextItemAliasLookup
+(
+  OrionldAltContext*      contextP,
+  const char*             longName,
+  bool*                   valueMayBeCompactedP,
+  OrionldContextItem**    contextItemPP
+);
+
+
+
+// -----------------------------------------------------------------------------
+//
+// orionldAltValueExpand -
+//
+// The "value" is only expanded if the type of the value is either KjString or KjArray
+//
+extern void orionldAltValueExpand(KjNode* attrNodeP);
+
+
+
+// -----------------------------------------------------------------------------
+//
+// orionldDirectValueExpand - FIXME: this function is not needed - just call orionldAltContextItemExpand
+//
+extern char* orionldDirectValueExpand(char* shortName);
+
+
+
+// -----------------------------------------------------------------------------
+//
+// orionldContextArraySimplify - simplify array if possible
+//
+extern KjNode* orionldContextArraySimplify(KjNode* contextNodeP, const char* url);
 
 #endif  // SRC_LIB_ORIONLD_CONTEXT_ORIONLDALTCONTEXT_H_
