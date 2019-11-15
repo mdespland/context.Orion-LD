@@ -35,7 +35,7 @@ extern "C"
 #include "logMsg/traceLevels.h"                                // Lmt*
 
 #include "orionld/db/dbConfiguration.h"                        // DB_DRIVER_MONGOC
-#include "orionld/context/orionldContext.h"                    // orionldCoreContext
+#include "orionld/context/orionldCoreContext.h"                // orionldCoreContext
 #include "orionld/common/QNode.h"                              // QNode
 #include "orionld/common/orionldState.h"                       // Own interface
 

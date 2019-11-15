@@ -55,6 +55,8 @@ extern "C"
 #include "orionld/common/OrionldResponseBuffer.h"                // OrionldResponseBuffer
 #include "orionld/common/orionldRequestSend.h"                   // orionldRequestSend
 #include "orionld/common/uuidGenerate.h"                         // uuidGenerate
+#include "orionld/context/OrionldContext.h"                      // OrionldContext
+#include "orionld/context/orionldCoreContext.h"                  // orionldCoreContext
 #include "orionld/context/orionldContext.h"                      // Temporary Own interface
 
 
@@ -69,34 +71,10 @@ extern "C"
 
 // -----------------------------------------------------------------------------
 //
-// orionldCoreContext
-//
-OrionldContext* orionldCoreContextP;
-
-
-
-// -----------------------------------------------------------------------------
-//
-// orionldDefaultUrl -
-//
-char* orionldDefaultUrl;
-
-
-
-// -----------------------------------------------------------------------------
-//
-// orionldDefaultUrlLen -
-//
-int orionldDefaultUrlLen;
-
-
-
-// -----------------------------------------------------------------------------
-//
 // orionldContextList
 //
 static sem_t             orionldContextListSem;
-static OrionldContext*   orionldContextListArray[100];  // When 100 is not enough, a realloc is done
+static OrionldContext*   orionldContextListArray[100];  // When 100 is not enough, a realloc is done (automatically)
 static OrionldContext**  orionldContextList         = orionldContextListArray;
 static int               orionldContextListSlots    = 100;
 static int               orionldContextListSlotIx   = 0;
@@ -112,10 +90,10 @@ KjNode* orionldContextCacheGet(KjNode* arrayP)
   for (int ix = 0; ix < orionldContextListSlotIx; ix++)
   {
     OrionldContext*  contextP         = orionldContextListArray[ix];
-    KjNode*             contextObjP      = kjObject(orionldState.kjsonP, NULL);
-    KjNode*             urlStringP       = kjString(orionldState.kjsonP, "url",  contextP->url);
-    KjNode*             idStringP        = kjString(orionldState.kjsonP, "id",  (contextP->id == NULL)? "None" : contextP->id);
-    KjNode*             typeStringP      = kjString(orionldState.kjsonP, "type", contextP->keyValues? "hash-table" : "array");
+    KjNode*          contextObjP      = kjObject(orionldState.kjsonP, NULL);
+    KjNode*          urlStringP       = kjString(orionldState.kjsonP, "url",  contextP->url);
+    KjNode*          idStringP        = kjString(orionldState.kjsonP, "id",  (contextP->id == NULL)? "None" : contextP->id);
+    KjNode*          typeStringP      = kjString(orionldState.kjsonP, "type", contextP->keyValues? "hash-table" : "array");
 
     kjChildAdd(contextObjP, urlStringP);
     kjChildAdd(contextObjP, idStringP);

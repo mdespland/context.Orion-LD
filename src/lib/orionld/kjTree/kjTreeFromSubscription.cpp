@@ -37,6 +37,7 @@ extern "C"
 #include "orionld/common/numberToDate.h"                       // numberToDate
 #include "orionld/common/orionldErrorResponse.h"               // orionldErrorResponseCreate, OrionldInternalError
 #include "orionld/common/OrionldConnection.h"                  // orionldState
+#include "orionld/context/orionldCoreContext.h"                // orionldCoreContext
 #include "orionld/context/orionldContext.h"                    // orionldContextItemAliasLookup, ...
 #include "orionld/kjTree/kjTreeFromSubscription.h"             // Own interface
 

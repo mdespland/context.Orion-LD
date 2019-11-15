@@ -1,5 +1,5 @@
-#ifndef SRC_LIB_ORIONLD_CONTEXT_ORIONLDCONTEXT_H_
-#define SRC_LIB_ORIONLD_CONTEXT_ORIONLDCONTEXT_H_
+#ifndef SRC_LIB_ORIONLD_CONTEXT_OORIONLDCONTEXT_H_
+#define SRC_LIB_ORIONLD_CONTEXT_OORIONLDCONTEXT_H_
 
 /*
 *
@@ -27,78 +27,11 @@
 */
 extern "C"
 {
-#include "khash/khash.h"
 #include "kjson/KjNode.h"
 }
 
-#include "orionld/common/OrionldProblemDetails.h"       // OrionldProblemDetails
-
-
-
-// -----------------------------------------------------------------------------
-//
-// ORIONLD_CORE_CONTEXT_URL -
-//
-#define ORIONLD_CORE_CONTEXT_URL  (char*) "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
-
-
-
-// -----------------------------------------------------------------------------
-//
-// OrionldContextHashTables -
-//
-typedef struct OrionldContextHashTables
-{
-  KHashTable*  nameHashTable;
-  KHashTable*  valueHashTable;
-} OrionldContextHashTables;
-
-
-
-struct OrionldContext;
-typedef struct OrionldContextArray
-{
-  int                     items;
-  struct OrionldContext** vector;
-} OrionldContextArray;
-
-
-
-// -----------------------------------------------------------------------------
-//
-// OrionldContextValue
-//
-typedef union OrionldContextInfo
-{
-  OrionldContextHashTables  hash;
-  OrionldContextArray       array;
-} OrionldContextInfo;
-
-
-
-// ----------------------------------------------------------------------------
-//
-// OrionldContext -
-//
-// The context is either an array of contexts or "the real thing" - a list of key-values in
-// a hash-list
-//
-typedef struct OrionldContext
-{
-  char*               url;
-  char*               id;         // For contexts that were created by the broker itself
-  KjNode*             tree;
-  bool                keyValues;
-  OrionldContextInfo  context;
-} OrionldContext;
-
-
-
-// -----------------------------------------------------------------------------
-//
-// orionldCoreContextP -
-//
-extern OrionldContext* orionldCoreContextP;
+#include "orionld/common/OrionldProblemDetails.h"                // OrionldProblemDetails
+#include "orionld/context/OrionldContext.h"                      // OrionldContext
 
 
 
@@ -285,4 +218,4 @@ extern OrionldContextItem* orionldContextItemValueLookup(OrionldContext* context
 //
 extern KjNode* orionldContextCacheGet(KjNode* arrayP);
 
-#endif  // SRC_LIB_ORIONLD_CONTEXT_ORIONLDCONTEXT_H_
+#endif  // SRC_LIB_ORIONLD_CONTEXT_OORIONLDCONTEXT_H_

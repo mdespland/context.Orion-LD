@@ -1117,24 +1117,6 @@ int main(int argC, char* argV[])
 
   LM_F(("Initialization Ready - Accepting Requests on Port %d", port));
 
-  // <DEBUG>
-#if 0
-  OrionldContextItem* ctxItemP = orionldContextItemLookup(orionldCoreContextP, "modifiedAt", NULL);
-
-  if (ctxItemP != NULL)
-    LM_TMP(("ALT: modifiedAt: %s", ctxItemP->id));
-  else
-    LM_TMP(("ALT: modifiedAt NOT FOUND in Core Context!!!"));
-
-  ctxItemP = orionldContextItemValueLookup(orionldCoreContextP, "https://uri.etsi.org/ngsi-ld/Property");
-  if (ctxItemP != NULL)
-    LM_TMP(("ALT: short name for 'https://uri.etsi.org/ngsi-ld/Property': '%s'", ctxItemP->name));
-  else
-    LM_TMP(("ALT: short name for 'https://uri.etsi.org/ngsi-ld/Property' NOT FOUND in Core Context!!!"));
-
-#endif
-  // </DEBUG>
-
   while (1)
   {
     sleep(60);
