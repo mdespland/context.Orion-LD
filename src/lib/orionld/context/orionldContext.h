@@ -31,20 +31,8 @@ extern "C"
 }
 
 #include "orionld/common/OrionldProblemDetails.h"                // OrionldProblemDetails
+#include "orionld/context/OrionldContextItem.h"                  // OrionldContextItem
 #include "orionld/context/OrionldContext.h"                      // OrionldContext
-
-
-
-// -----------------------------------------------------------------------------
-//
-// OrionldContextItem -
-//
-typedef struct OrionldContextItem
-{
-  char* name;
-  char* id;
-  char* type;
-} OrionldContextItem;
 
 
 

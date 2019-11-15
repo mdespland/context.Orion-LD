@@ -52,6 +52,7 @@ extern "C"
 #include "orionld/common/uuidGenerate.h"                         // uuidGenerate
 #include "orionld/common/orionldEntityPayloadCheck.h"            // orionldValidName  - FIXME: Own file for "orionldValidName()"!
 #include "orionld/context/orionldCoreContext.h"                  // ORIONLD_CORE_CONTEXT_URL
+#include "orionld/context/orionldContextCache.h"                 // orionldContextCachePresent
 #include "orionld/context/orionldContext.h"                      // New @context implementation
 #include "orionld/serviceRoutines/orionldBadVerb.h"              // orionldBadVerb
 #include "orionld/rest/orionldServiceInit.h"                     // orionldRestServiceV
@@ -546,7 +547,7 @@ static bool linkHeaderCheck(ConnectionInfo* ciP)
     ciP->httpStatusCode = (HttpStatusCode) pd.status;  // FIXME: Stop using ciP->httpStatusCode!!!
     return false;
   }
-  orionldContextListPresent("NCTX", "After creating context from HTTP Link header");
+  orionldContextCachePresent("NCTX", "After creating context from HTTP Link header");
   orionldState.link = orionldState.contextP->url;
   LM_TMP(("CTX: orionldState.link is: %s", orionldState.link));
 #endif
@@ -772,7 +773,7 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
   //
   LM_T(LmtServiceRoutine, ("Calling Service Routine %s (context at %p)", orionldState.serviceP->url, orionldState.contextP));
 
-  orionldContextListPresent("BUG", "Before calling service routine");
+  orionldContextCachePresent("BUG", "Before calling service routine");
   serviceRoutineResult = orionldState.serviceP->serviceRoutine(ciP);
   LM_T(LmtServiceRoutine, ("service routine '%s %s' done", orionldState.verbString, orionldState.serviceP->url));
 

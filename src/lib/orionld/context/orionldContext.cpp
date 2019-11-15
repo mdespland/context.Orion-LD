@@ -30,8 +30,6 @@
 #include <unistd.h>                                              // stat()
 #endif
 
-#include <semaphore.h>                                           // sem_t, sem_init, sem_wait, sem_post
-
 extern "C"
 {
 #include "kbase/kMacros.h"                                       // K_FT
@@ -57,27 +55,8 @@ extern "C"
 #include "orionld/common/uuidGenerate.h"                         // uuidGenerate
 #include "orionld/context/OrionldContext.h"                      // OrionldContext
 #include "orionld/context/orionldCoreContext.h"                  // orionldCoreContext
+#include "orionld/context/orionldContextCache.h"                 // orionldContextCache
 #include "orionld/context/orionldContext.h"                      // Temporary Own interface
-
-
-
-// -----------------------------------------------------------------------------
-//
-// ORIONLD_HASH_ARRAY_SIZE -
-//
-#define ORIONLD_HASH_ARRAY_SIZE   1024
-
-
-
-// -----------------------------------------------------------------------------
-//
-// orionldContextList
-//
-static sem_t             orionldContextListSem;
-static OrionldContext*   orionldContextListArray[100];  // When 100 is not enough, a realloc is done (automatically)
-static OrionldContext**  orionldContextList         = orionldContextListArray;
-static int               orionldContextListSlots    = 100;
-static int               orionldContextListSlotIx   = 0;
 
 
 
@@ -87,9 +66,9 @@ static int               orionldContextListSlotIx   = 0;
 //
 KjNode* orionldContextCacheGet(KjNode* arrayP)
 {
-  for (int ix = 0; ix < orionldContextListSlotIx; ix++)
+  for (int ix = 0; ix < orionldContextCacheSlotIx; ix++)
   {
-    OrionldContext*  contextP         = orionldContextListArray[ix];
+    OrionldContext*  contextP         = orionldContextCacheArray[ix];
     KjNode*          contextObjP      = kjObject(orionldState.kjsonP, NULL);
     KjNode*          urlStringP       = kjString(orionldState.kjsonP, "url",  contextP->url);
     KjNode*          idStringP        = kjString(orionldState.kjsonP, "id",  (contextP->id == NULL)? "None" : contextP->id);
@@ -106,7 +85,7 @@ KjNode* orionldContextCacheGet(KjNode* arrayP)
       KHashTable*  htP              = contextP->context.hash.nameHashTable;
       int          noOfItems        = 0;
 
-      for (int slot = 0; slot < ORIONLD_HASH_ARRAY_SIZE; ++slot)
+      for (int slot = 0; slot < ORIONLD_CONTEXT_CACHE_HASH_ARRAY_SIZE; ++slot)
       {
         KHashListItem* itemP = htP->array[slot];
 
@@ -187,83 +166,6 @@ void orionldContextPresentTree(const char* prefix, KjNode* contextNodeP)
   else
     LM_TMP(("%s: Invalid type for context: %s", prefix, kjValueType(contextNodeP->type)));
   LM_TMP(("%s", prefix));
-}
-
-
-
-// -----------------------------------------------------------------------------
-//
-// orionldContextPresent -
-//
-void orionldContextPresent(const char* prefix, OrionldContext* contextP)
-{
-  if (contextP == NULL)
-    return;
-
-  LM_TMP(("    %s: Context '%s' (%s)", prefix, contextP->url, contextP->keyValues? "Key-Values" : "Array"));
-  LM_TMP(("    %s: ----------------------------------------------------------------------------", prefix));
-
-  if (contextP->keyValues == true)
-  {
-    int          noOfItems = 0;
-    KHashTable*  htP       = contextP->context.hash.nameHashTable;
-
-    for (int slot = 0; slot < ORIONLD_HASH_ARRAY_SIZE; slot++)
-    {
-      KHashListItem* itemP = htP->array[slot];
-
-      while (itemP != 0)
-      {
-        OrionldContextItem* hiP = (OrionldContextItem*) itemP->data;
-
-        LM_TMP(("    %s: key-value[slot %d]: %s -> %s (type: %s)", prefix, slot, hiP->name, hiP->id, hiP->type));
-        itemP = itemP->next;
-        ++noOfItems;
-
-        if (noOfItems >= 100)
-          break;
-      }
-
-      if (noOfItems >= 100)
-        break;
-    }
-  }
-  else
-  {
-    for (int iIx = 0; iIx < contextP->context.array.items; iIx++)
-    {
-      if (contextP->context.array.vector[iIx] == NULL)
-      {
-        LM_TMP(("    %s:   Array Item %d is not ready", prefix, iIx));
-      }
-      else
-      {
-        LM_TMP(("    %s:   Array Item %d: %s (%s)",
-                prefix,
-                iIx,
-                contextP->context.array.vector[iIx]->url,
-                contextP->context.array.vector[iIx]->keyValues? "Key-Values" : "Array"));
-      }
-    }
-  }
-}
-
-
-
-// -----------------------------------------------------------------------------
-//
-// orionldContextListPresent -
-//
-void orionldContextListPresent(const char* prefix, const char* info)
-{
-  LM_TMP(("%s: *************** %s: %d Contexts *************************", prefix, info, orionldContextListSlotIx));
-  LM_TMP(("%s: ========================================================================", prefix));
-  for (int ix = 0; ix < orionldContextListSlotIx; ix++)
-  {
-    orionldContextPresent(prefix, orionldContextList[ix]);
-    LM_TMP(("%s:", prefix));
-  }
-  LM_TMP(("%s: ========================================================================", prefix));
 }
 
 
@@ -364,7 +266,7 @@ static bool orionldContextHashTablesFill(OrionldContext* contextP, KjNode* keyVa
   // Second pass, to fix prefix expansion in the values, and to create the valueHashTable
   // In this pass, the 'id' (value) is allocated on the global kalloc instance
   //
-  for (int slot = 0; slot < ORIONLD_HASH_ARRAY_SIZE; ++slot)
+  for (int slot = 0; slot < ORIONLD_CONTEXT_CACHE_HASH_ARRAY_SIZE; ++slot)
   {
     KHashListItem* itemP = nameHashTableP->array[slot];
 
@@ -400,30 +302,30 @@ static bool orionldContextHashTablesFill(OrionldContext* contextP, KjNode* keyVa
 //
 void orionldContextInsert(OrionldContext* contextP)
 {
-  sem_wait(&orionldContextListSem);
+  sem_wait(&orionldContextCacheSem);
 
   //
   // Reallocation necessary?
   //
 
-  if (orionldContextListSlotIx >= orionldContextListSlots)
+  if (orionldContextCacheSlotIx >= orionldContextCacheSlots)
   {
     int   slotsToAdd   = 50;
     int   addedSize    = slotsToAdd * sizeof(OrionldContext*);
-    int   newNoOfSlots = orionldContextListSlots + slotsToAdd;
+    int   newNoOfSlots = orionldContextCacheSlots + slotsToAdd;
     char* newArray     = (char*) kaAlloc(&kalloc, sizeof(OrionldContext*) * newNoOfSlots);
 
-    memcpy(newArray, (char*) orionldContextList, sizeof(OrionldContext*) * orionldContextListSlots);
-    bzero(&newArray[sizeof(OrionldContext*) * orionldContextListSlots], addedSize);
+    memcpy(newArray, (char*) orionldContextCache, sizeof(OrionldContext*) * orionldContextCacheSlots);
+    bzero(&newArray[sizeof(OrionldContext*) * orionldContextCacheSlots], addedSize);
 
-    orionldContextListSlots += 50;
-    orionldContextList = (OrionldContext**) newArray;
+    orionldContextCacheSlots += 50;
+    orionldContextCache = (OrionldContext**) newArray;
   }
 
-  orionldContextList[orionldContextListSlotIx] = contextP;
-  ++orionldContextListSlotIx;
+  orionldContextCache[orionldContextCacheSlotIx] = contextP;
+  ++orionldContextCacheSlotIx;
 
-  sem_post(&orionldContextListSem);
+  sem_post(&orionldContextCacheSem);
 
   if (contextP->keyValues)
     LM_TMP(("CTX: Inserted key-value context '%s' in context-cache - nameHashTable at %p", contextP->url, contextP->context.hash.nameHashTable));
@@ -440,14 +342,14 @@ void orionldContextInsert(OrionldContext* contextP)
 OrionldContext* orionldContextLookup(const char* url)
 {
   LM_TMP(("CTX: Looking up context '%s'", url));
-  orionldContextListPresent("CTX", "orionldContextLookup");
-  for (int ix = 0; ix < orionldContextListSlotIx; ix++)
+  orionldContextCachePresent("CTX", "orionldContextLookup");
+  for (int ix = 0; ix < orionldContextCacheSlotIx; ix++)
   {
-    if (strcmp(url, orionldContextList[ix]->url) == 0)
-      return orionldContextList[ix];
+    if (strcmp(url, orionldContextCache[ix]->url) == 0)
+      return orionldContextCache[ix];
 
-    if ((orionldContextList[ix]->id != NULL) && (strcmp(url, orionldContextList[ix]->id) == 0))
-      return orionldContextList[ix];
+    if ((orionldContextCache[ix]->id != NULL) && (strcmp(url, orionldContextCache[ix]->id) == 0))
+      return orionldContextCache[ix];
   }
 
   LM_TMP(("CTX: did not find context '%s'", url));
@@ -817,8 +719,8 @@ OrionldContext* orionldContextFromObject(char* url, bool toBeCloned, KjNode* con
   contextP = orionldContextCreate(url, id, contextObjectP, true, toBeCloned);
   orionldContextInsert(contextP);
 
-  contextP->context.hash.nameHashTable  = khashTableCreate(&kalloc, hashCode, nameCompareFunction,  ORIONLD_HASH_ARRAY_SIZE);
-  contextP->context.hash.valueHashTable = khashTableCreate(&kalloc, hashCode, valueCompareFunction, ORIONLD_HASH_ARRAY_SIZE);
+  contextP->context.hash.nameHashTable  = khashTableCreate(&kalloc, hashCode, nameCompareFunction,  ORIONLD_CONTEXT_CACHE_HASH_ARRAY_SIZE);
+  contextP->context.hash.valueHashTable = khashTableCreate(&kalloc, hashCode, valueCompareFunction, ORIONLD_CONTEXT_CACHE_HASH_ARRAY_SIZE);
 
   if (orionldContextHashTablesFill(contextP, contextObjectP, pdP) == false)
   {
@@ -826,7 +728,7 @@ OrionldContext* orionldContextFromObject(char* url, bool toBeCloned, KjNode* con
     return NULL;
   }
 
-  orionldContextListPresent("CTX", "After orionldContextFromObject");
+  orionldContextCachePresent("CTX", "After orionldContextFromObject");
 
   return contextP;
 }
@@ -911,7 +813,7 @@ OrionldContext* orionldContextFromArray(char* url, bool toBeCloned, int itemsInA
   }
 
   LM_TMP(("CTX: ===================================== orionldContextFromArray End ==============================================================================="));
-  orionldContextListPresent("CTX", "After orionldContextFromArray");
+  orionldContextCachePresent("CTX", "After orionldContextFromArray");
   return contextP;
 }
 
@@ -919,13 +821,13 @@ OrionldContext* orionldContextFromArray(char* url, bool toBeCloned, int itemsInA
 
 // -----------------------------------------------------------------------------
 //
-// orionldContextListInit -
+// orionldContextCacheInit -
 //
-static void orionldContextListInit(void)
+static void orionldContextCacheInit(void)
 {
-  bzero(&orionldContextListArray, sizeof(orionldContextListArray));
+  bzero(&orionldContextCacheArray, sizeof(orionldContextCacheArray));
 
-  if (sem_init(&orionldContextListSem, 0, 1) == -1)
+  if (sem_init(&orionldContextCacheSem, 0, 1) == -1)
     LM_X(1, ("Runtime Error (error initializing semaphore for orionld context list; %s)", strerror(errno)));
 }
 
@@ -1132,7 +1034,7 @@ static bool fileSystemContexts(char* cacheContextDir)
 bool orionldContextInit(OrionldProblemDetails* pdP)
 {
   LM_TMP(("CTX: Initializing ALT Context list"));
-  orionldContextListInit();
+  orionldContextCacheInit();
 
   char* cacheContextDir = getenv("ORIONLD_CACHED_CONTEXT_DIRECTORY");
   bool  gotCoreContext  = false;
@@ -1144,7 +1046,7 @@ bool orionldContextInit(OrionldProblemDetails* pdP)
     gotCoreContext = fileSystemContexts(cacheContextDir);
     if (gotCoreContext == false)
       LM_E(("Unable to cache pre-loaded contexts from '%s'", cacheContextDir));
-    orionldContextListPresent("INIT", "After loading initial cached contexts");
+    // orionldContextCachePresent("INIT", "After loading initial cached contexts");
   }
 #endif
 

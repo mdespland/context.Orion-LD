@@ -23,6 +23,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 SET (SOURCES
     orionldContext.cpp
     orionldCoreContext.cpp
+    orionldContextCache.cpp
 )
 
 # Include directories
