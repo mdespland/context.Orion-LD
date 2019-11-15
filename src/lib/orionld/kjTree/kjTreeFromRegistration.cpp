@@ -49,16 +49,16 @@ extern "C"
 //
 KjNode* kjTreeFromRegistration(ConnectionInfo* ciP, ngsiv2::Registration* registrationP)
 {
-  KjNode*             topP = kjObject(orionldState.kjsonP, NULL);
-  KjNode*             objectP;
-  KjNode*             objectP2;
-  KjNode*             arrayP;
-  KjNode*             arrayP2;
-  KjNode*             nodeP;
-  char                date[128];
-  char*               details;
-  unsigned int        infoSize;
-  OrionldAltContext*  contextP = orionldContextLookup(registrationP->ldContext.c_str());
+  KjNode*          topP = kjObject(orionldState.kjsonP, NULL);
+  KjNode*          objectP;
+  KjNode*          objectP2;
+  KjNode*          arrayP;
+  KjNode*          arrayP2;
+  KjNode*          nodeP;
+  char             date[128];
+  char*            details;
+  unsigned int     infoSize;
+  OrionldContext*  contextP = orionldContextLookup(registrationP->ldContext.c_str());
 
   // id
   nodeP = kjString(orionldState.kjsonP, "id", registrationP->id.c_str());

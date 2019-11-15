@@ -84,12 +84,12 @@ void debugContextElement(ContextElement* ceP)
 //
 KjNode* kjTreeFromNotification(NotifyContextRequest* ncrP, const char* context, MimeType mimeType, RenderFormat renderFormat, char** detailsP)
 {
-  KjNode*             nodeP;
-  char                buf[32];
-  KjNode*             rootP      = kjObject(orionldState.kjsonP, NULL);
-  char*               id         = mongoIdentifier(buf);
-  char                idBuffer[] = "urn:ngsi-ld:Notification:012345678901234567890123";  // The 012345678901234567890123 will be overwritten
-  OrionldAltContext*  contextP   = orionldContextLookup(context);
+  KjNode*          nodeP;
+  char             buf[32];
+  KjNode*          rootP      = kjObject(orionldState.kjsonP, NULL);
+  char*            id         = mongoIdentifier(buf);
+  char             idBuffer[] = "urn:ngsi-ld:Notification:012345678901234567890123";  // The 012345678901234567890123 will be overwritten
+  OrionldContext*  contextP   = orionldContextLookup(context);
 
   LM_TMP(("NOTIF: In kjTreeFromNotification"));
   // id

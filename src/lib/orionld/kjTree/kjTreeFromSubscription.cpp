@@ -175,14 +175,14 @@ void coordinateTransform(const char* geometry, char* to, int toLen, char* from)
 //
 KjNode* kjTreeFromSubscription(ConnectionInfo* ciP, ngsiv2::Subscription* subscriptionP)
 {
-  KjNode*             topP = kjObject(orionldState.kjsonP, NULL);
-  KjNode*             objectP;
-  KjNode*             arrayP;
-  KjNode*             nodeP;
-  bool                watchedAttributesPresent = false;
-  unsigned int        size;
-  unsigned int        ix;
-  OrionldAltContext*  contextP = orionldContextLookup(subscriptionP->ldContext.c_str());
+  KjNode*          topP = kjObject(orionldState.kjsonP, NULL);
+  KjNode*          objectP;
+  KjNode*          arrayP;
+  KjNode*          nodeP;
+  bool             watchedAttributesPresent = false;
+  unsigned int     size;
+  unsigned int     ix;
+  OrionldContext*  contextP = orionldContextLookup(subscriptionP->ldContext.c_str());
 
   // id
   nodeP = kjString(orionldState.kjsonP, "id", subscriptionP->id.c_str());

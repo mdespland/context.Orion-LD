@@ -71,7 +71,7 @@ extern "C"
 //
 // orionldCoreContext
 //
-OrionldAltContext* orionldCoreContextP;
+OrionldContext* orionldCoreContextP;
 
 
 
@@ -95,11 +95,11 @@ int orionldDefaultUrlLen;
 //
 // orionldContextList
 //
-static sem_t                orionldContextListSem;
-static OrionldAltContext*   orionldContextListArray[100];  // When 100 is not enough, a realloc is done
-static OrionldAltContext**  orionldContextList         = orionldContextListArray;
-static int                  orionldContextListSlots    = 100;
-static int                  orionldContextListSlotIx   = 0;
+static sem_t             orionldContextListSem;
+static OrionldContext*   orionldContextListArray[100];  // When 100 is not enough, a realloc is done
+static OrionldContext**  orionldContextList         = orionldContextListArray;
+static int               orionldContextListSlots    = 100;
+static int               orionldContextListSlotIx   = 0;
 
 
 
@@ -109,17 +109,11 @@ static int                  orionldContextListSlotIx   = 0;
 //
 KjNode* orionldContextCacheGet(KjNode* arrayP)
 {
-  LM_TMP(("CTX: %d contexts in cache", orionldContextListSlotIx));
   for (int ix = 0; ix < orionldContextListSlotIx; ix++)
   {
-    LM_TMP(("CTX: ix:%d. context at %p", ix, orionldContextListArray[ix]));
-    OrionldAltContext*  contextP         = orionldContextListArray[ix];
-    LM_TMP(("CTX: ix:%d. context at %p", ix, contextP));
+    OrionldContext*  contextP         = orionldContextListArray[ix];
     KjNode*             contextObjP      = kjObject(orionldState.kjsonP, NULL);
-    LM_TMP(("CTX: ix:%d. contextObj at %p", ix, contextObjP));
-    LM_TMP(("CTX: ix:%d. context::url at %p", ix, contextP->url));
     KjNode*             urlStringP       = kjString(orionldState.kjsonP, "url",  contextP->url);
-    LM_TMP(("CTX: ix:%d. context::url: '%s'", ix, contextP->url));
     KjNode*             idStringP        = kjString(orionldState.kjsonP, "id",  (contextP->id == NULL)? "None" : contextP->id);
     KjNode*             typeStringP      = kjString(orionldState.kjsonP, "type", contextP->keyValues? "hash-table" : "array");
 
@@ -223,7 +217,7 @@ void orionldContextPresentTree(const char* prefix, KjNode* contextNodeP)
 //
 // orionldContextPresent -
 //
-void orionldContextPresent(const char* prefix, OrionldAltContext* contextP)
+void orionldContextPresent(const char* prefix, OrionldContext* contextP)
 {
   if (contextP == NULL)
     return;
@@ -335,7 +329,7 @@ void orionldContextListPresent(const char* prefix, const char* info)
 // The value-table MUST be created in the second pass as its key is the value, and as the value changes in pass II, no other choice.
 // Remember that the key (in this case the value is used as key) is what decides the slot in the hash array.
 //
-static bool orionldContextHashTablesFill(OrionldAltContext* contextP, KjNode* keyValueTree, OrionldProblemDetails* pdP)
+static bool orionldContextHashTablesFill(OrionldContext* contextP, KjNode* keyValueTree, OrionldProblemDetails* pdP)
 {
   OrionldContextHashTables* hashP           = &contextP->context.hash;
   KHashTable*               nameHashTableP  = hashP->nameHashTable;
@@ -426,7 +420,7 @@ static bool orionldContextHashTablesFill(OrionldAltContext* contextP, KjNode* ke
 //
 // orionldContextInsert -
 //
-void orionldContextInsert(OrionldAltContext* contextP)
+void orionldContextInsert(OrionldContext* contextP)
 {
   sem_wait(&orionldContextListSem);
 
@@ -437,15 +431,15 @@ void orionldContextInsert(OrionldAltContext* contextP)
   if (orionldContextListSlotIx >= orionldContextListSlots)
   {
     int   slotsToAdd   = 50;
-    int   addedSize    = slotsToAdd * sizeof(OrionldAltContext*);
+    int   addedSize    = slotsToAdd * sizeof(OrionldContext*);
     int   newNoOfSlots = orionldContextListSlots + slotsToAdd;
-    char* newArray     = (char*) kaAlloc(&kalloc, sizeof(OrionldAltContext*) * newNoOfSlots);
+    char* newArray     = (char*) kaAlloc(&kalloc, sizeof(OrionldContext*) * newNoOfSlots);
 
-    memcpy(newArray, (char*) orionldContextList, sizeof(OrionldAltContext*) * orionldContextListSlots);
-    bzero(&newArray[sizeof(OrionldAltContext*) * orionldContextListSlots], addedSize);
+    memcpy(newArray, (char*) orionldContextList, sizeof(OrionldContext*) * orionldContextListSlots);
+    bzero(&newArray[sizeof(OrionldContext*) * orionldContextListSlots], addedSize);
 
     orionldContextListSlots += 50;
-    orionldContextList = (OrionldAltContext**) newArray;
+    orionldContextList = (OrionldContext**) newArray;
   }
 
   orionldContextList[orionldContextListSlotIx] = contextP;
@@ -465,7 +459,7 @@ void orionldContextInsert(OrionldAltContext* contextP)
 //
 // orionldContextLookup -
 //
-OrionldAltContext* orionldContextLookup(const char* url)
+OrionldContext* orionldContextLookup(const char* url)
 {
   LM_TMP(("CTX: Looking up context '%s'", url));
   orionldContextListPresent("CTX", "orionldContextLookup");
@@ -566,7 +560,7 @@ char* orionldContextDownload(const char* url, bool* downloadFailedP, OrionldProb
 //
 // orionldContextFromBuffer -
 //
-OrionldAltContext* orionldContextFromBuffer(char* url, char* buffer, OrionldProblemDetails* pdP)
+OrionldContext* orionldContextFromBuffer(char* url, char* buffer, OrionldProblemDetails* pdP)
 {
   LM_TMP(("CTX: preparing context (%s) from buffer", url));
 
@@ -604,9 +598,9 @@ OrionldAltContext* orionldContextFromBuffer(char* url, char* buffer, OrionldProb
 //
 // orionldContextFromUrl -
 //
-OrionldAltContext* orionldContextFromUrl(char* url, OrionldProblemDetails* pdP)
+OrionldContext* orionldContextFromUrl(char* url, OrionldProblemDetails* pdP)
 {
-  OrionldAltContext* contextP = orionldContextLookup(url);
+  OrionldContext* contextP = orionldContextLookup(url);
 
   LM_TMP(("CTX: Getting context from a URL: '%s'", url));
 
@@ -688,7 +682,7 @@ KjNode* orionldContextSimplify(KjNode* contextTreeP, int* itemsInArrayP)
 //
 // orionldContextFromTree -
 //
-OrionldAltContext* orionldContextFromTree(char* url, bool toBeCloned, KjNode* contextTreeP, OrionldProblemDetails* pdP)
+OrionldContext* orionldContextFromTree(char* url, bool toBeCloned, KjNode* contextTreeP, OrionldProblemDetails* pdP)
 {
   int itemsInArray;
 
@@ -732,11 +726,11 @@ OrionldAltContext* orionldContextFromTree(char* url, bool toBeCloned, KjNode* co
 //
 // orionldContextCreate -
 //
-OrionldAltContext* orionldContextCreate(const char* url, const char* id, KjNode* tree, bool keyValues, bool toBeCloned)
+OrionldContext* orionldContextCreate(const char* url, const char* id, KjNode* tree, bool keyValues, bool toBeCloned)
 {
   LM_TMP(("CTX: Creating empty context object"));
 
-  OrionldAltContext* contextP = (OrionldAltContext*) kaAlloc(&kalloc, sizeof(OrionldAltContext));
+  OrionldContext* contextP = (OrionldContext*) kaAlloc(&kalloc, sizeof(OrionldContext));
 
   contextP->url       = kaStrdup(&kalloc, url);
   contextP->id        = (id == NULL)? NULL : kaStrdup(&kalloc, id);
@@ -831,10 +825,10 @@ char* orionldContextUrlGenerate(char** contextIdP)
 // Served contexts need to be cloned so that they can be copied back to the caller (GET /ngsi-ld/ex/contexts/xxx).
 // For example, the URL "http:/x.y.z/contexts/context1.jsonld" was downloaded and its content is a key-value object.
 //
-OrionldAltContext* orionldContextFromObject(char* url, bool toBeCloned, KjNode* contextObjectP, OrionldProblemDetails* pdP)
+OrionldContext* orionldContextFromObject(char* url, bool toBeCloned, KjNode* contextObjectP, OrionldProblemDetails* pdP)
 {
-  char*              id = NULL;
-  OrionldAltContext* contextP;
+  char*           id = NULL;
+  OrionldContext* contextP;
 
   LM_TMP(("CTX: Creating hash tables for context '%s'", url));
 
@@ -865,10 +859,10 @@ OrionldAltContext* orionldContextFromObject(char* url, bool toBeCloned, KjNode* 
 //
 // orionldContextFromArray -
 //
-OrionldAltContext* orionldContextFromArray(char* url, bool toBeCloned, int itemsInArray, KjNode* contextArrayP, OrionldProblemDetails* pdP)
+OrionldContext* orionldContextFromArray(char* url, bool toBeCloned, int itemsInArray, KjNode* contextArrayP, OrionldProblemDetails* pdP)
 {
-  char*              id = NULL;
-  OrionldAltContext* contextP;
+  char*           id = NULL;
+  OrionldContext* contextP;
 
   LM_TMP(("CTX: Creating array for context '%s'", url));
 
@@ -879,7 +873,7 @@ OrionldAltContext* orionldContextFromArray(char* url, bool toBeCloned, int items
   orionldContextInsert(contextP);
 
   contextP->context.array.items    = itemsInArray;
-  contextP->context.array.vector   = (OrionldAltContext**) kaAlloc(&kalloc, itemsInArray * sizeof(OrionldAltContext*));
+  contextP->context.array.vector   = (OrionldContext**) kaAlloc(&kalloc, itemsInArray * sizeof(OrionldContext*));
 
 
   //
@@ -895,7 +889,7 @@ OrionldAltContext* orionldContextFromArray(char* url, bool toBeCloned, int items
   LM_TMP(("CTX: Starting with slot %d. array at %p", slot, contextArrayP));
   for (KjNode* arrayItemP = contextArrayP->value.firstChildP; arrayItemP != NULL; arrayItemP = arrayItemP->next)
   {
-    OrionldAltContext* childContextP;
+    OrionldContext* childContextP;
 
     LM_TMP(("CTX: current slot: %d, item type is: '%s'", slot, kjValueType(arrayItemP->type)));
 
@@ -1094,7 +1088,7 @@ static void contextFileTreat(char* dir, struct dirent* dirItemP)
   // Time to parse the 'JSON Context', create the OrionldContext, and insert it into the list of contexts
   //
 
-  OrionldAltContext* contextP = orionldContextFromBuffer(url, json, &pd);
+  OrionldContext* contextP = orionldContextFromBuffer(url, json, &pd);
 
   if (strcmp(url, ORIONLD_CORE_CONTEXT_URL) == 0)
   {
@@ -1228,11 +1222,11 @@ bool orionldContextInit(OrionldProblemDetails* pdP)
 //
 char* orionldContextItemExpand
 (
-  OrionldAltContext*      contextP,
-  const char*             shortName,
-  bool*                   valueMayBeExpandedP,
-  bool                    useDefaultUrlIfNotFound,
-  OrionldContextItem**    contextItemPP
+  OrionldContext*       contextP,
+  const char*           shortName,
+  bool*                 valueMayBeExpandedP,
+  bool                  useDefaultUrlIfNotFound,
+  OrionldContextItem**  contextItemPP
 )
 {
   OrionldContextItem* contextItemP;
@@ -1361,7 +1355,7 @@ void orionldValueExpand(KjNode* attrNodeP)
 //
 // orionldContextItemLookup - lookup an item in a context
 //
-OrionldContextItem* orionldContextItemLookup(OrionldAltContext* contextP, const char* name, bool* valueMayBeCompactedP)
+OrionldContextItem* orionldContextItemLookup(OrionldContext* contextP, const char* name, bool* valueMayBeCompactedP)
 {
   OrionldContextItem* itemP = NULL;
 
@@ -1446,7 +1440,7 @@ void prefixCacheInsert(const char* prefix, const char* expansion)
 //   * Normally, just a few prefixes are used, so a "prefix cache" of 10 values is maintained.
 //     This cache is local to the thread, so no semaphores are needed
 //
-char* orionldContextPrefixExpand(OrionldAltContext* contextP, const char* str, char* colonP)
+char* orionldContextPrefixExpand(OrionldContext* contextP, const char* str, char* colonP)
 {
   char* prefix;
   char* rest;
@@ -1529,10 +1523,10 @@ void debugHashValue(const char* prefix, const char* name)
 //
 char* orionldContextItemAliasLookup
 (
-  OrionldAltContext*      contextP,
-  const char*             longName,
-  bool*                   valueMayBeCompactedP,
-  OrionldContextItem**    contextItemPP
+  OrionldContext*       contextP,
+  const char*           longName,
+  bool*                 valueMayBeCompactedP,
+  OrionldContextItem**  contextItemPP
 )
 {
   OrionldContextItem* contextItemP;
@@ -1601,7 +1595,7 @@ char* orionldContextItemAliasLookup
 //
 // orionldContextItemValueLookup - lookup a value in a context
 //
-OrionldContextItem* orionldContextItemValueLookup(OrionldAltContext* contextP, const char* longname)
+OrionldContextItem* orionldContextItemValueLookup(OrionldContext* contextP, const char* longname)
 {
   OrionldContextItem* itemP = NULL;
 

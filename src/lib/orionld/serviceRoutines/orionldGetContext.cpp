@@ -49,8 +49,8 @@ bool orionldGetContext(ConnectionInfo* ciP)
 {
   LM_T(LmtServiceRoutine, ("In orionldGetContext - looking up context '%s'", orionldState.wildcard[0]));
 
-  OrionldAltContext* contextP    = orionldContextLookup(orionldState.wildcard[0]);
-  KjNode*            contextTree = NULL;
+  OrionldContext* contextP    = orionldContextLookup(orionldState.wildcard[0]);
+  KjNode*         contextTree = NULL;
 
   orionldState.noLinkHeader = true;  // We don't want the Link header for context requests
 

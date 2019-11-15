@@ -32,7 +32,7 @@ extern "C"
 
 #include "common/RenderFormat.h"                               // RenderFormat
 #include "ngsi/ContextAttribute.h"                             // ContextAttribute
-#include "orionld/context/orionldContext.h"                    // OrionldAltContext
+#include "orionld/context/orionldContext.h"                    // OrionldContext
 
 
 
@@ -40,6 +40,6 @@ extern "C"
 //
 // kjTreeFromContextAttribute -
 //
-extern KjNode* kjTreeFromContextAttribute(ContextAttribute* caP, OrionldAltContext* contextP, RenderFormat renderFormat, char** detailsP);
+extern KjNode* kjTreeFromContextAttribute(ContextAttribute* caP, OrionldContext* contextP, RenderFormat renderFormat, char** detailsP);
 
 #endif  // SRC_LIB_ORIONLD_KJTREE_KJTREEFROMCONTEXTATTRIBUTE_H_

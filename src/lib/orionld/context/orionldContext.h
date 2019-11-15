@@ -55,11 +55,11 @@ typedef struct OrionldContextHashTables
 
 
 
-struct OrionldAltContext;
+struct OrionldContext;
 typedef struct OrionldContextArray
 {
-  int                        items;
-  struct OrionldAltContext** vector;
+  int                     items;
+  struct OrionldContext** vector;
 } OrionldContextArray;
 
 
@@ -78,19 +78,19 @@ typedef union OrionldContextInfo
 
 // ----------------------------------------------------------------------------
 //
-// OrionldAltContext -
+// OrionldContext -
 //
 // The context is either an array of contexts or "the real thing" - a list of key-values in
 // a hash-list
 //
-typedef struct OrionldAltContext
+typedef struct OrionldContext
 {
   char*               url;
   char*               id;         // For contexts that were created by the broker itself
   KjNode*             tree;
   bool                keyValues;
   OrionldContextInfo  context;
-} OrionldAltContext;
+} OrionldContext;
 
 
 
@@ -98,7 +98,7 @@ typedef struct OrionldAltContext
 //
 // orionldCoreContextP -
 //
-extern OrionldAltContext* orionldCoreContextP;
+extern OrionldContext* orionldCoreContextP;
 
 
 
@@ -119,7 +119,7 @@ typedef struct OrionldContextItem
 //
 // orionldContextLookup -
 //
-extern OrionldAltContext* orionldContextLookup(const char* url);
+extern OrionldContext* orionldContextLookup(const char* url);
 
 
 
@@ -127,7 +127,7 @@ extern OrionldAltContext* orionldContextLookup(const char* url);
 //
 // orionldContextFromUrl -
 //
-extern OrionldAltContext* orionldContextFromUrl(char* url, OrionldProblemDetails* pdP);
+extern OrionldContext* orionldContextFromUrl(char* url, OrionldProblemDetails* pdP);
 
 
 
@@ -135,7 +135,7 @@ extern OrionldAltContext* orionldContextFromUrl(char* url, OrionldProblemDetails
 //
 // orionldContextFromTree -
 //
-extern OrionldAltContext* orionldContextFromTree(char* url, bool toBeCloned, KjNode* contextTreeP, OrionldProblemDetails* pdP);
+extern OrionldContext* orionldContextFromTree(char* url, bool toBeCloned, KjNode* contextTreeP, OrionldProblemDetails* pdP);
 
 
 
@@ -148,7 +148,7 @@ extern OrionldAltContext* orionldContextFromTree(char* url, bool toBeCloned, KjN
 // Served contexts need to be cloned so that they can be copied back to the caller (GET /ngsi-ld/ex/contexts/xxx).
 // For example, the URL "http:/x.y.z/contexts/context1.jsonld" was downloaded and its content is a key-value object.
 //
-extern OrionldAltContext* orionldContextFromObject(char* url, bool toBeCloned, KjNode* contextObjectP, OrionldProblemDetails* pdP);
+extern OrionldContext* orionldContextFromObject(char* url, bool toBeCloned, KjNode* contextObjectP, OrionldProblemDetails* pdP);
 
 
 
@@ -156,7 +156,7 @@ extern OrionldAltContext* orionldContextFromObject(char* url, bool toBeCloned, K
 //
 // orionldContextFromArray -
 //
-extern OrionldAltContext* orionldContextFromArray(char* url, bool toBeCloned, int itemsInArray, KjNode* contextArrayP, OrionldProblemDetails* pdP);
+extern OrionldContext* orionldContextFromArray(char* url, bool toBeCloned, int itemsInArray, KjNode* contextArrayP, OrionldProblemDetails* pdP);
 
 
 
@@ -182,7 +182,7 @@ extern void orionldValueExpand(KjNode* attrNodeP);
 //
 // orionldContextPresent -
 //
-extern void orionldContextPresent(const char* prefix, OrionldAltContext* contextP);
+extern void orionldContextPresent(const char* prefix, OrionldContext* contextP);
 
 
 
@@ -217,11 +217,11 @@ extern void orionldContextListPresent(const char* prefix, const char* info);
 //
 extern char* orionldContextItemExpand
 (
-  OrionldAltContext*      contextP,
-  const char*             shortName,
-  bool*                   valueMayBeExpandedP,
-  bool                    useDefaultUrlIfNotFound,
-  OrionldContextItem**    contextItemPP
+  OrionldContext*      contextP,
+  const char*          shortName,
+  bool*                valueMayBeExpandedP,
+  bool                 useDefaultUrlIfNotFound,
+  OrionldContextItem** contextItemPP
 );
 
 
@@ -230,7 +230,7 @@ extern char* orionldContextItemExpand
 //
 // orionldContextItemLookup - lookup an item in a context
 //
-extern OrionldContextItem* orionldContextItemLookup(OrionldAltContext* contextP, const char* name, bool* valueMayBeCompactedP);
+extern OrionldContextItem* orionldContextItemLookup(OrionldContext* contextP, const char* name, bool* valueMayBeCompactedP);
 
 
 
@@ -249,7 +249,7 @@ extern OrionldContextItem* orionldContextItemLookup(OrionldAltContext* contextP,
 //   * Normally, just a few prefixes are used, so a "prefix cache" of 10 values is maintained.
 //     This cache is local to the thread, so no semaphores are needed
 //
-extern char* orionldContextPrefixExpand(OrionldAltContext* contextP, const char* str, char* colonP);
+extern char* orionldContextPrefixExpand(OrionldContext* contextP, const char* str, char* colonP);
 
 
 
@@ -263,10 +263,10 @@ extern char* orionldContextPrefixExpand(OrionldAltContext* contextP, const char*
 //
 extern char* orionldContextItemAliasLookup
 (
-  OrionldAltContext*      contextP,
-  const char*             longName,
-  bool*                   valueMayBeCompactedP,
-  OrionldContextItem**    contextItemPP
+  OrionldContext*      contextP,
+  const char*          longName,
+  bool*                valueMayBeCompactedP,
+  OrionldContextItem** contextItemPP
 );
 
 
@@ -275,7 +275,7 @@ extern char* orionldContextItemAliasLookup
 //
 // orionldContextItemValueLookup - lookup a value in a context
 //
-extern OrionldContextItem* orionldContextItemValueLookup(OrionldAltContext* contextP, const char* longname);
+extern OrionldContextItem* orionldContextItemValueLookup(OrionldContext* contextP, const char* longname);
 
 
 

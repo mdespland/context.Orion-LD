@@ -60,7 +60,7 @@ extern "C"
 //
 // kjTreeFromContextAttribute -
 //
-KjNode* kjTreeFromContextAttribute(ContextAttribute* caP, OrionldAltContext* contextP, RenderFormat renderFormat, char** detailsP)
+KjNode* kjTreeFromContextAttribute(ContextAttribute* caP, OrionldContext* contextP, RenderFormat renderFormat, char** detailsP)
 {
   bool     valueMayBeCompacted;
   char*    nameAlias = orionldContextItemAliasLookup(contextP, caP->name.c_str(), &valueMayBeCompacted, NULL);

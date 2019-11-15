@@ -135,7 +135,7 @@ typedef struct OrionldConnectionState
   char*                   link;
   bool                    linkHeaderAdded;
   bool                    noLinkHeader;
-  OrionldAltContext*      contextP;
+  OrionldContext*         contextP;
   bool                    contextToBeFreed;
   ApiVersion              apiVersion;
   int                     requestNo;
