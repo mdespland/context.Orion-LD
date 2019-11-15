@@ -225,6 +225,9 @@ void orionldContextPresentTree(const char* prefix, KjNode* contextNodeP)
 //
 void orionldContextPresent(const char* prefix, OrionldAltContext* contextP)
 {
+  if (contextP == NULL)
+    return;
+
   LM_TMP(("    %s: Context '%s' (%s)", prefix, contextP->url, contextP->keyValues? "Key-Values" : "Array"));
   LM_TMP(("    %s: ----------------------------------------------------------------------------", prefix));
 
@@ -772,7 +775,7 @@ int nameCompareFunction(const char* name, void* itemP)
 {
   OrionldContextItem* cItemP = (OrionldContextItem*) itemP;
 
-  LM_TMP(("ALIAS: Looking for '%s', comparing with '%s'", name, cItemP->name));
+  LM_TMP(("LOCA: Looking for name '%s', comparing with '%s'", name, cItemP->name));
   return strcmp(name, cItemP->name);
 }
 
@@ -786,7 +789,7 @@ int valueCompareFunction(const char* longname, void* itemP)
 {
   OrionldContextItem* cItemP = (OrionldContextItem*) itemP;
 
-  LM_TMP(("ALIAS: Looking for '%s', comparing with '%s'", longname, cItemP->id));
+  LM_TMP(("LCA: Looking for value '%s', comparing with '%s'", longname, cItemP->id));
   return strcmp(longname, cItemP->id);
 }
 
@@ -1374,31 +1377,18 @@ OrionldContextItem* orionldContextItemLookup(OrionldAltContext* contextP, const 
   OrionldContextItem* itemP = NULL;
 
   if (contextP == NULL)
-  {
-    LM_TMP(("ALT3: NULL context: using Core Context"));
     contextP = orionldCoreContextP;
-  }
-  
-  LM_TMP(("ALT3: Looking for '%s' in context '%s'", name, contextP->url));
 
   if (contextP->keyValues == true)
-  {
-    LM_TMP(("ALT3: Context is key-values - direct lookup in hash-table"));
     itemP = (OrionldContextItem*) khashItemLookup(contextP->context.hash.nameHashTable, name);
-    LM_TMP(("ALT3: hash-table lookup of '%s': %s", name, (itemP == NULL)? "Not Found" : "FOUND"));
-  }
   else
   {
-    LM_TMP(("ALT3: Context is an Array, no key-values"));
     for (int ix = 0; ix < contextP->context.array.items; ++ix)
     {
-      LM_TMP(("ALT3: recursive call (%d in loop) for context %s", ix, contextP->context.array.vector[ix]->url));
       if ((itemP = orionldContextItemLookup(contextP->context.array.vector[ix], name, valueMayBeCompactedP)) != NULL)
         break;
     }
   }
-
-  LM_TMP(("ALT3: %s '%s' in context '%s'", itemP? "Found" : "Didn't find", name, contextP->url));
 
   if (valueMayBeCompactedP != NULL)
   {
@@ -1524,6 +1514,18 @@ char* orionldContextPrefixExpand(OrionldAltContext* contextP, const char* str, c
   *colonP = ':';
 
   return expandedString;
+}
+
+
+
+void debugHashValue(const char* prefix, const char* name)
+{
+  OrionldContextItem* cItemP = orionldContextItemLookup(orionldState.altContextP, name, NULL);
+
+  if (cItemP == NULL)
+    LM_TMP(("%s: '%s' not found", prefix, name));
+  else
+    LM_TMP(("%s: '%s' == '%s' (OrionldContextItem::id at %p)", prefix, name, cItemP->id, cItemP->id));
 }
 
 

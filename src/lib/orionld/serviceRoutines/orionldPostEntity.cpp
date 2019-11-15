@@ -26,6 +26,7 @@
 
 extern "C"
 {
+#include "kbase/kMacros.h"                                       // K_VEC_SIZE
 #include "kjson/kjBuilder.h"                                     // kjChildRemove
 #include "kjson/kjRender.h"                                      // kjRender
 #include "kjson/kjLookup.h"                                      // kjLookup
@@ -56,6 +57,7 @@ extern "C"
 #include "orionld/serviceRoutines/orionldPostEntity.h"           // Own Interface
 
 
+extern void debugHashValue(const char* prefix, const char* name);  // TMP
 
 // ----------------------------------------------------------------------------
 //
@@ -312,23 +314,6 @@ void kjModDateSet(KjNode* attrP)
     }
   }
 }
-
-
-
-#if 0
-// -----------------------------------------------------------------------------
-//
-// kjTreeLog - DEBUGGING FUNCTION - To Be Removed
-//
-static void kjTreeLog(const char* comment, KjNode* nodeP)
-{
-  char buf[2048];
-
-  kjRender(orionldState.kjsonP, nodeP, buf, sizeof(buf));
-
-  LM_TMP(("NFY: %s: %s", comment, buf));
-}
-#endif
 
 
 
@@ -648,6 +633,13 @@ static bool expandAttrNames(KjNode* treeP, char** detailsP)
 //
 // subscriptionMatchCallback -
 //
+// This is the callback function for dbSubscriptionMatchEntityIdAndAttributes().
+// Its purpose is to fill the notification vector 'orionldState.notificationInfo'
+// which is used by the function orionldNotify() to send notifications.
+//
+// orionldNotify() is called after the entire request has been treated, and responded, in the last function of
+// any request: requestCompleted() in rest/rest.cpp.
+//
 static bool subscriptionMatchCallback
 (
   const char*  entityId,
@@ -732,6 +724,17 @@ static bool subscriptionMatchCallback
   }
   else
     LM_TMP(("NFY: 'attrs' is present - its value will decide what to include in the notification"));
+
+
+  //
+  // Is there room in the notificationInfo vector?
+  //
+  if ((unsigned int) orionldState.notificationRecords >= K_VEC_SIZE(orionldState.notificationInfo))
+  {
+    LM_W(("No room in orionldState.notificationInfo - notification dropped"));
+    return false;
+  }
+
 
   //
   // Creating the attribute list that the Notification will be based on
@@ -879,7 +882,6 @@ bool orionldNotifyForAttrList(const char* entityId, KjNode* currentEntityTree, K
 //
 bool orionldPostEntityOverwrite(ConnectionInfo* ciP)
 {
-  LM_TMP(("NFY: In orionldPostEntityOverwrite"));
   //
   // Forwarding and Subscriptions will be taken care of later.
   // For now, just local updates
@@ -891,12 +893,19 @@ bool orionldPostEntityOverwrite(ConnectionInfo* ciP)
   // 3. Write to mongo
   //
   char*   entityId           = orionldState.wildcard[0];
-  KjNode* currentEntityTree = dbEntityLookup(entityId);
+  KjNode* currentEntityTree  = dbEntityLookup(entityId);
   char*   title;
   char*   details;
 
+  //
+  // This function needs to replace dots (.) for equal signs (=) for attribute names and thus need to destroy the values in the incoming payload
+  // After looking up longnames for entity-type and attribute names, and making the KjNode::name point to strings in the context cache,
+  // we will need to clone the tree, so that we don't destroy the cache when changing '.' for '='
+  //
+  KjNode* requestTree = orionldState.requestTree;  // kjClone(&orionldState.kalloc, orionldState.requestTree) ?
+
   // Expand attribute names
-  if (expandAttrNames(orionldState.requestTree, &details) == false)
+  if (expandAttrNames(requestTree, &details) == false)
   {
     ciP->httpStatusCode = SccReceiverInternalError;
     orionldErrorResponseCreate(OrionldBadRequestData, "Can't expand attribute names", details);
@@ -922,7 +931,7 @@ bool orionldPostEntityOverwrite(ConnectionInfo* ciP)
   //
 
   LM_TMP(("DOT: Calling orionldNotifyForAttrList where EQs are needed"));
-  orionldNotifyForAttrList(entityId, currentEntityTree, orionldState.requestTree);
+  orionldNotifyForAttrList(entityId, currentEntityTree, requestTree);
 
   if (currentEntityTree == NULL)
   {
@@ -931,11 +940,32 @@ bool orionldPostEntityOverwrite(ConnectionInfo* ciP)
     return false;
   }
 
-  // Merge orionldState.requestTree with currentEntityTree
-  if (kjTreeMergeAddNewAttrsOverwriteExisting(currentEntityTree, orionldState.requestTree, &title, &details) == false)
+  //
+  // Change the dots in attributes for EQ-signs which is how they must be stored in mongo
+  // - This gives problems for the context cache ...
+  //
+  debugHashValue("LOCA-before-dotForEq", "locatedIn");
+  for (KjNode* attrNodeP = requestTree->value.firstChildP; attrNodeP != NULL; attrNodeP = attrNodeP->next)
+  {
+    LM_TMP(("LOCA: Replacing dots for eqs in '%s', at %p", attrNodeP->name, attrNodeP->name));
+    dotForEq(attrNodeP->name);
+  }
+  debugHashValue("LOCA-after-dotForEq", "locatedIn");
+
+  // Merge requestTree with currentEntityTree
+  if (kjTreeMergeAddNewAttrsOverwriteExisting(currentEntityTree, requestTree, &title, &details) == false)
   {
     ciP->httpStatusCode = SccReceiverInternalError;
     orionldErrorResponseCreate(OrionldInternalError, title, details);
+
+    //
+    // Put back the dots, to not destroy the context-cache
+    //
+    for (KjNode* attrNodeP = requestTree->value.firstChildP; attrNodeP != NULL; attrNodeP = attrNodeP->next)
+    {
+      eqForDot(attrNodeP->name);
+    }
+
     return false;
   }
 
@@ -952,6 +982,14 @@ bool orionldPostEntityOverwrite(ConnectionInfo* ciP)
   // All OK - set HTTP STatus Code
   //
   ciP->httpStatusCode = SccNoContent;
+
+  //
+  // Here we can put back the dots
+  //
+  for (KjNode* attrNodeP = requestTree->value.firstChildP; attrNodeP != NULL; attrNodeP = attrNodeP->next)
+  {
+    eqForDot(attrNodeP->name);
+  }
 
   return true;
 }
