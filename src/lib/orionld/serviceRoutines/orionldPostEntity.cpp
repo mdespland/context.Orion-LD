@@ -87,12 +87,12 @@ void treePresent(const char* prefix, const char* title, KjNode* treeP)
         else if (oItemP->type == KjFloat)
           LM_TMP(("%s:   %s: (string) %f", prefix, oItemP->name, oItemP->value.f));
         else
-          LM_TMP(("%s:   %s: %s", prefix, oItemP->name, kjValueType(oItemP->type)));      
+          LM_TMP(("%s:   %s: %s", prefix, oItemP->name, kjValueType(oItemP->type)));
       }
       LM_TMP(("%s:   ---------------------------", prefix));
     }
     else
-      LM_TMP(("%s: %s: %s", prefix, itemP->name, kjValueType(itemP->type)));      
+      LM_TMP(("%s: %s: %s", prefix, itemP->name, kjValueType(itemP->type)));
   }
 }
 
@@ -781,7 +781,7 @@ static bool subscriptionMatchCallback
     return false;
   }
   LM_TMP(("SUB: REFERENCE of matching subscription: '%s'", referenceP->value.s));
-  
+
 #if 0
   if (throttlingP != NULL)
   {
