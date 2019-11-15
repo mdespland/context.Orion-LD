@@ -128,6 +128,9 @@ void mongoCppLegacySubscriptionMatchEntityIdAndAttributes
       continue;
     }
 
+    //
+    // Found a matching subscription - now the caller of this function can do whatever he/she needs to do with it
+    //
     subMatchCallback(entityId, subscriptionTree, currentEntityTree, incomingRequestTree);
 
     //

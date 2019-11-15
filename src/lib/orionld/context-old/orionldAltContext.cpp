@@ -1524,8 +1524,8 @@ char* orionldAltContextPrefixExpand(OrionldAltContext* contextP, const char* str
 //
 static void valueExpand(KjNode* nodeP)
 {
-  LM_TMP(("VEX: Expanding '%s' using @context %s", nodeP->value.s, orionldState.altContextP->url));
-  nodeP->value.s = orionldAltContextItemExpand(orionldState.altContextP, nodeP->value.s, NULL, true, NULL);
+  LM_TMP(("VEX: Expanding '%s' using @context %s", nodeP->value.s, orionldState.contextP->url));
+  nodeP->value.s = orionldAltContextItemExpand(orionldState.contextP, nodeP->value.s, NULL, true, NULL);
   LM_TMP(("VEX: New value: %s", nodeP->value.s));
 }
 
@@ -1579,7 +1579,7 @@ void orionldAltValueExpand(KjNode* attrNodeP)
 //
 char* orionldDirectValueExpand(char* shortName)
 {
-  return orionldAltContextItemExpand(orionldState.altContextP, shortName, NULL, true, NULL);
+  return orionldAltContextItemExpand(orionldState.contextP, shortName, NULL, true, NULL);
 }
 
 

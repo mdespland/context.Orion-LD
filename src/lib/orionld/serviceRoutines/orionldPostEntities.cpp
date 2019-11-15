@@ -117,7 +117,7 @@ bool orionldPostEntities(ConnectionInfo* ciP)
   entityIdP->creDate       = getCurrentTime();
   entityIdP->modDate       = getCurrentTime();
   entityIdP->isTypePattern = false;
-  entityIdP->type          = orionldContextItemExpand(orionldState.altContextP, entityType, NULL, true, NULL);
+  entityIdP->type          = orionldContextItemExpand(orionldState.contextP, entityType, NULL, true, NULL);
 
 
   //

@@ -47,7 +47,7 @@ extern "C"
 bool orionldGetContexts(ConnectionInfo* ciP)
 {
   KjNode* contextTree = kjArray(orionldState.kjsonP, "contexts");
-  
+
   orionldState.responseTree = orionldContextCacheGet(contextTree);
 
   return true;

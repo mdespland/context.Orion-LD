@@ -538,8 +538,8 @@ static bool linkHeaderCheck(ConnectionInfo* ciP)
   OrionldProblemDetails  pd;
 
   LM_TMP(("CTX: Context from HTTP Link header: %s - calling orionldContextCreateFromUrl", url));
-  orionldState.altContextP = orionldContextFromUrl(url, &pd);
-  if (orionldState.altContextP == NULL)
+  orionldState.contextP = orionldContextFromUrl(url, &pd);
+  if (orionldState.contextP == NULL)
   {
     LM_W(("Bad Input? (%s: %s)", pd.title, pd.detail));
     orionldErrorResponseFromProblemDetails(&pd);
@@ -547,7 +547,7 @@ static bool linkHeaderCheck(ConnectionInfo* ciP)
     return false;
   }
   orionldContextListPresent("NCTX", "After creating context from HTTP Link header");
-  orionldState.link = orionldState.altContextP->url;
+  orionldState.link = orionldState.contextP->url;
   LM_TMP(("CTX: orionldState.link is: %s", orionldState.link));
 #endif
   return true;
@@ -745,12 +745,12 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
     OrionldProblemDetails pd = { OrionldBadRequestData, (char*) "naught", (char*) "naught", 0 };
 
     LM_TMP(("CTX: Context from payload. Type: %s", kjValueType(orionldState.payloadContextNode->type)));
-    orionldState.altContextP = orionldContextFromTree(NULL, true, orionldState.payloadContextNode, &pd);
+    orionldState.contextP = orionldContextFromTree(NULL, true, orionldState.payloadContextNode, &pd);
 
     if (pd.status == 200)  // got an array with only Core Context
-      orionldState.altContextP = orionldCoreContextP;
+      orionldState.contextP = orionldCoreContextP;
 
-    if (orionldState.altContextP == NULL)
+    if (orionldState.contextP == NULL)
     {
       LM_W(("Bad Input? (%s: %s (type == %d, status = %d))", pd.title, pd.detail, pd.type, pd.status));
       orionldErrorResponseFromProblemDetails(&pd);
@@ -760,17 +760,17 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
     }
   }
 
-  if (orionldState.altContextP == NULL)
-    orionldState.altContextP = orionldCoreContextP;
+  if (orionldState.contextP == NULL)
+    orionldState.contextP = orionldCoreContextP;
 
-  orionldState.link = orionldState.altContextP->url;
+  orionldState.link = orionldState.contextP->url;
   LM_TMP(("CTX: orionldState.link is: %s", orionldState.link));
 
   // ********************************************************************************************
   //
   // Call the SERVICE ROUTINE
   //
-  LM_T(LmtServiceRoutine, ("Calling Service Routine %s (context at %p)", orionldState.serviceP->url, orionldState.altContextP));
+  LM_T(LmtServiceRoutine, ("Calling Service Routine %s (context at %p)", orionldState.serviceP->url, orionldState.contextP));
 
   orionldContextListPresent("BUG", "Before calling service routine");
   serviceRoutineResult = orionldState.serviceP->serviceRoutine(ciP);
@@ -823,8 +823,8 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
   //
   if ((serviceRoutineResult == true) && (orionldState.noLinkHeader == false))
   {
-    LM_TMP(("LINK: orionldState.link == '%s' (contextP at %p, Core Context at %p)", orionldState.link, orionldState.altContextP, orionldCoreContextP));
-    LM_TMP(("LINK: orionldState.altContextP->url: '%s'", orionldState.altContextP->url));
+    LM_TMP(("LINK: orionldState.link == '%s' (contextP at %p, Core Context at %p)", orionldState.link, orionldState.contextP, orionldCoreContextP));
+    LM_TMP(("LINK: orionldState.contextP->url: '%s'", orionldState.contextP->url));
     if (orionldState.acceptJsonld == false)
       httpHeaderLinkAdd(ciP, orionldState.link);
     else if (orionldState.responseTree == NULL)

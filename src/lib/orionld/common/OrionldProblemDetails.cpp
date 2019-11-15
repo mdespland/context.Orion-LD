@@ -44,5 +44,4 @@ void orionldProblemDetailsFill
   pdP->title  = (char*) title;
   pdP->detail = (char*) detail;
   pdP->status = status;
-
 }

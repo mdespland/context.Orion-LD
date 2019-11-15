@@ -155,7 +155,7 @@ KjNode* orionldContextCacheGet(KjNode* arrayP)
         if (noOfItems >= 5)
           break;
       }
-        
+
       kjChildAdd(contextObjP, hashTableObjectP);
     }
     else
@@ -173,7 +173,7 @@ KjNode* orionldContextCacheGet(KjNode* arrayP)
       }
       kjChildAdd(contextObjP, urlArrayP);
     }
-    
+
     kjChildAdd(arrayP, contextObjP);
   }
 
@@ -201,7 +201,7 @@ void orionldContextPresentTree(const char* prefix, KjNode* contextNodeP)
     int items = 0;
 
     LM_TMP(("%s: the context is an Object:", prefix));
-    for	(KjNode* itemP = contextNodeP->value.firstChildP; itemP != NULL; itemP = itemP->next)
+    for (KjNode* itemP = contextNodeP->value.firstChildP; itemP != NULL; itemP = itemP->next)
     {
       if (itemP->type == KjString)
         LM_TMP(("%s: %s -> %s", prefix, itemP->name, itemP->value));
@@ -360,7 +360,7 @@ static bool orionldContextHashTablesFill(OrionldAltContext* contextP, KjNode* ke
       for (KjNode* itemP = kvP->value.firstChildP; itemP != NULL; itemP = itemP->next)
       {
         if (strcmp(itemP->name, "@id") == 0)
-          hiP->id =	itemP->value.s;  // Will be allocated in pass II
+          hiP->id = itemP->value.s;  // Will be allocated in pass II
         else if (strcmp(itemP->name, "@type") == 0)
           hiP->type = kaStrdup(&kalloc, itemP->value.s);
       }
@@ -428,7 +428,6 @@ static bool orionldContextHashTablesFill(OrionldAltContext* contextP, KjNode* ke
 //
 void orionldContextInsert(OrionldAltContext* contextP)
 {
-  LM_TMP(("BUG: Inserting context '%s'", contextP->url));
   sem_wait(&orionldContextListSem);
 
   //
@@ -437,11 +436,13 @@ void orionldContextInsert(OrionldAltContext* contextP)
 
   if (orionldContextListSlotIx >= orionldContextListSlots)
   {
-    char* newArray = (char*) kaAlloc(&kalloc, sizeof(OrionldAltContext*) * (orionldContextListSlots + 50));
+    int   slotsToAdd   = 50;
+    int   addedSize    = slotsToAdd * sizeof(OrionldAltContext*);
+    int   newNoOfSlots = orionldContextListSlots + slotsToAdd;
+    char* newArray     = (char*) kaAlloc(&kalloc, sizeof(OrionldAltContext*) * newNoOfSlots);
 
-    LM_TMP(("BUG: Reallocation of Context-Cache"));
     memcpy(newArray, (char*) orionldContextList, sizeof(OrionldAltContext*) * orionldContextListSlots);
-    bzero(&newArray[sizeof(OrionldAltContext*) * orionldContextListSlots], 50 * sizeof(OrionldAltContext*));
+    bzero(&newArray[sizeof(OrionldAltContext*) * orionldContextListSlots], addedSize);
 
     orionldContextListSlots += 50;
     orionldContextList = (OrionldAltContext**) newArray;
@@ -591,7 +592,7 @@ OrionldAltContext* orionldContextFromBuffer(char* url, char* buffer, OrionldProb
     pdP->detail = (char*) "No @context field";
     pdP->status = 400;
 
-    return NULL;    
+    return NULL;
   }
 
   return orionldContextFromTree(url, false, contextNodeP, pdP);
@@ -648,7 +649,7 @@ KjNode* orionldContextSimplify(KjNode* contextTreeP, int* itemsInArrayP)
 
   KjNode* nodeP       = contextTreeP->value.firstChildP;
   int    itemsInArray = 0;
-  
+
   while (nodeP != NULL)
   {
     KjNode* next = nodeP->next;
@@ -709,7 +710,6 @@ OrionldAltContext* orionldContextFromTree(char* url, bool toBeCloned, KjNode* co
     }
   }
 
-  LM_TMP(("BUG: url == '%s' (at %p). type: %s", url, url, kjValueType(contextTreeP->type)));
   if      (contextTreeP->type == KjString)   return orionldContextFromUrl(contextTreeP->value.s, pdP);
   else if (contextTreeP->type == KjObject)   return orionldContextFromObject(url, toBeCloned, contextTreeP, pdP);
   else if (contextTreeP->type == KjArray)    return orionldContextFromArray(url, toBeCloned, itemsInArray, contextTreeP, pdP);
@@ -875,24 +875,11 @@ OrionldAltContext* orionldContextFromArray(char* url, bool toBeCloned, int items
   if (url == NULL)
     url = orionldContextUrlGenerate(&id);
 
-  LM_TMP(("BUG: Calling orionldContextCreate. url: '%s' (at %p)", url, url));
   contextP = orionldContextCreate(url, id, contextArrayP, false, toBeCloned);
   orionldContextInsert(contextP);
 
   contextP->context.array.items    = itemsInArray;
   contextP->context.array.vector   = (OrionldAltContext**) kaAlloc(&kalloc, itemsInArray * sizeof(OrionldAltContext*));
-
-  // <DEBUG>
-  int item = 0;
-  for (KjNode* arrayItemP = contextArrayP->value.firstChildP; arrayItemP != NULL; arrayItemP = arrayItemP->next)
-  {
-    if (arrayItemP->type == KjString)
-      LM_TMP(("BUG: Item %d is a KjString: %s", item, arrayItemP->value.s));
-    else
-      LM_TMP(("BUG: Item %d is a %s", item, kjValueType(arrayItemP->type)));
-    ++item;
-  }
-  // </DEBUG>
 
 
   //
@@ -933,7 +920,7 @@ OrionldAltContext* orionldContextFromArray(char* url, bool toBeCloned, int items
       {
         // orionldContextFromObject fills in pdP
         LM_E(("CTX: orionldContextFromObject: %s: %s", pdP->title, pdP->detail));
-       	return NULL;
+        return NULL;
       }
     }
     else
@@ -1271,7 +1258,7 @@ char* orionldContextItemExpand
   contextItemP = orionldContextItemLookup(orionldCoreContextP, shortName, NULL);
   if (contextItemP != NULL)
     LM_TMP(("EXPAND: Found '%s' -> '%s' in Core Context", shortName, contextItemP->id));
-  
+
   // 2. Lookup in given context (unless it's the Core Context)
   if ((contextItemP == NULL) && (contextP != orionldCoreContextP))
   {
@@ -1285,9 +1272,11 @@ char* orionldContextItemExpand
   {
     if (useDefaultUrlIfNotFound == true)
     {
-      char* longName = (char*) kaAlloc(&orionldState.kalloc, 512);
+      int   shortNameLen = strlen(shortName);
+      int   longNameLen  = orionldDefaultUrlLen + shortNameLen + 1;
+      char* longName     = (char*) kaAlloc(&orionldState.kalloc, longNameLen);
 
-      snprintf(longName, 512, "%s%s", orionldDefaultUrl, shortName);
+      snprintf(longName, longNameLen, "%s%s", orionldDefaultUrl, shortName);
 
       if (contextItemPP != NULL)
         *contextItemPP = NULL;
@@ -1321,7 +1310,7 @@ char* orionldContextItemExpand
 //
 static void valueExpand(KjNode* nodeP)
 {
-  nodeP->value.s = orionldContextItemExpand(orionldState.altContextP, nodeP->value.s, NULL, true, NULL);
+  nodeP->value.s = orionldContextItemExpand(orionldState.contextP, nodeP->value.s, NULL, true, NULL);
 }
 
 
@@ -1440,7 +1429,7 @@ void prefixCacheInsert(const char* prefix, const char* expansion)
     ++orionldState.prefixCache.items;
 }
 
-  
+
 
 // -----------------------------------------------------------------------------
 //
@@ -1449,7 +1438,7 @@ void prefixCacheInsert(const char* prefix, const char* expansion)
 // This function looks for a ':' inside 'name' and if found, treats what's before the ':' as a prefix.
 // This prefix is looked up in the context and if found, the name is expanded, replacing the prefix (and the colon)
 // with the value of the context item found in the lookup.
-// 
+//
 // NOTE
 //   * URIs contain ':' but we don't want to expand 'urn', not' http', etc.
 //     So, if 'name' starts with 'urn:', or if "://" is found in 'name, then no prefix expansion is performed.
@@ -1520,7 +1509,7 @@ char* orionldContextPrefixExpand(OrionldAltContext* contextP, const char* str, c
 
 void debugHashValue(const char* prefix, const char* name)
 {
-  OrionldContextItem* cItemP = orionldContextItemLookup(orionldState.altContextP, name, NULL);
+  OrionldContextItem* cItemP = orionldContextItemLookup(orionldState.contextP, name, NULL);
 
   if (cItemP == NULL)
     LM_TMP(("%s: '%s' not found", prefix, name));

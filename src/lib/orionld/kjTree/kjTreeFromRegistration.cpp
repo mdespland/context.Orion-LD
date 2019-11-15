@@ -328,7 +328,7 @@ KjNode* kjTreeFromRegistration(ConnectionInfo* ciP, ngsiv2::Registration* regist
     //
     for (KjNode* nodeP = registrationP->properties->value.firstChildP; nodeP != NULL; nodeP = nodeP->next)
     {
-      char* alias = orionldContextItemAliasLookup(orionldState.altContextP, nodeP->name, NULL, NULL);
+      char* alias = orionldContextItemAliasLookup(orionldState.contextP, nodeP->name, NULL, NULL);
 
       if (alias != NULL)
         nodeP->name = alias;

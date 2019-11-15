@@ -109,7 +109,7 @@ void orionldStateInit(void)
   orionldState.kjsonP                      = kjBufferCreate(&orionldState.kjson, &orionldState.kalloc);
   orionldState.linkHttpHeaderPresent       = false;
   orionldState.link                        = NULL;
-  orionldState.noLinkHeader                = false; // Service routines can set this value to 'true' to avoid having the Link HTTP Header in its output
+  orionldState.noLinkHeader                = false;  // Service routines can set this value to 'true' to avoid having the Link HTTP Header in its output
   orionldState.entityCreated               = false;
   orionldState.entityId                    = NULL;
   orionldState.linkHeaderAdded             = false;
@@ -124,7 +124,7 @@ void orionldStateInit(void)
   orionldState.prettyPrintSpaces           = 2;
   orionldState.prettyPrint                 = false;
   orionldState.locationAttributeP          = NULL;
-  orionldState.altContextP                 = orionldCoreContextP;
+  orionldState.contextP                    = orionldCoreContextP;
   orionldState.payloadContextNode          = NULL;
   orionldState.payloadIdNode               = NULL;
   orionldState.payloadTypeNode             = NULL;

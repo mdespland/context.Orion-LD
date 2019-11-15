@@ -146,7 +146,7 @@ static void attrListParseAndExpand(int* attrsInAttrListP, char*** attrListExpand
   for (int ix = 0; ix < attrs; ix++)
   {
     LM_TMP(("BUG: Calling orionldContextItemExpand for '%s'", expandedV[ix]));
-    expandedV[ix] = orionldContextItemExpand(orionldState.altContextP, expandedV[ix], NULL, true, NULL);
+    expandedV[ix] = orionldContextItemExpand(orionldState.contextP, expandedV[ix], NULL, true, NULL);
     LM_TMP(("BUG: orionldContextItemExpand returned '%s'", expandedV[ix]));
   }
 
@@ -317,7 +317,7 @@ KjNode* kjTreeFromQueryContextResponse(ConnectionInfo* ciP, bool oneHit, char* a
     // type
     if (ceP->entityId.type != "")
     {
-      char* alias = orionldContextItemAliasLookup(orionldState.altContextP, ceP->entityId.type.c_str(), NULL, NULL);
+      char* alias = orionldContextItemAliasLookup(orionldState.contextP, ceP->entityId.type.c_str(), NULL, NULL);
 
       nodeP = kjString(orionldState.kjsonP, "type", alias);
       if (nodeP == NULL)
@@ -357,8 +357,8 @@ KjNode* kjTreeFromQueryContextResponse(ConnectionInfo* ciP, bool oneHit, char* a
       bool              valueMayBeCompacted  = false;
 
       LM_TMP(("BUG: Treating attribute '%s'", attrShortName));
-      attrName = orionldContextItemAliasLookup(orionldState.altContextP, attrShortName, &valueMayBeCompacted, NULL);
-      LM_TMP(("BUG: Got alias '%s' for '%s' via context '%s'", orionldState.altContextP->url, attrShortName, attrName));
+      attrName = orionldContextItemAliasLookup(orionldState.contextP, attrShortName, &valueMayBeCompacted, NULL);
+      LM_TMP(("BUG: Got alias '%s' for '%s' via context '%s'", orionldState.contextP->url, attrShortName, attrName));
 
       //
       // If URI param attrList has been used, only matching attributes should be included in the response
@@ -378,7 +378,7 @@ KjNode* kjTreeFromQueryContextResponse(ConnectionInfo* ciP, bool oneHit, char* a
         case orion::ValueTypeString:
           if (valueMayBeCompacted == true)
           {
-            char* compactedValue = orionldContextItemAliasLookup(orionldState.altContextP, aP->stringValue.c_str(), NULL, NULL);
+            char* compactedValue = orionldContextItemAliasLookup(orionldState.contextP, aP->stringValue.c_str(), NULL, NULL);
             if (compactedValue == NULL)
               aTop = kjString(orionldState.kjsonP, attrName, compactedValue);
             else
@@ -476,7 +476,7 @@ KjNode* kjTreeFromQueryContextResponse(ConnectionInfo* ciP, bool oneHit, char* a
           if (valueMayBeCompacted == true)
           {
             LM_TMP(("VAL: ... and it may be compacted"));
-            char* compactedValue = orionldContextItemAliasLookup(orionldState.altContextP, aP->stringValue.c_str(), NULL, NULL);
+            char* compactedValue = orionldContextItemAliasLookup(orionldState.contextP, aP->stringValue.c_str(), NULL, NULL);
 
             if (compactedValue != NULL)
             {
@@ -551,7 +551,7 @@ KjNode* kjTreeFromQueryContextResponse(ConnectionInfo* ciP, bool oneHit, char* a
             //
             // Looking up short name for the sub-attribute
             //
-            mdName = orionldContextItemAliasLookup(orionldState.altContextP, mdName, &valueMayBeCompacted, NULL);
+            mdName = orionldContextItemAliasLookup(orionldState.contextP, mdName, &valueMayBeCompacted, NULL);
           }
 
           if (mdP->type != "")
@@ -590,7 +590,7 @@ KjNode* kjTreeFromQueryContextResponse(ConnectionInfo* ciP, bool oneHit, char* a
             case orion::ValueTypeString:
               if (valueMayBeCompacted == true)
               {
-                char* compactedValue = orionldContextItemAliasLookup(orionldState.altContextP, mdP->stringValue.c_str(), NULL, NULL);
+                char* compactedValue = orionldContextItemAliasLookup(orionldState.contextP, mdP->stringValue.c_str(), NULL, NULL);
 
                 if (compactedValue != NULL)
                   valueP = kjString(orionldState.kjsonP, valueFieldName, compactedValue);
@@ -638,7 +638,7 @@ KjNode* kjTreeFromQueryContextResponse(ConnectionInfo* ciP, bool oneHit, char* a
             case orion::ValueTypeString:
               if (valueMayBeCompacted == true)
               {
-                char* compactedValue = orionldContextItemAliasLookup(orionldState.altContextP, mdP->stringValue.c_str(), NULL, NULL);
+                char* compactedValue = orionldContextItemAliasLookup(orionldState.contextP, mdP->stringValue.c_str(), NULL, NULL);
 
                 if (compactedValue != NULL)
                   nodeP = kjString(orionldState.kjsonP, mdName, compactedValue);

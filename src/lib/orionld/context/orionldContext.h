@@ -241,7 +241,7 @@ extern OrionldContextItem* orionldContextItemLookup(OrionldAltContext* contextP,
 // This function looks for a ':' inside 'name' and if found, treats what's before the ':' as a prefix.
 // This prefix is looked up in the context and if found, the name is expanded, replacing the prefix (and the colon)
 // with the value of the context item found in the lookup.
-// 
+//
 // NOTE
 //   * URIs contain ':' but we don't want to expand 'urn', not' http', etc.
 //     So, if 'name' starts with 'urn:', or if "://" is found in 'name, then no prefix expansion is performed.

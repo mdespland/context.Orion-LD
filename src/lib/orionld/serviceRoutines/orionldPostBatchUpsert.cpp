@@ -385,7 +385,7 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
 
     mongoRequest.updateActionType = ActionTypeAppendStrict;
     entityIdP->id                 = entityId;
-    entityIdP->type               = orionldContextItemExpand(orionldState.altContextP, entityType, NULL, true, NULL);
+    entityIdP->type               = orionldContextItemExpand(orionldState.contextP, entityType, NULL, true, NULL);
     entityIdP->isPattern          = "false";
 
     if (kjTreeToContextElementAttributes(ciP, entityNodeP, createdAtP, modifiedAtP, ceP, &detail) == false)

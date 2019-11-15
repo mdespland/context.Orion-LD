@@ -51,7 +51,7 @@ bool orionldDeleteAttribute(ConnectionInfo* ciP)
   if ((strncmp(orionldState.wildcard[1], "http://", 7) == 0) || (strncmp(orionldState.wildcard[1], "https://", 8) == 0))
     attrNameP = orionldState.wildcard[1];
   else
-    attrNameP = orionldContextItemExpand(orionldState.altContextP, orionldState.wildcard[1], NULL, true, NULL);
+    attrNameP = orionldContextItemExpand(orionldState.contextP, orionldState.wildcard[1], NULL, true, NULL);
 
   //
   // Does the attribute to be deleted even exist?

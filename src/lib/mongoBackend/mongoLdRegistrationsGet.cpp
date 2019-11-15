@@ -34,7 +34,7 @@
 #include "orionld/common/orionldState.h"                       // orionldState
 #include "orionld/common/urlCheck.h"                           // urlCheck
 #include "orionld/common/orionldErrorResponse.h"               // orionldErrorResponseCreate
-#include "orionld/context/orionldContext.h"                    // 
+#include "orionld/context/orionldContext.h"                    // New @context implementation
 #include "mongoBackend/MongoGlobal.h"                          // getMongoConnection
 #include "mongoBackend/safeMongo.h"                            // moreSafe
 #include "mongoBackend/connectionOperations.h"                 // collectionRangedQuery
@@ -148,7 +148,7 @@ static bool uriParamTypeToFilter(mongo::BSONObjBuilder* queryBuilderP, char* typ
     }
     else
     {
-      char* typeExpanded = orionldContextItemExpand(orionldState.altContextP, type, NULL, true, NULL);
+      char* typeExpanded = orionldContextItemExpand(orionldState.contextP, type, NULL, true, NULL);
       bsonArray.append(typeExpanded);
     }
   }
@@ -196,7 +196,7 @@ static bool uriParamAttrsToFilter(mongo::BSONObjBuilder* queryBuilderP, char* at
     }
     else
     {
-      char* attrExpanded = orionldContextItemExpand(orionldState.altContextP, attr, NULL, true, NULL);
+      char* attrExpanded = orionldContextItemExpand(orionldState.contextP, attr, NULL, true, NULL);
       bsonArray.append(attrExpanded);
     }
   }

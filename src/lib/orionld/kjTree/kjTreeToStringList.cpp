@@ -36,7 +36,7 @@ extern "C"
 #include "orionld/common/CHECK.h"                              // CHECKx()
 #include "orionld/common/orionldState.h"                       // orionldState
 #include "orionld/common/orionldErrorResponse.h"               // orionldErrorResponseCreate
-#include "orionld/context/orionldContext.h"                    // 
+#include "orionld/context/orionldContext.h"                    // New context implementation
 #include "orionld/kjTree/kjTreeToStringList.h"                 // Own interface
 
 
@@ -52,7 +52,7 @@ bool kjTreeToStringList(ConnectionInfo* ciP, KjNode* kNodeP, std::vector<std::st
     char*   expanded;
 
     STRING_CHECK(attributeP, "String-List item");
-    expanded = orionldContextItemExpand(orionldState.altContextP, attributeP->value.s, NULL, true, NULL);
+    expanded = orionldContextItemExpand(orionldState.contextP, attributeP->value.s, NULL, true, NULL);
     LM_TMP(("SLIST: Called orionldContextItemExpand for '%s' -> '%s'", attributeP->value.s, expanded));
     stringListP->push_back(expanded);
   }

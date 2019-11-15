@@ -60,11 +60,8 @@ bool orionldGetEntity(ConnectionInfo* ciP)
   EntityId              entityId(orionldState.wildcard[0], "", "false", false);
   char*                 details;
 
-  LM_TMP(("BUG: context: %s", orionldState.altContextP->url));
-  orionldContextPresent("BUG", orionldState.altContextP);
-  
   LM_T(LmtServiceRoutine, ("In orionldGetEntity: %s", orionldState.wildcard[0]));
-  
+
   request.entityIdVector.push_back(&entityId);
 
   //

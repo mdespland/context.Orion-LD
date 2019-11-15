@@ -569,11 +569,11 @@ void exitFunc(void)
   }
 
 #if 0
-  if (orionldState.altContextP != NULL)
+  if (orionldState.contextP != NULL)
   {
-    free(orionldState.altContextP->url);  // Always allocated using 'malloc' ???
-    free(orionldState.altContextP);       // Always cloned using kjClone ???
-    orionldState.altContextP = NULL;
+    free(orionldState.contextP->url);  // Always allocated using 'malloc' ???
+    free(orionldState.contextP);       // Always cloned using kjClone ???
+    orionldState.contextP = NULL;
   }
 #endif
 }

@@ -135,7 +135,7 @@ typedef struct OrionldConnectionState
   char*                   link;
   bool                    linkHeaderAdded;
   bool                    noLinkHeader;
-  OrionldAltContext*      altContextP;                  // FIXME: rename to contextP
+  OrionldAltContext*      contextP;
   bool                    contextToBeFreed;
   ApiVersion              apiVersion;
   int                     requestNo;

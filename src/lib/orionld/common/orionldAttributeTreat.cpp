@@ -451,11 +451,11 @@ static bool atValueCheck(KjNode* atTypeNodeP, KjNode* atValueNodeP, char** title
 bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute* caP, KjNode** typeNodePP, char** detailP)
 {
   char* caName = kNodeP->name;
-  
+
   *detailP = (char*) "unknown error";
 
-  if (orionldState.altContextP == NULL)
-    orionldState.altContextP = orionldCoreContextP;
+  if (orionldState.contextP == NULL)
+    orionldState.contextP = orionldCoreContextP;
 
   LM_T(LmtPayloadCheck, ("Treating attribute '%s' (KjNode at %p)", caName, kNodeP));
 
@@ -497,7 +497,7 @@ bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute
     LM_TMP(("VEX: ------------------------------------------------------------------------------------------"));
     LM_TMP(("VEX: Calling orionldUriExpand for node '%s' is of type '%s'", kNodeP->name, kjValueType(kNodeP->type)));
 
-    longName = orionldContextItemExpand(orionldState.altContextP, kNodeP->name, &valueMayBeExpanded, true, NULL);
+    longName = orionldContextItemExpand(orionldState.contextP, kNodeP->name, &valueMayBeExpanded, true, NULL);
 
     if (valueMayBeExpanded)
       orionldValueExpand(kNodeP);
@@ -691,7 +691,7 @@ bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute
       //
       bool  valueMayBeExpanded  = false;
 
-      nodeP->name = orionldContextItemExpand(orionldState.altContextP, nodeP->name, &valueMayBeExpanded, true, NULL);
+      nodeP->name = orionldContextItemExpand(orionldState.contextP, nodeP->name, &valueMayBeExpanded, true, NULL);
       LM_TMP(("VEX: valueMayBeExpanded: %s", FT(valueMayBeExpanded)));
 
       if (valueMayBeExpanded == true)

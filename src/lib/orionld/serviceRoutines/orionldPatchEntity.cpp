@@ -110,7 +110,7 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
     {
       bool valueToBeExpanded = false;
 
-      attrNameP = orionldContextItemExpand(orionldState.altContextP, attrNodeP->name, &valueToBeExpanded, true, NULL);
+      attrNameP = orionldContextItemExpand(orionldState.contextP, attrNodeP->name, &valueToBeExpanded, true, NULL);
 
       if (valueToBeExpanded == true)
         orionldValueExpand(attrNodeP);

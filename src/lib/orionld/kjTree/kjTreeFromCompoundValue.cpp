@@ -50,7 +50,7 @@ static KjNode* kjTreeFromCompoundValue2(KjNode* parentP, orion::CompoundValueNod
   switch (compoundP->valueType)
   {
   case orion::ValueTypeString:
-    if ((valueMayBeCompacted == true) && ((compactedValue = orionldContextItemAliasLookup(orionldState.altContextP, compoundP->stringValue.c_str(), NULL, NULL)) != NULL))
+    if ((valueMayBeCompacted == true) && ((compactedValue = orionldContextItemAliasLookup(orionldState.contextP, compoundP->stringValue.c_str(), NULL, NULL)) != NULL))
       nodeP = kjString(orionldState.kjsonP, name, compactedValue);
     else
       nodeP = kjString(orionldState.kjsonP, name, compoundP->stringValue.c_str());
