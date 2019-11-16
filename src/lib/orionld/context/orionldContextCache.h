@@ -58,8 +58,40 @@ extern int               orionldContextCacheSlotIx;
 
 // -----------------------------------------------------------------------------
 //
+// orionldContextCacheInit -
+//
+extern void orionldContextCacheInit(void);
+
+
+
+// -----------------------------------------------------------------------------
+//
+// orionldContextCacheGet -
+//
+extern KjNode* orionldContextCacheGet(KjNode* arrayP);
+
+
+
+// -----------------------------------------------------------------------------
+//
 // orionldContextCachePresent -
 //
 extern void orionldContextCachePresent(const char* prefix, const char* info);
+
+
+
+// -----------------------------------------------------------------------------
+//
+// orionldContextCacheInsert -
+//
+extern void orionldContextCacheInsert(OrionldContext* contextP);
+
+
+
+// -----------------------------------------------------------------------------
+//
+// orionldContextCacheLookup -
+//
+extern OrionldContext* orionldContextCacheLookup(const char* url);
 
 #endif  // SRC_LIB_ORIONLD_CONTEXT_ORIONLDCONTEXTCACHE_H_

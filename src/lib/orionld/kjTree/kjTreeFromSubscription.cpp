@@ -24,22 +24,24 @@
 */
 extern "C"
 {
-#include "kjson/KjNode.h"                                      // KjNode
-#include "kjson/kjBuilder.h"                                   // kjObject, kjString, kjBoolean, ...
-#include "kjson/kjParse.h"                                     // kjParse
+#include "kjson/KjNode.h"                                        // KjNode
+#include "kjson/kjBuilder.h"                                     // kjObject, kjString, kjBoolean, ...
+#include "kjson/kjParse.h"                                       // kjParse
 }
 
-#include "logMsg/logMsg.h"                                     // LM_*
-#include "logMsg/traceLevels.h"                                // Lmt*
+#include "logMsg/logMsg.h"                                       // LM_*
+#include "logMsg/traceLevels.h"                                  // Lmt*
 
-#include "rest/ConnectionInfo.h"                               // ConnectionInfo
-#include "apiTypesV2/Subscription.h"                           // Subscription
-#include "orionld/common/numberToDate.h"                       // numberToDate
-#include "orionld/common/orionldErrorResponse.h"               // orionldErrorResponseCreate, OrionldInternalError
-#include "orionld/common/OrionldConnection.h"                  // orionldState
-#include "orionld/context/orionldCoreContext.h"                // orionldCoreContext
-#include "orionld/context/orionldContext.h"                    // orionldContextItemAliasLookup, ...
-#include "orionld/kjTree/kjTreeFromSubscription.h"             // Own interface
+#include "rest/ConnectionInfo.h"                                 // ConnectionInfo
+#include "apiTypesV2/Subscription.h"                             // Subscription
+#include "orionld/common/numberToDate.h"                         // numberToDate
+#include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate, OrionldInternalError
+#include "orionld/common/OrionldConnection.h"                    // orionldState
+#include "orionld/context/OrionldContext.h"                      // OrionldContext
+#include "orionld/context/orionldCoreContext.h"                  // orionldCoreContext
+#include "orionld/context/orionldContextCache.h"                 // orionldContextCacheLookup
+#include "orionld/context/orionldContext.h"                      // orionldContextItemAliasLookup, ...
+#include "orionld/kjTree/kjTreeFromSubscription.h"               // Own interface
 
 
 
@@ -183,7 +185,7 @@ KjNode* kjTreeFromSubscription(ConnectionInfo* ciP, ngsiv2::Subscription* subscr
   bool             watchedAttributesPresent = false;
   unsigned int     size;
   unsigned int     ix;
-  OrionldContext*  contextP = orionldContextLookup(subscriptionP->ldContext.c_str());
+  OrionldContext*  contextP = orionldContextCacheLookup(subscriptionP->ldContext.c_str());
 
   // id
   nodeP = kjString(orionldState.kjsonP, "id", subscriptionP->id.c_str());

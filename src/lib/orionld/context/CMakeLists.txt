@@ -24,6 +24,10 @@ SET (SOURCES
     orionldContext.cpp
     orionldCoreContext.cpp
     orionldContextCache.cpp
+    orionldContextPresent.cpp
+    orionldContextTreePresent.cpp
+    orionldContextHashTablesFill.cpp
+    orionldContextDownload.cpp
 )
 
 # Include directories

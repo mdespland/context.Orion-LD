@@ -39,6 +39,7 @@ extern "C"
 #include "orionld/common/QNode.h"                                // QNode
 #include "orionld/types/OrionldGeoJsonType.h"                    // OrionldGeoJsonType
 #include "orionld/types/OrionldPrefixCache.h"                    // OrionldPrefixCache
+#include "orionld/common/OrionldResponseBuffer.h"                // OrionldResponseBuffer
 #include "orionld/context/orionldContext.h"                      // OrionldContext
 
 
@@ -178,6 +179,7 @@ typedef struct OrionldConnectionState
   OrionldNotificationInfo notificationInfo[100];
   bool                    notify;
   OrionldPrefixCache      prefixCache;
+  OrionldResponseBuffer   httpResponse;
 
 #ifdef DB_DRIVER_MONGOC
   //
