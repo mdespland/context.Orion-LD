@@ -52,7 +52,6 @@ echo
 echo
 
 
-
 echo "02. Create entity E2 with same context but in Link header"
 echo "========================================================="
 payload='{
