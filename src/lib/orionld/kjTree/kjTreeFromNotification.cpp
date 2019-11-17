@@ -40,8 +40,8 @@ extern "C"
 #include "orionld/common/SCOMPARE.h"                             // SCOMPAREx
 #include "orionld/context/OrionldContext.h"                      // OrionldContext
 #include "orionld/context/orionldCoreContext.h"                  // ORIONLD_CORE_CONTEXT_URL
-#include "orionld/context/orionldContext.h"                      // orionldContextItemAliasLookup
-#include "orionld/context/orionldContextCache.h"                 // orionldContextCacheLookup
+#include "orionld/context/orionldContextItemAliasLookup.h"       // orionldContextItemAliasLookup
+#include "orionld/context/orionldContextCacheLookup.h"           // orionldContextCacheLookup
 #include "orionld/kjTree/kjTreeFromContextAttribute.h"           // kjTreeFromContextAttribute
 #include "orionld/kjTree/kjTreeFromNotification.h"               // Own interface
 

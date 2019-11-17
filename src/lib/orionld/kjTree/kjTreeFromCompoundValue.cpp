@@ -31,7 +31,7 @@ extern "C"
 
 #include "parse/CompoundValueNode.h"                           // CompoundValueNode
 #include "orionld/common/OrionldConnection.h"                  // orionldState
-#include "orionld/context/orionldContext.h"                    // orionldContextItemAliasLookup
+#include "orionld/context/orionldContextItemAliasLookup.h"     // orionldContextItemAliasLookup
 #include "orionld/kjTree/kjTreeFromCompoundValue.h"            // Own interface
 
 

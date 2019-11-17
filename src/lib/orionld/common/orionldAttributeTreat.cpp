@@ -36,8 +36,9 @@ extern "C"
 #include "rest/ConnectionInfo.h"                                 // ConnectionInfo
 #include "common/string.h"                                       // FT
 
-#include "orionld/context/orionldCoreContext.h"                  // orionldCoreContext
-#include "orionld/context/orionldContext.h"                      // orionldContextItemExpand, orionldValueExpand, orionldCoreContextP
+#include "orionld/context/orionldCoreContext.h"                  // orionldCoreContextP
+#include "orionld/context/orionldContextItemExpand.h"            // orionldContextItemExpand
+#include "orionld/context/orionldContextValueExpand.h"           // orionldContextValueExpand
 #include "orionld/common/geoJsonCheck.h"                         // geoJsonCheck
 #include "orionld/common/orionldState.h"                         // orionldState
 #include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate
@@ -500,7 +501,7 @@ bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute
     longName = orionldContextItemExpand(orionldState.contextP, kNodeP->name, &valueMayBeExpanded, true, NULL);
 
     if (valueMayBeExpanded)
-      orionldValueExpand(kNodeP);
+      orionldContextValueExpand(kNodeP);
 
     kNodeP->name = longName;
     caP->name    = longName;
@@ -695,7 +696,7 @@ bool orionldAttributeTreat(ConnectionInfo* ciP, KjNode* kNodeP, ContextAttribute
       LM_TMP(("VEX: valueMayBeExpanded: %s", FT(valueMayBeExpanded)));
 
       if (valueMayBeExpanded == true)
-        orionldValueExpand(nodeP);
+        orionldContextValueExpand(nodeP);
 
       if (caP->metadataVector.lookupByName(nodeP->name) != NULL)
       {

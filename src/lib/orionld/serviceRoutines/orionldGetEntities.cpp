@@ -47,10 +47,9 @@ extern "C"
 #include "orionld/kjTree/kjTreeFromQueryContextResponse.h"     // kjTreeFromQueryContextResponse
 #include "orionld/context/orionldCoreContext.h"                // orionldDefaultUrl
 #include "orionld/common/orionldErrorResponse.h"               // orionldErrorResponseCreate
-#include "orionld/context/orionldContext.h"                    // orionldContextItemExpand
+#include "orionld/context/orionldContextItemExpand.h"          // orionldContextItemExpand
 #include "orionld/serviceRoutines/orionldGetEntities.h"        // Own Interface
 
-extern void debugHashValue(const char* prefix, const char* name);
 
 
 // ----------------------------------------------------------------------------
@@ -328,7 +327,6 @@ bool orionldGetEntities(ConnectionInfo* ciP)
     }
   }
 
-  debugHashValue("CATEGORY-1", "category");
 #if NGSILD_Q_FILTER
   if (q != NULL)
   {
@@ -340,7 +338,6 @@ bool orionldGetEntities(ConnectionInfo* ciP)
     QNode* lexList;
     QNode* qTree;
 
-  debugHashValue("CATEGORY-2", "category");
     if ((lexList = qLex(q, &title, &detail)) == NULL)
     {
       LM_W(("Bad Input (qLex: %s: %s)", title, detail));
@@ -349,7 +346,6 @@ bool orionldGetEntities(ConnectionInfo* ciP)
       return false;
     }
 
-  debugHashValue("CATEGORY-3", "category");
     if ((qTree = qParse(lexList, &title, &detail)) == NULL)
     {
       LM_W(("Bad Input (qParse: %s: %s)", title, detail));
@@ -361,7 +357,6 @@ bool orionldGetEntities(ConnectionInfo* ciP)
     orionldState.qMongoFilterP = new mongo::BSONObj;
 
     LM_TMP(("Q: Calling qTreeToBsonObj"));
-  debugHashValue("CATEGORY-4", "category");
     mongo::BSONObjBuilder objBuilder;
     if (qTreeToBsonObj(qTree, &objBuilder, &title, &detail) == false)
     {
@@ -370,7 +365,6 @@ bool orionldGetEntities(ConnectionInfo* ciP)
       parseData.qcr.res.release();
       return false;
     }
-  debugHashValue("CATEGORY-5", "category");
 
 #if 0
     LM_TMP(("Q: Setting qMongoFilterP: %s (DESTRUCTIVE!!!)", objBuilder.obj().toString().c_str()));
@@ -532,7 +526,6 @@ bool orionldGetEntities(ConnectionInfo* ciP)
   }
 #endif
 
-  debugHashValue("CATEGORY-before-postQueryContext", "category");
   // Call standard op postQueryContext
   std::vector<std::string>  compV;    // Not used but part of signature for postQueryContext
   std::string               answer = postQueryContext(ciP, 0, compV, &parseData);
@@ -543,9 +536,7 @@ bool orionldGetEntities(ConnectionInfo* ciP)
   ciP->httpStatusCode       = SccOk;
 
   LM_TMP(("CATEGORY: Calling kjTreeFromQueryContextResponse"));
-  debugHashValue("CATEGORY-before", "category");
   orionldState.responseTree = kjTreeFromQueryContextResponse(ciP, false, NULL, keyValues, &parseData.qcrs.res);
-  debugHashValue("CATEGORY-after", "category");
 
   return true;
 }

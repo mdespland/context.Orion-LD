@@ -39,8 +39,8 @@ extern "C"
 #include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate, OrionldInternalError
 #include "orionld/common/OrionldConnection.h"                    // orionldState
 #include "orionld/context/OrionldContext.h"                      // OrionldContext
-#include "orionld/context/orionldContext.h"                      // orionldContextItemAliasLookup
-#include "orionld/context/orionldContextCache.h"                 // orionldContextCacheLookup
+#include "orionld/context/orionldContextItemAliasLookup.h"       // orionldContextItemAliasLookup
+#include "orionld/context/orionldContextCacheLookup.h"           // orionldContextCacheLookup
 #include "orionld/kjTree/kjTreeFromRegistration.h"               // Own interface
 
 

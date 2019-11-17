@@ -36,7 +36,7 @@ extern "C"
 #include "orionld/common/CHECK.h"                              // CHECKx()
 #include "orionld/common/orionldState.h"                       // orionldState
 #include "orionld/common/orionldErrorResponse.h"               // orionldErrorResponseCreate
-#include "orionld/context/orionldContext.h"                    // New context implementation
+#include "orionld/context/orionldContextItemExpand.h"          // orionldContextItemExpand
 #include "orionld/kjTree/kjTreeToStringList.h"                 // Own interface
 
 

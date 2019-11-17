@@ -36,11 +36,11 @@ extern "C"
 #include "apiTypesV2/Subscription.h"                             // Subscription
 #include "orionld/common/numberToDate.h"                         // numberToDate
 #include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate, OrionldInternalError
-#include "orionld/common/OrionldConnection.h"                    // orionldState
+#include "orionld/common/orionldState.h"                         // orionldState
 #include "orionld/context/OrionldContext.h"                      // OrionldContext
 #include "orionld/context/orionldCoreContext.h"                  // orionldCoreContext
-#include "orionld/context/orionldContextCache.h"                 // orionldContextCacheLookup
-#include "orionld/context/orionldContext.h"                      // orionldContextItemAliasLookup, ...
+#include "orionld/context/orionldContextCacheLookup.h"           // orionldContextCacheLookup
+#include "orionld/context/orionldContextItemAliasLookup.h"       // orionldContextItemAliasLookup
 #include "orionld/kjTree/kjTreeFromSubscription.h"               // Own interface
 
 

@@ -46,8 +46,8 @@ extern "C"
 #include "mongoBackend/dbConstants.h"
 
 #ifdef ORIONLD
-#include "orionld/common/orionldState.h"            // orionldState
-#include "orionld/context/orionldContext.h"         // orionldContextItemExpand
+#include "orionld/common/orionldState.h"                // orionldState
+#include "orionld/context/orionldContextItemExpand.h"   // orionldContextItemExpand
 #endif
 #include "rest/StringFilter.h"
 

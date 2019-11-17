@@ -47,7 +47,7 @@ extern "C"
 #include "orionld/common/OrionldConnection.h"                  // Global vars: orionldState, kjson, kalloc, kallocBuffer, ...
 #include "orionld/common/urlCheck.h"                           // urlCheck
 #include "orionld/context/orionldCoreContext.h"                // orionldCoreContext, ORIONLD_CORE_CONTEXT_URL
-#include "orionld/context/orionldContext.h"                    // New @context implementation
+#include "orionld/context/orionldContextInit.h"                // orionldContextInit
 #include "orionld/rest/OrionLdRestService.h"                   // OrionLdRestService, ORION_LD_SERVICE_PREFIX_LEN
 #include "orionld/rest/temporaryErrorPayloads.h"               // Temporary Error Payloads
 #include "orionld/serviceRoutines/orionldPostEntities.h"       // orionldPostEntities

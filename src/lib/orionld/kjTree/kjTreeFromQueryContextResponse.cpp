@@ -42,9 +42,10 @@ extern "C"
 #include "orionld/common/numberToDate.h"                       // numberToDate
 #include "orionld/common/httpStatusCodeToOrionldErrorType.h"   // httpStatusCodeToOrionldErrorType
 #include "orionld/common/SCOMPARE.h"                           // SCOMPAREx
-#include "orionld/common/OrionldConnection.h"                  // orionldState
-#include "orionld/context/orionldContext.h"                    // orionldContextItemExpand, orionldContextItemAliasLookup
+#include "orionld/common/orionldState.h"                       // orionldState
 #include "orionld/context/orionldCoreContext.h"                // orionldCoreContext
+#include "orionld/context/orionldContextItemExpand.h"          // orionldContextItemExpand
+#include "orionld/context/orionldContextItemAliasLookup.h"     // orionldContextItemAliasLookup
 #include "orionld/kjTree/kjTreeFromContextAttribute.h"         // kjTreeFromContextAttribute
 #include "orionld/kjTree/kjTreeFromContextContextAttribute.h"  // kjTreeFromContextContextAttribute
 #include "orionld/kjTree/kjTreeFromCompoundValue.h"            // kjTreeFromCompoundValue

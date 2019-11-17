@@ -27,11 +27,6 @@
 */
 #include <semaphore.h>                                           // sem_t, sem_init, sem_wait, sem_post
 
-extern "C"
-{
-#include "kjson/KjNode.h"                                        // KjNode
-}
-
 #include "orionld/context/OrionldContext.h"                      // OrionldContext
 
 
@@ -53,45 +48,5 @@ extern OrionldContext*   orionldContextCacheArray[100];  // When 100 is not enou
 extern OrionldContext**  orionldContextCache;
 extern int               orionldContextCacheSlots;
 extern int               orionldContextCacheSlotIx;
-
-
-
-// -----------------------------------------------------------------------------
-//
-// orionldContextCacheInit -
-//
-extern void orionldContextCacheInit(void);
-
-
-
-// -----------------------------------------------------------------------------
-//
-// orionldContextCacheGet -
-//
-extern KjNode* orionldContextCacheGet(KjNode* arrayP);
-
-
-
-// -----------------------------------------------------------------------------
-//
-// orionldContextCachePresent -
-//
-extern void orionldContextCachePresent(const char* prefix, const char* info);
-
-
-
-// -----------------------------------------------------------------------------
-//
-// orionldContextCacheInsert -
-//
-extern void orionldContextCacheInsert(OrionldContext* contextP);
-
-
-
-// -----------------------------------------------------------------------------
-//
-// orionldContextCacheLookup -
-//
-extern OrionldContext* orionldContextCacheLookup(const char* url);
 
 #endif  // SRC_LIB_ORIONLD_CONTEXT_ORIONLDCONTEXTCACHE_H_

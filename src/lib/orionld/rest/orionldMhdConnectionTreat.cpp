@@ -52,8 +52,9 @@ extern "C"
 #include "orionld/common/uuidGenerate.h"                         // uuidGenerate
 #include "orionld/common/orionldEntityPayloadCheck.h"            // orionldValidName  - FIXME: Own file for "orionldValidName()"!
 #include "orionld/context/orionldCoreContext.h"                  // ORIONLD_CORE_CONTEXT_URL
-#include "orionld/context/orionldContextCache.h"                 // orionldContextCachePresent
-#include "orionld/context/orionldContext.h"                      // New @context implementation
+#include "orionld/context/orionldContextCachePresent.h"          // orionldContextCachePresent
+#include "orionld/context/orionldContextFromUrl.h"               // orionldContextFromUrl
+#include "orionld/context/orionldContextFromTree.h"              // orionldContextFromTree
 #include "orionld/serviceRoutines/orionldBadVerb.h"              // orionldBadVerb
 #include "orionld/rest/orionldServiceInit.h"                     // orionldRestServiceV
 #include "orionld/rest/orionldServiceLookup.h"                   // orionldServiceLookup
@@ -522,7 +523,7 @@ static bool linkHeaderCheck(ConnectionInfo* ciP)
   }
 
 #ifdef OLD_CONTEXT_ALGORITHM
-  if ((orionldState.contextP = orionldContextCreateFromUrl(ciP, orionldState.link, OrionldUserContext, &details)) == NULL)
+  if ((orionldState.contextP = orionldContextFromUrl(ciP, orionldState.link, OrionldUserContext, &details)) == NULL)
   {
     orionldErrorResponseCreate(OrionldBadRequestData, "Failure to create context from URL", details);
     ciP->httpStatusCode = SccBadRequest;
@@ -538,7 +539,7 @@ static bool linkHeaderCheck(ConnectionInfo* ciP)
   char*                  url = kaStrdup(&kalloc, orionldState.link);
   OrionldProblemDetails  pd;
 
-  LM_TMP(("CTX: Context from HTTP Link header: %s - calling orionldContextCreateFromUrl", url));
+  LM_TMP(("CTX: Context from HTTP Link header: %s - calling orionldContextFromUrl", url));
   orionldState.contextP = orionldContextFromUrl(url, &pd);
   if (orionldState.contextP == NULL)
   {
@@ -660,8 +661,8 @@ static void contextToPayload(void)
 //   10. Check the Accept header and decide output MIME-type
 //   11. Make sure the HTTP Header "Link" is valid
 //   12. Check the @context in HTTP Header
-//   13. if (Link):     orionldState.contextP = orionldContextCreateFromUrl()
-//   14. if (@context): orionldState.contextP orionldContextCreateFromTree()
+//   13. if (Link):     orionldState.contextP = orionldContextFromUrl()
+//   14. if (@context): orionldState.contextP orionldContextFromTree()
 //   15. if (@context != SimpleString): Create OrionldContext with 13|14
 //   16. if (@context != SimpleString): Insert context in context cache
 //   17. Call the SERVICE ROUTINE

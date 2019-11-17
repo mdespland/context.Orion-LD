@@ -21,13 +21,32 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 SET (SOURCES
-    orionldContext.cpp
     orionldCoreContext.cpp
+    orionldContextCreate.cpp
+    orionldContextInit.cpp
     orionldContextCache.cpp
     orionldContextPresent.cpp
     orionldContextTreePresent.cpp
     orionldContextHashTablesFill.cpp
     orionldContextDownload.cpp
+    orionldContextItemAliasLookup.cpp
+    orionldContextItemValueLookup.cpp
+    orionldContextPrefixExpand.cpp
+    orionldContextItemLookup.cpp
+    orionldContextValueExpand.cpp
+    orionldContextItemExpand.cpp
+    orionldContextFromBuffer.cpp
+    orionldContextFromUrl.cpp
+    orionldContextSimplify.cpp
+    orionldContextFromTree.cpp
+    orionldContextFromObject.cpp
+    orionldContextCacheInsert.cpp
+    orionldContextUrlGenerate.cpp
+    orionldContextFromArray.cpp
+    orionldContextCacheInit.cpp
+    orionldContextCacheLookup.cpp
+    orionldContextCachePresent.cpp
+    orionldContextCacheGet.cpp
 )
 
 # Include directories

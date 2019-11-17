@@ -54,7 +54,7 @@ extern "C"
 #include "orionld/common/orionldState.h"                                   // orionldState
 #include "orionld/common/orionldAttributeTreat.h"                          // orionldAttributeTreat
 #include "orionld/context/orionldCoreContext.h"                            // orionldDefaultUrl, orionldCoreContext
-#include "orionld/context/orionldContext.h"                                // orionldContextItemExpand
+#include "orionld/context/orionldContextItemExpand.h"                      // orionldContextItemExpand
 #include "orionld/kjTree/kjStringValueLookupInArray.h"                     // kjStringValueLookupInArray
 #include "orionld/serviceRoutines/orionldPostBatchUpsert.h"                // Own Interface
 

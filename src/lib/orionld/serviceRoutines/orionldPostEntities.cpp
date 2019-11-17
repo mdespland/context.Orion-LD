@@ -54,7 +54,7 @@ extern "C"
 #include "orionld/common/orionldState.h"                         // orionldState
 #include "orionld/common/orionldAttributeTreat.h"                // orionldAttributeTreat
 #include "orionld/common/orionldEntityPayloadCheck.h"            // orionldEntityPayloadCheck
-#include "orionld/context/orionldContext.h"                      // orionldContextItemExpand
+#include "orionld/context/orionldContextItemExpand.h"            // orionldContextItemExpand
 #include "orionld/serviceRoutines/orionldPostEntities.h"         // Own interface
 
 

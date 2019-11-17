@@ -109,14 +109,12 @@ extern "C"
 #include "logSummary/logSummary.h"
 
 #include "orionld/common/orionldState.h"                    // orionldState, kalloc, ...
-#include "orionld/context/orionldCoreContext.h"             // orionldCoreContext
 #include "orionld/rest/orionldServiceInit.h"                // orionldServiceInit
 #include "orionld/db/dbInit.h"                              // dbInit
 
 #include "orionld/version.h"
 #include "orionld/orionRestServices.h"
 #include "orionld/orionldRestServices.h"
-#include "orionld/context/orionldContext.h"                 // New @context implementation
 
 using namespace orion;
 

@@ -39,6 +39,7 @@ extern "C"
 #include "orionld/context/OrionldContext.h"                      // OrionldContext, OrionldContextHashTables
 #include "orionld/context/orionldContextCache.h"                 // ORIONLD_CONTEXT_CACHE_HASH_ARRAY_SIZE
 #include "orionld/context/OrionldContextItem.h"                  // OrionldContextItem
+#include "orionld/context/orionldContextPrefixExpand.h"          // orionldContextPrefixExpand
 #include "orionld/context/orionldContextHashTablesFill.h"        // Own interface
 
 

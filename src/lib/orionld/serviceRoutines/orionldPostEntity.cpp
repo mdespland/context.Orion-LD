@@ -53,7 +53,9 @@ extern "C"
 #include "orionld/common/eqForDot.h"                             // eqForDot
 #include "orionld/db/dbEntityLookup.h"                           // dbEntityLookup
 #include "orionld/db/dbEntityUpdate.h"                           // dbEntityUpdate
-#include "orionld/context/orionldContext.h"                      // orionldContextItemExpand, orionldValueExpand, orionldContextItemAliasLookup
+#include "orionld/context/orionldContextItemExpand.h"            // orionldContextItemExpand
+#include "orionld/context/orionldContextValueExpand.h"           // orionldContextValueExpand
+#include "orionld/context/orionldContextItemAliasLookup.h"       // orionldContextItemAliasLookup
 #include "orionld/serviceRoutines/orionldPostEntity.h"           // Own Interface
 
 
@@ -685,7 +687,7 @@ static bool expandAttrNames(KjNode* treeP, char** detailsP)
     // Expand the value, if necessary (if the @context says so)
     //
     if (valueToBeExpanded == true)
-      orionldValueExpand(attrP);
+      orionldContextValueExpand(attrP);
 
 
     //
@@ -711,7 +713,7 @@ static bool expandAttrNames(KjNode* treeP, char** detailsP)
       // Expand the value, if ...
       //
       if (valueToBeExpanded == true)
-        orionldValueExpand(subAttrP);
+        orionldContextValueExpand(subAttrP);
     }
   }
 

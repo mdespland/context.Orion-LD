@@ -40,7 +40,7 @@ extern "C"
 #include "orionld/types/OrionldGeoJsonType.h"                    // OrionldGeoJsonType
 #include "orionld/types/OrionldPrefixCache.h"                    // OrionldPrefixCache
 #include "orionld/common/OrionldResponseBuffer.h"                // OrionldResponseBuffer
-#include "orionld/context/orionldContext.h"                      // OrionldContext
+#include "orionld/context/OrionldContext.h"                      // OrionldContext
 
 
 

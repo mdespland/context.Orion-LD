@@ -34,7 +34,7 @@
 #include "orionld/common/orionldState.h"                       // orionldState
 #include "orionld/common/urlCheck.h"                           // urlCheck
 #include "orionld/common/orionldErrorResponse.h"               // orionldErrorResponseCreate
-#include "orionld/context/orionldContext.h"                    // New @context implementation
+#include "orionld/context/orionldContextItemExpand.h"          // orionldContextItemExpand
 #include "mongoBackend/MongoGlobal.h"                          // getMongoConnection
 #include "mongoBackend/safeMongo.h"                            // moreSafe
 #include "mongoBackend/connectionOperations.h"                 // collectionRangedQuery

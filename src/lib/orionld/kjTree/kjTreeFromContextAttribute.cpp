@@ -37,7 +37,8 @@ extern "C"
 #include "rest/httpHeaderAdd.h"                                // httpHeaderAdd
 #include "ngsi/ContextAttribute.h"                             // ContextAttribute
 #include "orionld/common/orionldState.h"                       // orionldState
-#include "orionld/context/orionldContext.h"                    // New @context implementation
+#include "orionld/context/OrionldContext.h"                    // OrionldContext
+#include "orionld/context/orionldContextItemAliasLookup.h"     // orionldContextItemAliasLookup
 #include "orionld/kjTree/kjTreeFromCompoundValue.h"            // kjTreeFromCompoundValue
 #include "orionld/kjTree/kjTreeFromContextAttribute.h"         // Own interface
 

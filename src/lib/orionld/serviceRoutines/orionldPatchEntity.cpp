@@ -42,7 +42,8 @@ extern "C"
 #include "orionld/common/OrionldConnection.h"                    // orionldState
 #include "orionld/common/SCOMPARE.h"                             // SCOMPAREx
 #include "orionld/common/orionldAttributeTreat.h"                // orionldAttributeTreat
-#include "orionld/context/orionldContext.h"                      // orionldContextItemExpand, orionldValueExpand
+#include "orionld/context/orionldContextItemExpand.h"            // orionldContextItemExpand
+#include "orionld/context/orionldContextValueExpand.h"           // orionldContextValueExpand
 #include "orionld/kjTree/kjStringValueLookupInArray.h"           // kjStringValueLookupInArray
 #include "orionld/serviceRoutines/orionldPatchEntity.h"          // Own Interface
 
@@ -113,7 +114,7 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
       attrNameP = orionldContextItemExpand(orionldState.contextP, attrNodeP->name, &valueToBeExpanded, true, NULL);
 
       if (valueToBeExpanded == true)
-        orionldValueExpand(attrNodeP);
+        orionldContextValueExpand(attrNodeP);
     }
 
     if (kjStringValueLookupInArray(attrNamesArrayP, attrNameP) == NULL)
