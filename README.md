@@ -27,23 +27,25 @@ A Test Suite for NGSI-LD can be found [here](https://github.com/fiware/NGSI-LD_T
 
 For full Orion documentation, please check Orion's [README.md](https://github.com/telefonicaid/fiware-orion)
 
-(The content of this repo may eventually be merged into the main Orion development line)
+The current state of the implementation is found [here](doc/manuals-ld/progress.md).
 
-The current state of the implementation is found [here](doc/manuals/orionld-progress.md).
+An installation guide is found [here](doc/manuals-ld/installation-guide.md)
 
 ## External Libraries
-The LD part of orionld depend on the following external libraries:
+The LD part of orionld depends on the following external libraries:
 * microhttpd
 * mongo client library (C++ Legacy driver)
 * libcurl
+* libuuid
 * kbase
 * klog
 * kalloc
+* khash
 * kjson
 
 The "heart" of the linked-data extension of orionld is the _kjson_ library.
 kjson takes care of the parsing of incoming JSON and transforms the textual input as a tree of KjNode structs.
-In the case of entities, the tree is basically a linked list of attributes (id and type are some kind of attributes of the entity, right?)
+A KjNode tree is basically a linked list of attributes (id and type are some kind of attributes of the entity, right?)
 that can have children, the metadata. In NGSI-LD the metadata takes another name, namely Property-of-Property, or Property-of-Relationhsip, or ...
 
 But, trees based on the KjNode structure isn't just for the incoming payload, but also for:
