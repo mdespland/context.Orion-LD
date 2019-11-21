@@ -265,7 +265,8 @@ void orionldServiceInit(OrionLdRestServiceSimplifiedVector* restServiceVV, int v
 
 
   //
-  // Set up the global kjson instance with preallocated kalloc buffer
+  // Initialize the KJSON library
+  // This sets up the global kjson instance with preallocated kalloc buffer
   //
   kjsonP = kjBufferCreate(&kjson, &kalloc);
 

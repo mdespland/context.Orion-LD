@@ -132,7 +132,7 @@ To download, build and install:
 
 ```bash
 sudo mkdir /opt/mongoclient
-sudo chown $USER:$GROUP /opt/mongoclient  # (*)
+sudo chown $USER:$GROUP /opt/mongoclient  # (1)
 cd /opt/mongoclient
 wget https://github.com/mongodb/mongo-cxx-driver/archive/legacy-1.1.2.tar.gz
 tar xfvz legacy-1.1.2.tar.gz
@@ -140,7 +140,7 @@ cd mongo-cxx-driver-legacy-1.1.2
 scons --disable-warnings-as-errors --ssl --use-sasl-client
 sudo scons install --prefix=/usr/local --disable-warnings-as-errors --ssl --use-sasl-client
 ```
-(*) To make you the owner of a file, you need to state your username and group.
+(1) To make you the owner of a file, you need to state your username and group.
     The env var **USER** already exists, but if you want to cut 'n paste this "sudo chown" command, you'll need to create the env var **GROUP**, to reflect your group. In my case, I do this:
 ```bash
 export GROUP=kz
