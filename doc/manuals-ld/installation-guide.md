@@ -19,13 +19,54 @@ While Orion-LD works just fine also in CentOS, Debian, etc, or, other versions o
 
 ### Docker Images
 Docker images for Ubuntu and CentOS are produced for each Pull Request merged into the `develop` branch.
-[ Jason, could you describe where to find them, please? ]
+To create and run the Orion-LD Docker image, it is necessary to have [Docker](https://www.docker.com/).
+and [Docker Compose](https://docs.docker.com/compose) installed. A sample `docker-compose.yml` can be found below:
 
-For the alpha release, Docker images for Ubuntu and CentOS are found [here](http://x.y.z/).
+```yaml
+version: "3.5"
+services:
+  # Orion is the context broker
+  orion:
+    image: fiware/orion-ld
+    hostname: orion
+    container_name: fiware-orion
+    depends_on:
+      - mongo-db
+     expose:
+      - "1026"
+    ports:
+      - "1026:1026" 
+    command: -dbhost mongo-db -logLevel DEBUG
+    healthcheck:
+      test: curl --fail -s http://orion:1026/version || exit 1
+
+  # Databases
+  mongo-db:
+    image: mongo:3.6
+    hostname: mongo-db
+    container_name: db-mongo
+    expose:
+      - "27017"
+    ports:
+      - "27017:27017" 
+    command: --nojournal
+    volumes:
+      - mongo-db:/data
+      
+volumes:
+  mongo-db: ~
+```
+
+We also provide Centos and Debian based Dockerfiles to facilitate the building of your own images. 
+They can be found in the following [location](https://github.com/FIWARE/context.Orion-LD/tree/develop/docker) 
+along  with the documentation describing how to use it.
+
+A public image is also available on [Docker Hub](https://hub.docker.com/r/fiware/orion-ld/) 
 
 ### Building from source code
 First thing to do is to install the operating system.
 In order to write this guide, Ubuntu 18.04.3 LTS (Desktop image) was downloaded from [here](http://releases.ubuntu.com/18.04/), and installed as a virtual machine under VMWare.
+
 
 #### Installation of dependency packages
 
@@ -38,18 +79,21 @@ To be installed via package manager:
 * libuuid
 
 Now, a whole bunch of packages are to be installed. Personally I prefer *aptitude* over *apt-get*, so the first thing I do is to install *aptitude*:
-```
-  sudo apt-get install aptitude
+
+```bash
+sudo apt-get install aptitude
 ```
 
 Tools needed for compilation:
-```
-  sudo aptitude install build-essential cmake scons
+```bash
+sudo aptitude install build-essential cmake scons
 ```
 
 Libraries that aren't built from source code:
-```
-  sudo aptitude install libssl1.0-dev gnutls-dev libcurl4-gnutls-dev libsasl2-dev libgcrypt-dev uuid-dev libboost-dev libboost-regex-dev libboost-thread-dev libboost-filesystem-dev
+```bash
+sudo aptitude install libssl1.0-dev gnutls-dev libcurl4-gnutls-dev libsasl2-dev \
+                      libgcrypt-dev uuid-dev libboost-dev libboost-regex-dev libboost-thread-dev \
+                      libboost-filesystem-dev
 
 ```
 
@@ -69,13 +113,15 @@ Some libraries are built from source code and those sources must be downloaded a
 For those libraries that are cloned repositories, I myself keep all repositories in a directory I call *git* directly under my home directory: `~/git`.
 This guide follows that example, so, let's start by creating the directory for repositories:
 
-```
-  mkdir ~/git
+
+```bash
+mkdir ~/git
 ```
 
 And, as `git` will be used, we might as well install it:
-```
-  sudo aptitude install git
+
+```bash
+sudo aptitude install git
 ```
 
 ##### Mongo Driver
@@ -83,20 +129,21 @@ As Orion-LD is based on Orion, and Orion uses the old Legacy C++ driver of the m
 Plans are to migrate, at least all the NGSI-LD requests to the newest C driver of the mongo client, but that work has still not commenced.
 
 To download, build and install:
-```
-  sudo mkdir /opt/mongoclient
-  sudo chown $USER:$GROUP /opt/mongoclient  (*)
-  cd /opt/mongoclient
-  wget https://github.com/mongodb/mongo-cxx-driver/archive/legacy-1.1.2.tar.gz
-  tar xfvz legacy-1.1.2.tar.gz
-  cd mongo-cxx-driver-legacy-1.1.2
-  scons --disable-warnings-as-errors --ssl --use-sasl-client
-  sudo scons install --prefix=/usr/local --disable-warnings-as-errors --ssl --use-sasl-client
+
+```bash
+sudo mkdir /opt/mongoclient
+sudo chown $USER:$GROUP /opt/mongoclient  # (*)
+cd /opt/mongoclient
+wget https://github.com/mongodb/mongo-cxx-driver/archive/legacy-1.1.2.tar.gz
+tar xfvz legacy-1.1.2.tar.gz
+cd mongo-cxx-driver-legacy-1.1.2
+scons --disable-warnings-as-errors --ssl --use-sasl-client
+sudo scons install --prefix=/usr/local --disable-warnings-as-errors --ssl --use-sasl-client
 ```
 [ (*) To make you the owner of a file, you need to state your username and group.
       The env var USER already exists, but if you want to cut 'n paste this "sudo chown" command, you'll need to create the env var GROUP, to reflect youre group. In my case, I do this:
-```
-      export GROUP=kz
+```bash
+export GROUP=kz
 ```
 ]
 After this, you should have the library *libmongoclient.a* under `/usr/local/lib/` and the header directory *mongo* under `/usr/local/include/`.
@@ -105,16 +152,17 @@ After this, you should have the library *libmongoclient.a* under `/usr/local/lib
 *libmicrohttpd* is the library that takes care of incoming connections and http/https.
 We use an older version of it, soon to be repaced by the latest release.
 This is how you install libmicrohttpd from source code:
-```
-  sudo mkdir /opt/libmicrohttpd
-  sudo chown $USER:$GROUP /opt/libmicrohttpd
-  cd /opt/libmicrohttpd
-  wget http://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-0.9.48.tar.gz
-  tar xvf libmicrohttpd-0.9.48.tar.gz
-  cd libmicrohttpd-0.9.48
-  ./configure --disable-messages --disable-postprocessor --disable-dauth
-  make
-  sudo make install
+
+```bash
+sudo mkdir /opt/libmicrohttpd
+sudo chown $USER:$GROUP /opt/libmicrohttpd
+cd /opt/libmicrohttpd
+wget http://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-0.9.48.tar.gz
+tar xvf libmicrohttpd-0.9.48.tar.gz
+cd libmicrohttpd-0.9.48
+./configure --disable-messages --disable-postprocessor --disable-dauth
+make
+sudo make install
 ```
 
 ##### rapidjson
@@ -122,35 +170,36 @@ This is how you install libmicrohttpd from source code:
 AS Orion-LD includes NGSI APIv2 as well, we need this library.
 Like libmicrohttpd, we use an older version of the library.
 This is	how to install it from source code:
-```
-  sudo mkdir /opt/rapidjson
-  sudo chown $USER:$GROUP /opt/rapidjson
-  cd /opt/rapidjson
-  wget https://github.com/miloyip/rapidjson/archive/v1.0.2.tar.gz
-  tar xfvz v1.0.2.tar.gz
-  sudo mv rapidjson-1.0.2/include/rapidjson/ /usr/local/include
+
+```bash
+sudo mkdir /opt/rapidjson
+sudo chown $USER:$GROUP /opt/rapidjson
+cd /opt/rapidjson
+wget https://github.com/miloyip/rapidjson/archive/v1.0.2.tar.gz
+tar xfvz v1.0.2.tar.gz
+sudo mv rapidjson-1.0.2/include/rapidjson/ /usr/local/include
 ```
 
 ##### kbase
 *kbase* is a collection of basic functionality, like string handling, that is used by the rest of the "K-libs".
 To download, build and install:
-```
-  cd ~/git
-  git clone https://gitlab.com/kzangeli/kbase.git
-  cd kbase
-  git checkout release/0.2
-  make install
+```bash
+cd ~/git
+git clone https://gitlab.com/kzangeli/kbase.git
+cd kbase
+git checkout release/0.2
+make install
 ```
 
 ##### klog
 *klog* is a library for logging, used by the rest of the "K-libs".
 To download, build and install:
-```
-  cd ~/git
-  git clone https://gitlab.com/kzangeli/klog.git
-  cd klog
-  git checkout release/0.2
-  make install
+```bash
+cd ~/git
+git clone https://gitlab.com/kzangeli/klog.git
+cd klog
+git checkout release/0.2
+make install
 ```
 
 
@@ -161,66 +210,70 @@ The portions cannot be freed, only the *big* buffers allocated via `malloc` and 
 For a context broker, that treats every request in a separate thread, this is ideal from a performance point of view.
 
 To download, build and install:
-```
-  cd ~/git
-  git clone https://gitlab.com/kzangeli/kalloc.git
-  cd kalloc
-  git checkout release/0.2
-  make install
+```bash
+cd ~/git
+git clone https://gitlab.com/kzangeli/kalloc.git
+cd kalloc
+git checkout release/0.2
+make install
 ```
 
-##### kjson  - ToDo: Move kjson/kjLog.h to klog
+##### kjson
+
 *kjson* is a JSON parser that builds a simple-to-use KjNode tree from the textual JSON input.
 It is very easy to use (linked lists) and many times faster than rapidjson, which APIv2 uses.
 The new implementation for NGSI-LD uses `kjson` instead of rapidjson.
 
 To download, build and install:
-```
-  cd ~/git
-  git clone https://gitlab.com/kzangeli/kjson.git
-  cd kjson
-  git checkout release/0.2
-  make install
+```bash
+cd ~/git
+git clone https://gitlab.com/kzangeli/kjson.git
+cd kjson
+git checkout release/0.2
+make install
 ```
 
 ##### khash
 *khash* is a library that provides a hash table implementation. This hash table is used for the Context Cache of Orion-LD.
 
 To download, build and install:
-```
-  cd ~/git
-  git clone https://gitlab.com/kzangeli/khash.git
-  cd khash
-  git checkout release/0.2
-  make install
+```bash
+cd ~/git
+git clone https://gitlab.com/kzangeli/khash.git
+cd khash
+git checkout release/0.2
+make install
 ```
 
 #### Source code of Orion-LD
 Now that we have all the dependencies installed, it's time to clone the Orion-LD repository:
+```bash
+cd ~/git
+git clone https://github.com/FIWARE/context.Orion-LD.git
+cd context.Orion-LD
+make install
 ```
-  cd ~/git
-  git clone https://github.com/FIWARE/context.Orion-LD.git
-  cd context.Orion-LD
-  make install
-```
+
 At the end of `make install`, the makefile wants to copy the executable (orionld) to /usr/bin, and more files under /usr.
 As the compilation hasn't been (and shouldn't be) run as root (sudo), these copies will fail.
 So, you have two options here:
-1. Create the files by hand, using `sudo` and then set yourself as owner of the files:
-```
-  sudo touch /usr/bin/orionld
-  sudo chown $USER:$GROUP /usr/bin/orionld
-  sudo touch /etc/init.d/orionld
-  sudo chown $USER:$GROUP /etc/init.d/orionld
-  sudo touch /etc/default/orionld
-  sudo chown $USER:$GROUP /etc/default/orionld
+
+&nbsp;1. Create the files by hand, using `sudo` and then set yourself as owner of the files:
+```bash
+sudo touch /usr/bin/orionld
+sudo chown $USER:$GROUP /usr/bin/orionld
+sudo touch /etc/init.d/orionld
+sudo chown $USER:$GROUP /etc/init.d/orionld
+sudo touch /etc/default/orionld
+sudo chown $USER:$GROUP /etc/default/orionld
 ```
 
-2. Run `sudo make install` and let the files be owned by root.
+&nbsp;2. Run `sudo make install` and let the files be owned by root.
 
 Personally I prefer option 1. I really dislike to use sudo.
 
-Voila, you now have *orionld*, the NGSI-LD Context Broker compiled, installed and ready to work!
+You now have *orionld*, the NGSI-LD Context Broker compiled, installed and ready to work!
+
 Except, of course, you need to install the MongoDB server as well.
 So far, we have only installed the mongo client library, so that *orionld* can speak to the MongoDB server.
 
@@ -230,19 +283,19 @@ For this, preser refer to the [MongoDB documentation](https://docs.mongodb.com/m
 The version 4.0 is recommended, but both older and newer should work just fine.
 
 This is an what the MongoDB documentation tells us to do to install MongoDB server 4.0 under Ubuntu 18.04:
-```
-  # Import the MongoDB public GPG Key
-  wget -qO - https://www.mongodb.org/static/pgp/server-4.0.asc | sudo apt-key add -
-  # Should respon with "OK"
+```bash
+# Import the MongoDB public GPG Key
+wget -qO - https://www.mongodb.org/static/pgp/server-4.0.asc | sudo apt-key add -
+# Should respon with "OK"
 
-  # Create the list file /etc/apt/sources.list.d/mongodb-org-4.2.list
-  echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.0.list
+# Create the list file /etc/apt/sources.list.d/mongodb-org-4.2.list
+echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.0.list
 
-  # Reload local package database
-  sudo apt-get update
+# Reload local package database
+sudo apt-get update
 
-  # Install the MongoDB packages
-  sudo apt-get install -y mongodb-org
+# Install the MongoDB packages
+sudo apt-get install -y mongodb-org
 ```
 
 For more detail on the installation process, or if something goes wrong, please refer to the [MongoDB documentation](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/)
@@ -251,37 +304,41 @@ For more detail on the installation process, or if something goes wrong, please 
 Now that you have everything installed the broker should work.
 To make sure, let's start it and run a few simple commands against it.
 First, make sure the MongoDB server is running:
-```
-  ps aux | grep mongodb
+```bash
+ps aux | grep mongodb
 ```
 
 Example output if MongDB *is* running:
-```
+```bash
 mongodb   27265  7.5  3.9 1115980 79720 ?       Ssl  11:34   0:00 /usr/bin/mongod --config /etc/mongod.conf
-
 ```
 
 If not running (no /usr/bin/mongod process found in the previous command), please start it:
-```
-  sudo service mongod start
+```bash
+sudo service mongod start
 ```
 
 You might want to look in the MongoDB documentation on how to make it start automatically on boot.
 
 Let's start the broker in foreground, in a separate window:
-```
-  orionld -fg
+```bash
+orionld -fg
 ```
 
 In another window, we send curl commands to the broker.
 First we need to install curl though :):
+```bash
+sudo aptitude install curl
+curl localhost:1026/ngsi-ld/ex/v1/version
 ```
-  sudo aptitude install curl
-  curl localhost:1026/ngsi-ld/ex/v1/version
-```
+
 You should see a response similar to this:
-```
+
+```bash
 kz@ubuntu:~$ curl localhost:1026/ngsi-ld/ex/v1/version
+```
+
+```json
 {
   "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld",
   "branch": "develop",
@@ -298,26 +355,30 @@ kz@ubuntu:~$ curl localhost:1026/ngsi-ld/ex/v1/version
   "Next File Descriptor": 18
 }
 ```
-You will also probably notice traces output in the brokers terminal.
+You will also probably notice traces output in the broker's terminal.
 
 Now let's create an entity:
-```
+
+```bash
   curl localhost:1026/ngsi-ld/v1/entities -d '{ "id": "urn:entities:E1", "type": "T", "P1": { "type": "Property", "value": 12 }}' -H 'Content-Type: application/json' --dump-header /tmp/httpHeaders.out
 ```
 *curl* only prints the payload data of the response on the screen, and as an Entity Creation _has no payload data_, you will see nothing (unless there is a nerror).
 You can check that the curl command worked by issuing the following command (right after the curl command):
+
+```bash
+echo $?
 ```
-  echo $?
-```
+
 *$?* is an environment variable that stores the return code of the last executed shell command.
 Zero means OK, anything else means an error.
 
 There is no payload data in the response, but, can see the HTTP headers of the response, as the option `--dump-header /tmp/httpHeaders.out` was used:
-```
-  cat /tmp/httpHeaders.out
+```bash
+cat /tmp/httpHeaders.out
 ```
 Expected HTTP headers:
-```
+
+```text
 HTTP/1.1 201 Created
 Connection: Keep-Alive
 Content-Length: 0
@@ -328,11 +389,12 @@ Date: Tue, 19 Nov 2019 18:56:01 GMT
 
 As may be extrapolated, there is no payload data in the response - only HTTP headers. That's why `--dump-header /tmp/httpHeaders.out` was added in the curl request andf the second command shows the context of the file.
 An entity has been created and we can see it in mongo, like this:
-```
+```sql
   echo 'db.entities.findOne()' | mongo mongodb://localhost:27017/orion
 ```
 Expected response:
-```
+
+```text
 kz@ubuntu:~$ echo 'db.entities.findOne()' | mongo mongodb://localhost:27017/orion
 MongoDB shell version v4.0.13
 connecting to: mongodb://localhost:27017/orion?gssapiServiceName=mongodb
@@ -371,12 +433,12 @@ How the context works is fully explained in documents and tutorials on NGSI-LD.
 I'd propose to start with the [Getting Started with Orion-LD Guide](doc/manuals-ld/getting-started-guide.md)
  
 Now, before we end, let's ask _the broker_ to give us the entity, instead of just peeking inside the database:
-```
+```bash
 curl 'localhost:1026/ngsi-ld/v1/entities?type=T&prettyPrint=yes&space=2'
 ```
 
 The output should be exactly like this:
-```
+```json
 [
   {
     "id": "urn:entities:E1",
@@ -401,15 +463,17 @@ present in the Core Context will override and item (with the same key/name) of t
 
 The context that was used to compose the response is returned in the HTTP *Link* header.
 If you ask curl for the HTTP headers, doing the GET operation like this:
-```
-  curl 'localhost:1026/ngsi-ld/v1/entities?type=T&prettyPrint=yes&space=2' --dump-header /tmp/httpHeaders.out
+```bash
+curl 'localhost:1026/ngsi-ld/v1/entities?type=T&prettyPrint=yes&space=2' --dump-header /tmp/httpHeaders.out
 ```
 and then view the HTTP headers:
-```
-  cat --dump-header /tmp/httpHeaders.out
+
+```bash
+cat --dump-header /tmp/httpHeaders.out
 ```
 you'll see this:
-```
+
+```text
 HTTP/1.1 200 OK
 Connection: Keep-Alive
 Content-Length: 120
@@ -420,11 +484,14 @@ Date: Wed, 20 Nov 2019 11:49:04 GMT
 *https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld* - that's the Core Context!
 
 If you instead ask the broker to return the context inside the payload data (which is done by setting the *Accept* header to *application/ld+json*):
-```
+
+```bash
 curl 'localhost:1026/ngsi-ld/v1/entities?type=T&prettyPrint=yes&space=2' -H "Accept: application/ld+json"
 ```
+
 then the response would be like this:
-```
+
+```json
 [
   {
     "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld",
@@ -439,5 +506,6 @@ then the response would be like this:
 ```
 and no HTTP Link header would be present.
 
-That's all fopr the installation guide.
+That's all for the installation guide.
+
 Now please continue to learn about Orion-LD with the (Getting Started Guide)[doc/manuals-ld/getting-started-guide.md].
