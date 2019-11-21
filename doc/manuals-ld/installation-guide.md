@@ -292,7 +292,7 @@ If using a docker image, the MongoDB server comes as part of the docker, but if 
 For this, preser refer to the [MongoDB documentation](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/).
 The version 4.0 is recommended, but both older and newer should work just fine.
 
-This is an what the MongoDB documentation tells us to do to install MongoDB server 4.0 under Ubuntu 18.04:
+This is what the MongoDB documentation tells us to do to install MongoDB server 4.0 under Ubuntu 18.04:
 
 ```bash
 # Import the MongoDB public GPG Key
@@ -312,7 +312,7 @@ sudo apt-get install -y mongodb-org
 For more detail on the installation process, or if something goes wrong, please refer to the [MongoDB documentation](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/)
 
 ### Sanity check
-Now that you have everything installed the broker should work.
+Now that you have everything installed, the broker should work.
 To make sure, let's start it and run a few simple commands against it.
 First, make sure the MongoDB server is running:
 
