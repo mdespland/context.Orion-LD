@@ -27,7 +27,7 @@ For the alpha release, Docker images for Ubuntu and CentOS are found [here](http
 First thing to do is to install the operating system.
 In order to write this guide, Ubuntu 18.04.3 LTS (Desktop image) was downloaded from [here](http://releases.ubuntu.com/18.04/), and installed as a virtual machine under VMWare.
 
-#### Install dependencies packages
+#### Installation of dependency packages
 
 To be installed via package manager:
 * boost (plenty of libraries)
@@ -42,7 +42,7 @@ Now, a whole bunch of packages are to be installed. Personally I prefer *aptitud
   sudo apt-get install aptitude
 ```
 
-Tools needed for ompilation:
+Tools needed for compilation:
 ```
   sudo aptitude install build-essential cmake scons
 ```

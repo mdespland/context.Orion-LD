@@ -37,9 +37,9 @@
 
 extern "C"
 {
+#include "kbase/kInit.h"                                       // kInit
 #include "kalloc/kaInit.h"                                     // kaInit
 #include "kalloc/kaBufferInit.h"                               // kaBufferInit
-#include "kjson/kjInit.h"                                      // kjInit
 #include "kjson/kjBufferCreate.h"                              // kjBufferCreate
 #include "kjson/kjParse.h"                                     // kjParse
 }
@@ -251,16 +251,17 @@ void orionldServiceInit(OrionLdRestServiceSimplifiedVector* restServiceVV, int v
 
 
   //
+  // Initialize the KBASE library
+  // This call redirects all log messaghes from the K-libs to the brokers log file.
+  //
+  kInit(libLogFunction);
+
+
+  //
   // Initialize the KALLOC library
   //
   kaInit(libLogFunction);
   kaBufferInit(&kalloc, kallocBuffer, sizeof(kallocBuffer), 32 * 1024, NULL, "Global KAlloc buffer");
-
-
-  //
-  // Initialize the KSON library
-  //
-  kjInit(libLogFunction);
 
 
   //
