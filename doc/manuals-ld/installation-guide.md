@@ -67,7 +67,6 @@ A public image is also available on [Docker Hub](https://hub.docker.com/r/fiware
 First thing to do is to install the operating system.
 In order to write this guide, Ubuntu 18.04.3 LTS (Desktop image) was downloaded from [here](http://releases.ubuntu.com/18.04/), and installed as a virtual machine under VMWare.
 
-
 #### Installation of dependency packages
 
 To be installed via package manager:
@@ -85,11 +84,13 @@ sudo apt-get install aptitude
 ```
 
 Tools needed for compilation:
+
 ```bash
 sudo aptitude install build-essential cmake scons
 ```
 
 Libraries that aren't built from source code:
+
 ```bash
 sudo aptitude install libssl1.0-dev gnutls-dev libcurl4-gnutls-dev libsasl2-dev \
                       libgcrypt-dev uuid-dev libboost-dev libboost-regex-dev libboost-thread-dev \
@@ -112,7 +113,6 @@ Some libraries are built from source code and those sources must be downloaded a
 
 For those libraries that are cloned repositories, I myself keep all repositories in a directory I call *git* directly under my home directory: `~/git`.
 This guide follows that example, so, let's start by creating the directory for repositories:
-
 
 ```bash
 mkdir ~/git
@@ -140,15 +140,16 @@ cd mongo-cxx-driver-legacy-1.1.2
 scons --disable-warnings-as-errors --ssl --use-sasl-client
 sudo scons install --prefix=/usr/local --disable-warnings-as-errors --ssl --use-sasl-client
 ```
-[ (*) To make you the owner of a file, you need to state your username and group.
-      The env var USER already exists, but if you want to cut 'n paste this "sudo chown" command, you'll need to create the env var GROUP, to reflect youre group. In my case, I do this:
+(*) To make you the owner of a file, you need to state your username and group.
+    The env var **USER** already exists, but if you want to cut 'n paste this "sudo chown" command, you'll need to create the env var **GROUP**, to reflect your group. In my case, I do this:
 ```bash
 export GROUP=kz
 ```
-]
+
 After this, you should have the library *libmongoclient.a* under `/usr/local/lib/` and the header directory *mongo* under `/usr/local/include/`.
 
 ##### libmicrohttpd
+
 *libmicrohttpd* is the library that takes care of incoming connections and http/https.
 We use an older version of it, soon to be repaced by the latest release.
 This is how you install libmicrohttpd from source code:
@@ -166,6 +167,7 @@ sudo make install
 ```
 
 ##### rapidjson
+
 *rapidjson* is the JSON parser used by the NGSI APIv2 implementation.
 AS Orion-LD includes NGSI APIv2 as well, we need this library.
 Like libmicrohttpd, we use an older version of the library.
@@ -181,8 +183,10 @@ sudo mv rapidjson-1.0.2/include/rapidjson/ /usr/local/include
 ```
 
 ##### kbase
+
 *kbase* is a collection of basic functionality, like string handling, that is used by the rest of the "K-libs".
 To download, build and install:
+
 ```bash
 cd ~/git
 git clone https://gitlab.com/kzangeli/kbase.git
@@ -192,8 +196,10 @@ make install
 ```
 
 ##### klog
+
 *klog* is a library for logging, used by the rest of the "K-libs".
 To download, build and install:
+
 ```bash
 cd ~/git
 git clone https://gitlab.com/kzangeli/klog.git
@@ -204,6 +210,7 @@ make install
 
 
 ##### kalloc
+
 *kalloc* is a library that provides faster allocation by avoiding calls to `malloc`.
 The library allocates *big* buffers by calling `malloc` and then gives out portions of this big allocated buffer.
 The portions cannot be freed, only the *big* buffers allocated via `malloc` and that is done when the kalloc instance dies.
@@ -234,6 +241,7 @@ make install
 ```
 
 ##### khash
+
 *khash* is a library that provides a hash table implementation. This hash table is used for the Context Cache of Orion-LD.
 
 To download, build and install:
@@ -246,7 +254,9 @@ make install
 ```
 
 #### Source code of Orion-LD
+
 Now that we have all the dependencies installed, it's time to clone the Orion-LD repository:
+
 ```bash
 cd ~/git
 git clone https://github.com/FIWARE/context.Orion-LD.git
@@ -258,7 +268,7 @@ At the end of `make install`, the makefile wants to copy the executable (orionld
 As the compilation hasn't been (and shouldn't be) run as root (sudo), these copies will fail.
 So, you have two options here:
 
-&nbsp;1. Create the files by hand, using `sudo` and then set yourself as owner of the files:
+&nbsp;1.  Create the files by hand, using `sudo` and then set yourself as owner of the files:
 ```bash
 sudo touch /usr/bin/orionld
 sudo chown $USER:$GROUP /usr/bin/orionld
@@ -268,9 +278,9 @@ sudo touch /etc/default/orionld
 sudo chown $USER:$GROUP /etc/default/orionld
 ```
 
-&nbsp;2. Run `sudo make install` and let the files be owned by root.
+&nbsp;2.  Run `sudo make install` and let the files be owned by root.
 
-Personally I prefer option 1. I really dislike to use sudo.
+Personally I prefer option 1. I really dislike to use `sudo`.
 
 You now have *orionld*, the NGSI-LD Context Broker compiled, installed and ready to work!
 
@@ -283,6 +293,7 @@ For this, preser refer to the [MongoDB documentation](https://docs.mongodb.com/m
 The version 4.0 is recommended, but both older and newer should work just fine.
 
 This is an what the MongoDB documentation tells us to do to install MongoDB server 4.0 under Ubuntu 18.04:
+
 ```bash
 # Import the MongoDB public GPG Key
 wget -qO - https://www.mongodb.org/static/pgp/server-4.0.asc | sudo apt-key add -
@@ -304,16 +315,19 @@ For more detail on the installation process, or if something goes wrong, please 
 Now that you have everything installed the broker should work.
 To make sure, let's start it and run a few simple commands against it.
 First, make sure the MongoDB server is running:
+
 ```bash
 ps aux | grep mongodb
 ```
 
 Example output if MongDB *is* running:
-```bash
+
+```text
 mongodb   27265  7.5  3.9 1115980 79720 ?       Ssl  11:34   0:00 /usr/bin/mongod --config /etc/mongod.conf
 ```
 
 If not running (no /usr/bin/mongod process found in the previous command), please start it:
+
 ```bash
 sudo service mongod start
 ```
@@ -373,6 +387,7 @@ echo $?
 Zero means OK, anything else means an error.
 
 There is no payload data in the response, but, can see the HTTP headers of the response, as the option `--dump-header /tmp/httpHeaders.out` was used:
+
 ```bash
 cat /tmp/httpHeaders.out
 ```
@@ -389,6 +404,7 @@ Date: Tue, 19 Nov 2019 18:56:01 GMT
 
 As may be extrapolated, there is no payload data in the response - only HTTP headers. That's why `--dump-header /tmp/httpHeaders.out` was added in the curl request andf the second command shows the context of the file.
 An entity has been created and we can see it in mongo, like this:
+
 ```sql
   echo 'db.entities.findOne()' | mongo mongodb://localhost:27017/orion
 ```
@@ -424,6 +440,7 @@ MongoDB server version: 4.0.13
 }
 bye
 ```
+
 If you see something similar to this, then congratulations!!! everything works! 
 
 If you look closer at the data in mongo, you will see that the entity type and the name of the attribute are longer exactly what you "asked for".
@@ -433,11 +450,13 @@ How the context works is fully explained in documents and tutorials on NGSI-LD.
 I'd propose to start with the [Getting Started with Orion-LD Guide](doc/manuals-ld/getting-started-guide.md)
  
 Now, before we end, let's ask _the broker_ to give us the entity, instead of just peeking inside the database:
+
 ```bash
 curl 'localhost:1026/ngsi-ld/v1/entities?type=T&prettyPrint=yes&space=2'
 ```
 
 The output should be exactly like this:
+
 ```json
 [
   {
@@ -463,6 +482,7 @@ present in the Core Context will override and item (with the same key/name) of t
 
 The context that was used to compose the response is returned in the HTTP *Link* header.
 If you ask curl for the HTTP headers, doing the GET operation like this:
+
 ```bash
 curl 'localhost:1026/ngsi-ld/v1/entities?type=T&prettyPrint=yes&space=2' --dump-header /tmp/httpHeaders.out
 ```
@@ -481,6 +501,7 @@ Content-Type: application/json
 Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
 Date: Wed, 20 Nov 2019 11:49:04 GMT
 ```
+
 *https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld* - that's the Core Context!
 
 If you instead ask the broker to return the context inside the payload data (which is done by setting the *Accept* header to *application/ld+json*):
@@ -507,5 +528,4 @@ then the response would be like this:
 and no HTTP Link header would be present.
 
 That's all for the installation guide.
-
 Now please continue to learn about Orion-LD with the (Getting Started Guide)[doc/manuals-ld/getting-started-guide.md].
