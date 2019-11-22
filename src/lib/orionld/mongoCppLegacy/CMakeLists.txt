@@ -23,7 +23,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 SET (SOURCES
     mongoCppLegacyInit.cpp
     mongoCppLegacyEntityLookup.cpp
-    mongoCppLegacyEntityLookupMany.cpp
+    mongoCppLegacyEntityUpdateAttribute.cpp
     mongoCppLegacyEntityUpdate.cpp
     mongoCppLegacyEntityBatchDelete.cpp
     mongoCppLegacyKjTreeFromBsonObj.cpp

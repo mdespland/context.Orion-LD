@@ -108,15 +108,14 @@ extern "C"
 #include "metricsMgr/metricsMgr.h"
 #include "logSummary/logSummary.h"
 
-#include "orionld/common/orionldState.h"                    // orionldState, kalloc, ...
-#include "orionld/context/orionldCoreContext.h"             // orionldCoreContext
+#include "orionld/common/orionldState.h"                    // orionldStateRelease, kalloc, ...
+#include "orionld/context/orionldContextCacheRelease.h"     // orionldContextCacheRelease
 #include "orionld/rest/orionldServiceInit.h"                // orionldServiceInit
 #include "orionld/db/dbInit.h"                              // dbInit
 
 #include "orionld/version.h"
 #include "orionld/orionRestServices.h"
 #include "orionld/orionldRestServices.h"
-#include "orionld/context/orionldContextList.h"             // orionldContextHead
 
 using namespace orion;
 
@@ -523,6 +522,13 @@ void orionExit(int code, const std::string& reason)
     LM_E(("Fatal Error (reason: %s)", reason.c_str()));
   }
 
+  orionldStateRelease();
+
+  //
+  // Contexts that have been cloned must be freed
+  //
+  orionldContextCacheRelease();
+
   exit(code);
 }
 
@@ -554,26 +560,9 @@ void exitFunc(void)
   curl_global_cleanup();
 
   //
-  // Free the context cache
+  // Free the context cache ?
+  // Or, is freeing up the global KAlloc instance sufficient ... ?
   //
-  OrionldContext* contextP = orionldContextHead;
-  OrionldContext* next;
-  while (contextP != NULL)
-  {
-    if (contextP == &orionldCoreContext)
-    {
-      contextP = contextP->next;
-      continue;
-    }
-
-    next = contextP->next;
-
-    kjFree(contextP->tree);   // Always cloned using kjClone ???
-    // free(contextP);  - the context is allocated using kaAlloc(&kalloc) - to free this, kaBufferReset is used (a few lines down)
-
-    contextP = next;
-  }
-
 
   //
   // Free the kalloc buffer
@@ -583,13 +572,6 @@ void exitFunc(void)
   if (unlink(pidPath) != 0)
   {
     LM_T(LmtSoftError, ("error removing PID file '%s': %s", pidPath, strerror(errno)));
-  }
-
-  if ((orionldState.contextP != NULL) && (orionldState.contextP->temporary == true))
-  {
-    free(orionldState.contextP->url);  // Always allocated using 'malloc' ???
-    free(orionldState.contextP);       // Always cloned using kjClone ???
-    orionldState.contextP = NULL;
   }
 }
 

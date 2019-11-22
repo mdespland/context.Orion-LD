@@ -58,17 +58,12 @@ extern "C"
 #include "orionld/common/orionldState.h"                       // orionldState
 #include "orionld/common/orionldAttributeTreat.h"              // orionldAttributeTreat
 #include "orionld/context/orionldCoreContext.h"                // orionldDefaultUrl, orionldCoreContext
-#include "orionld/context/orionldContextAdd.h"                 // Add a context to the context list
-#include "orionld/context/orionldContextLookup.h"              // orionldContextLookup
-#include "orionld/context/orionldContextItemLookup.h"          // orionldContextItemLookup
-#include "orionld/context/orionldContextList.h"                // orionldContextHead, orionldContextTail
-#include "orionld/context/orionldContextListInsert.h"          // orionldContextListInsert
 #include "orionld/context/orionldContextPresent.h"             // orionldContextPresent
-#include "orionld/context/orionldUserContextKeyValuesCheck.h"  // orionldUserContextKeyValuesCheck
-#include "orionld/context/orionldUriExpand.h"                  // orionldUriExpand
-#include "orionld/context/orionldAliasLookup.h"                // orionldAliasLookup
+#include "orionld/context/orionldContextItemAliasLookup.h"     // orionldContextItemAliasLookup
+#include "orionld/context/orionldContextItemExpand.h"          // orionldUriExpand
 #include "orionld/kjTree/kjStringValueLookupInArray.h"         // kjStringValueLookupInArray
 #include "orionld/serviceRoutines/orionldPostBatchUpsert.h"    // Own Interface
+#include "orionld/db/dbEntityUpdateAttribute.h"                // dbEntityUpdateAttribute
 
 // -----------------------------------------------------------------------------
 //
@@ -186,6 +181,23 @@ static void entityIdPush(KjNode *entityIdsArrayP, const char *entityId)
   kjChildAdd(entityIdsArrayP, eIdP);
 }
 
+// ---------------------------------------------------------------------------------------------------
+//
+// entityIdAndCreDateFromDbPush - The function objective is add ID field and creDate from DB entities,
+//                                for use the original creDate for update the entities replaced.
+//
+static void entityIdAndCreDateFromDbPush(KjNode *entityIdAndCreDateArrayP, const char *entityId, double creDate)
+{
+  KjNode *objP = kjObject(orionldState.kjsonP, NULL);
+  KjNode *eIdP = kjString(orionldState.kjsonP, "id", entityId);
+  KjNode *creDateP = kjInteger(orionldState.kjsonP, "creDate", creDate);
+
+  kjChildAdd(objP, eIdP);
+  kjChildAdd(objP, creDateP);
+
+  kjChildAdd(entityIdAndCreDateArrayP, objP);
+}
+
 // ----------------------------------------------------------------------------
 //
 // orionldPostEntityOperationsUpsert -
@@ -236,6 +248,7 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
   KjNode *successArrayP = kjArray(orionldState.kjsonP, "success");
   KjNode *errorsArrayP = kjArray(orionldState.kjsonP, "errors");
   KjNode *entityIdsArrayP = kjArray(orionldState.kjsonP, "entityIds");
+  KjNode *entityIdAndCreDateArrayP = kjArray(orionldState.kjsonP, "entitiesIdAndCreDate");
   char   *detail;
 
   ciP->httpStatusCode = SccOk;
@@ -257,6 +270,15 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
     KjNode *entityTypeNodeP = NULL;
     bool duplicatedType = false;
     bool duplicatedId = false;
+
+    KjNode* entityNodeCreDateP    = kjLookup(entityNodeP, "createdAt");
+    KjNode* entityNodeModDateP    = kjLookup(entityNodeP, "modifiedAt");
+
+    if (entityNodeCreDateP != NULL)  // Ignore "createdAt" if present in incoming payload
+      kjChildRemove(entityNodeP, entityNodeCreDateP);
+
+    if (entityNodeModDateP != NULL)  // Ignore "modifiedAt" if present in incoming payload
+      kjChildRemove(entityNodeP, entityNodeModDateP);
 
     //
     // We only check for duplicated entries in this loop.
@@ -351,12 +373,14 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
     char *entityType = entityTypeNodeP->value.s;
     ContextElement *ceP = new ContextElement();  // FIXME: Any way I can avoid to allocate ?
     EntityId *entityIdP = &ceP->entityId;
-    char typeExpanded[256];
+    char* typeExpanded;
+    bool  valueMayBeExpanded  = false;
 
     mongoRequest.updateActionType = ActionTypeAppendStrict;
     entityIdP->id = entityId;
 
-    if (orionldUriExpand(orionldState.contextP, entityType, typeExpanded, sizeof(typeExpanded), NULL, &detail) == false)
+    typeExpanded = orionldContextItemExpand(orionldState.contextP, entityType, &valueMayBeExpanded, true, NULL);
+    if (typeExpanded == NULL)
     {
       LM_E(("orionldUriExpand failed: %s", detail));
       entityErrorPush(errorsArrayP, entityIdNodeP->value.s, OrionldBadRequestData, "unable to expand entity::type", detail, 400);
@@ -414,7 +438,7 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
           const char *entityIdMongoReq                 = ceMongoReqVecP[ix]->entityId.id.c_str();
           const char *typeMongoReq                     = ceMongoReqVecP[ix]->entityId.type.c_str();
           const char* typeMongoReqAlias;
-          typeMongoReqAlias                            = orionldAliasLookup(orionldState.contextP, typeMongoReq, NULL);
+          typeMongoReqAlias                            = orionldContextItemAliasLookup(orionldState.contextP, typeMongoReq, NULL, NULL);
 
           LM_TMP(("EntityId: %s", entityIdMongoReq));
           LM_TMP(("Type: %s", typeMongoReqAlias));
@@ -423,9 +447,9 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
           for (KjNode* entityNodeP = entitiesFromDbP->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
           {
             KjNode* itemFromDbP = entityNodeP->value.firstChildP;
-            char *id     = NULL;
-            char *type   = NULL;
-            int  creDate = 0;
+            char   *id     = NULL;
+            char   *type   = NULL;
+            double creDate = 0;
             while (itemFromDbP != NULL)
             {
               LM_TMP(("UPSERT: Got item '%s' of entity %d", itemFromDbP->name, entityIx));
@@ -443,7 +467,7 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
                   else if (SCOMPARE5(_idContentP->name, 't', 'y', 'p', 'e', 0))
                   {
                     char* alias;
-                    alias = orionldAliasLookup(orionldState.contextP, _idContentP->value.s, NULL);
+                    alias = orionldContextItemAliasLookup(orionldState.contextP, _idContentP->value.s, NULL, NULL);
                     type = alias;
                     LM_TMP(("UPSERT: type: %s", type));
                   }
@@ -467,6 +491,10 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
                 LM_TMP(("typeMongoReqAlias: %s | type: %s", typeMongoReqAlias, type));
                 entityErrorPush(errorsArrayP, entityIdMongoReq, OrionldBadRequestData, "incoming type must be equal to type from DB", "entity::type", 400);
                 mongoRequest.contextElementVector.vec.erase(mongoRequest.contextElementVector.vec.begin()+ix);
+              }
+              else
+              {
+                entityIdAndCreDateFromDbPush(entityIdAndCreDateArrayP, id, creDate);
               }
             }
             ++entityIx;
@@ -505,6 +533,29 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
                                            ciP->httpHeaders.ngsiv2AttrsFormat,
                                            ciP->apiVersion,
                                            NGSIV2_NO_FLAVOUR);
+
+  for (KjNode* entityNodeP = entityIdAndCreDateArrayP->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
+  {
+    KjNode*  itemFromDbP  = entityNodeP->value.firstChildP;
+    char     *entityId    = NULL;
+    KjNode   *creDateNode = NULL;
+
+    while (itemFromDbP != NULL)
+    {
+      if (SCOMPARE3(itemFromDbP->name, 'i', 'd', 0))
+      {
+        entityId = itemFromDbP->value.s;
+        LM_TMP(("entityIdAndCreDateArrayP: id: %s", entityId));
+      }
+      else if (SCOMPARE8(itemFromDbP->name, 'c', 'r', 'e', 'D', 'a', 't', 'e', 0))
+      {
+        creDateNode  = itemFromDbP;
+        LM_TMP(("entityIdAndCreDateArrayP: creDate: %d", itemFromDbP->value.i));
+      }
+      itemFromDbP = itemFromDbP->next;
+    }
+    dbEntityUpdateAttribute(entityId, creDateNode);
+  }
 
   //
   // Now check orionldState.errorAttributeArray to see whether any attribute failed to be updated
