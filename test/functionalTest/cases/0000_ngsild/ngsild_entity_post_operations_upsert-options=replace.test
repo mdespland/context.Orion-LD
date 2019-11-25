@@ -32,11 +32,14 @@ brokerStart CB 212-249
 
 #
 # 01. Create entities E1 and E2 using POST /ngsi-ld/v1/entityOperations/upsert?options=replace
-# 02. GET the entities
-# 03. Modify E2 and add E3 using POST /ngsi-ld/v1/entityOperations/upsert?options=replace
-# 04. GET all entities - see all entities replaced and with new creDate and modDate fields
+# 02. See the two entities in mongo
+# 03. T3: Extract creDate and modDate of E1 and E2 from mongo (E1_T3_creDate, E1_T3_modDate, E2_T3_creDate, E2_T3_modDate)
+# 04. Sleep 3 secs - to force E2::creDate to be 3 secs older than E2::modDate after step 05
+# 05. Modify E2 and add E3 using POST /ngsi-ld/v1/entityOperations/upsert?options=replace
+# 06. T6: Extract creDate and modDate of E1, E2 and E3 from mongo
+# 07. Make sure all creDate/modDates are correct
+# 08. See E1-E3 in mongo. E1::P2: STEP 01, E2/E3::P2: STEP 05
 #
-
 
 echo "01. Create entities E1 and E2 using POST /ngsi-ld/v1/entityOperations/upsert?options=replace"
 echo "============================================================================================"
@@ -63,21 +66,40 @@ echo
 echo
 
 
-echo "02. GET the entities"
-echo "===================="
+echo "02. See the two entities in mongo"
+echo "================================="
 mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})'
 mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})'
 echo
 echo
 
 
-#
-# Sleep 2 secs to provoke a different modDate - creDate should stay intact
-#
-sleep 2
+echo "03. T3: Extract creDate and modDate of E1 and E2 from mongo (E1_T3_creDate, E1_T3_modDate, E2_T3_creDate, E2_T3_modDate)"
+echo "========================================================================================================================"
+E1_T3_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})' | grep creDate | head -1)
+E1_T3_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})' | grep modDate | head -1)
+E2_T3_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})' | grep creDate | head -1)
+E2_T3_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})' | grep modDate | head -1)
+echo $E1_T3_creDate
+echo $E1_T3_modDate
+echo $E2_T3_creDate
+echo $E2_T3_modDate
+echo
+echo
 
 
-echo "03. Modify E2 and add E3 using POST /ngsi-ld/v1/entityOperations/upsert?options=replace"
+#
+# Sleep 3 secs to provoke a modDate different from creDate - creDate should stay intact in step 05
+#
+echo "04. Sleep 3 secs - to force E2::creDate to be 3 secs older than E2::modDate after step 05"
+echo "========================================================================================="
+sleep 3
+echo Slept 3 seconds
+echo
+echo
+
+
+echo "05. Modify E2 and add E3 using POST /ngsi-ld/v1/entityOperations/upsert?options=replace"
 echo "======================================================================================="
 payload='[
   {
@@ -85,7 +107,7 @@ payload='[
     "type": "Vehicle",
     "P2": {
       "type": "Property",
-      "value": "STEP 03"
+      "value": "STEP 05"
     }
   },
   {
@@ -93,7 +115,7 @@ payload='[
     "type": "Vehicle",
     "P2": {
       "type": "Property",
-      "value": "STEP 03"
+      "value": "STEP 05"
     }
   }
 ]'
@@ -102,11 +124,64 @@ echo
 echo
 
 
-echo "04. GET all entities - see all entities replaced and with new creDate and modDate fields"
-echo "========================================================================================"
+echo "06. T6: Extract creDate and modDate of E1, E2 and E3 from mongo"
+echo "==============================================================="
+E1_T6_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})' | grep creDate | head -1)
+E1_T6_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})' | grep modDate | head -1)
+E2_T6_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})' | grep creDate | head -1)
+E2_T6_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})' | grep modDate | head -1)
+E3_T6_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E3"})' | grep creDate | head -1)
+E3_T6_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E3"})' | grep modDate | head -1)
+echo $E1_T6_creDate
+echo $E1_T6_modDate
+echo $E2_T6_creDate
+echo $E2_T6_modDate
+echo $E3_T6_creDate
+echo $E3_T6_modDate
+echo
+echo
+
+
+echo "07. Make sure all creDate/modDates are correct"
+echo "=============================================="
+if [ "$E1_T6_creDate" != "$E1_T3_creDate" ]
+then
+  echo "E1::creDate has changed!!"
+else
+  echo "E1::creDate is OK"
+fi
+
+if [ "$E1_T6_modDate" != "$E1_T3_modDate" ]
+then
+  echo "E1::modDate has changed without the entity being updated!!"
+else
+  echo "E1::modDate is OK"
+fi
+
+if [ "$E2_T6_creDate" != "$E2_T3_creDate" ]
+then
+  echo "E2::creDate has changed!!!"
+else
+  echo "E2::creDate is OK"
+fi
+
+if [ "$E2_T6_modDate" == "$E2_T3_modDate" ]
+then
+  echo "E2::modDate has NOT changed!!!"
+else
+  echo "E2::modDate is OK"
+fi
+
+echo
+echo
+
+
+echo "08. See E1-E3 in mongo. E1::P2: STEP 01, E2/E3::P2: STEP 05"
+echo "==========================================================="
 mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})'
 mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})'
 mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E3"})'
+echo
 echo
 
 
@@ -120,16 +195,16 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "errors": [],
     "success": [
         "urn:ngsi-ld:entity:E1",
         "urn:ngsi-ld:entity:E2"
-    ],
-    "errors": []
+    ]
 }
 
 
-02. GET the entities
-====================
+02. See the two entities in mongo
+=================================
 MongoDB shell version REGEX(.*)
 connecting to: REGEX(.*)
 MongoDB server version: REGEX(.*)
@@ -184,7 +259,20 @@ MongoDB server version: REGEX(.*)
 bye
 
 
-03. Modify E2 and add E3 using POST /ngsi-ld/v1/entityOperations/upsert?options=replace
+03. T3: Extract creDate and modDate of E1 and E2 from mongo (E1_T3_creDate, E1_T3_modDate, E2_T3_creDate, E2_T3_modDate)
+========================================================================================================================
+"creDate" : REGEX(.*),
+"modDate" : REGEX(.*),
+"creDate" : REGEX(.*),
+"modDate" : REGEX(.*),
+
+
+04. Sleep 3 secs - to force E2::creDate to be 3 secs older than E2::modDate after step 05
+=========================================================================================
+Slept 3 seconds
+
+
+05. Modify E2 and add E3 using POST /ngsi-ld/v1/entityOperations/upsert?options=replace
 =======================================================================================
 HTTP/1.1 200 OK
 Content-Length: 73
@@ -193,16 +281,34 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "errors": [],
     "success": [
         "urn:ngsi-ld:entity:E2",
         "urn:ngsi-ld:entity:E3"
-    ],
-    "errors": []
+    ]
 }
 
 
-04. GET all entities - see all entities replaced and with new creDate and modDate fields
-========================================================================================
+06. T6: Extract creDate and modDate of E1, E2 and E3 from mongo
+===============================================================
+"creDate" : REGEX(.*),
+"modDate" : REGEX(.*),
+"creDate" : REGEX(.*),
+"modDate" : REGEX(.*),
+"creDate" : REGEX(.*),
+"modDate" : REGEX(.*),
+
+
+07. Make sure all creDate/modDates are correct
+==============================================
+E1::creDate is OK
+E1::modDate is OK
+E2::creDate has changed!!!
+E2::modDate is OK
+
+
+08. See E1-E3 in mongo. E1::P2: STEP 01, E2/E3::P2: STEP 05
+===========================================================
 MongoDB shell version REGEX(.*)
 connecting to: REGEX(.*)
 MongoDB server version: REGEX(.*)
@@ -246,7 +352,7 @@ MongoDB server version: REGEX(.*)
 			"type" : "Property",
 			"creDate" : REGEX(.*),
 			"modDate" : REGEX(.*),
-			"value" : "STEP 03",
+			"value" : "STEP 05",
 			"mdNames" : [ ]
 		}
 	},
@@ -272,7 +378,7 @@ MongoDB server version: REGEX(.*)
 			"type" : "Property",
 			"creDate" : REGEX(.*),
 			"modDate" : REGEX(.*),
-			"value" : "STEP 03",
+			"value" : "STEP 05",
 			"mdNames" : [ ]
 		}
 	},
@@ -281,6 +387,7 @@ MongoDB server version: REGEX(.*)
 	"lastCorrelator" : ""
 }
 bye
+
 
 --TEARDOWN--
 brokerStop CB

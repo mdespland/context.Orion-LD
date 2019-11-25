@@ -32,7 +32,7 @@ brokerStart CB 0-255
 
 #
 # 01. POST /ngsi-ld/v1/entityOperations/upsert?options=replace - 4 entities
-# 02. POST /ngsi-ld/v1/entityOperations/upsert?options=replace - 4 entities with a type value different
+# 02. Update all four entities. Vehicle:00001 with a entity::type that differs
 #
 
 
@@ -113,12 +113,12 @@ echo
 echo
 
 
-echo "02. POST /ngsi-ld/v1/entityOperations/upsert?options=replace - 4 entities with a type value different"
-echo "====================================================================================================="
+echo "02. Update all four entities. Vehicle:00001 with a entity::type that differs"
+echo "============================================================================"
 payload='[
     {
         "id": "urn:ngsi-ld:Vehicle:00001",
-        "type": "Motocycle",
+        "type": "Motorcycle",
         "brandName": {
             "type": "Property",
             "value": "Mercedes"
@@ -200,40 +200,40 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "errors": [],
     "success": [
         "urn:ngsi-ld:Vehicle:00001",
         "urn:ngsi-ld:Vehicle:00002",
         "urn:ngsi-ld:Vehicle:00003",
         "urn:ngsi-ld:Vehicle:00004"
-    ],
-    "errors": []
+    ]
 }
 
 
-02. POST /ngsi-ld/v1/entityOperations/upsert?options=replace - 4 entities with a type value different
-=====================================================================================================
+02. Update all four entities. Vehicle:00001 with a entity::type that differs
+============================================================================
 HTTP/1.1 200 OK
-Content-Length: 310
+Content-Length: 295
 Content-Type: application/json
 Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
 Date: REGEX(.*)
 
 {
-    "success": [
-        "urn:ngsi-ld:Vehicle:00003",
-        "urn:ngsi-ld:Vehicle:00004",
-        "urn:ngsi-ld:Vehicle:00002"
-    ],
     "errors": [
         {
             "entityId": "urn:ngsi-ld:Vehicle:00001",
             "error": {
-                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData",
-                "title": "incoming type must be equal to type from DB",
-                "detail": "entity::type",
-                "status": 400
+                "detail": "Motorcycle",
+                "status": 400,
+                "title": "attempt to modify entity::type",
+                "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
             }
         }
+    ],
+    "success": [
+        "urn:ngsi-ld:Vehicle:00003",
+        "urn:ngsi-ld:Vehicle:00004",
+        "urn:ngsi-ld:Vehicle:00002"
     ]
 }
 

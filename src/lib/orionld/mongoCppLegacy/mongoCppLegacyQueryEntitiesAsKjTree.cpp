@@ -96,9 +96,9 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
   while (cursorP->more())
   {
     mongo::BSONObj  bsonObj;
-    KjNode* entityObj;
-    char*   title;
-    char*   detail;
+    KjNode*         entityObj;
+    char*           title;
+    char*           detail;
 
     bsonObj = cursorP->nextSafe();
 
@@ -114,7 +114,7 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
     kjChildAdd(entitiesTree, entityObj);
 
     //
-    // A limit of 100 entities has been stablished.
+    // A limit of 100 entities has been established.
     //
     ++limitOp;
     if (limitOp >= 100)
@@ -124,15 +124,8 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
     }
     
   }
-  /*
-  for (KjNode* resultP = entitiesTree->value.firstChildP; resultP != NULL; resultP = resultP->next)
-  {
-    //LM_TMP(("LARYTREE: entitiesTree: %s", resultP->value.s));
-    char buf[1024];
-    kjRender(orionldState.kjsonP, resultP, buf, sizeof(buf));
-    LM_TMP(("LARYTYPE: entitiesTree: %s", buf));
-  }
-*/
-  //releaseMongoConnection(connectionP);
+
+  releaseMongoConnection(connectionP);
+
   return entitiesTree;
 }

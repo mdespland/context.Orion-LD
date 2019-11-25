@@ -24,9 +24,6 @@
 */
 #include <vector>                // vector
 
-#include "logMsg/logMsg.h"       // LM_*
-#include "logMsg/traceLevels.h"  // Lmt*
-
 extern "C"
 {
 #include "kjson/KjNode.h"     // KjNode
@@ -34,6 +31,9 @@ extern "C"
 #include "kjson/kjLookup.h"   // kjLookup
 #include "kjson/kjRender.h"   // kjRender
 }
+
+#include "logMsg/logMsg.h"       // LM_*
+#include "logMsg/traceLevels.h"  // Lmt*
 
 #include "common/globals.h"                   // parse8601Time
 #include "rest/ConnectionInfo.h"              // ConnectionInfo
@@ -65,19 +65,23 @@ extern "C"
 #include "orionld/serviceRoutines/orionldPostBatchUpsert.h"    // Own Interface
 #include "orionld/db/dbEntityUpdateAttribute.h"                // dbEntityUpdateAttribute
 
+
+
 // -----------------------------------------------------------------------------
 //
 // kjTreeToContextElementBatch -
 //
 // NOTE: "id" and "type" of the entity must be removed from the tree before this function is called
 //
-bool kjTreeToContextElementAttributes(
-    ConnectionInfo *ciP,
-    KjNode *entityNodeP,
-    KjNode *createdAtP,
-    KjNode *modifiedAtP,
-    ContextElement *ceP,
-    char **detailP)
+bool kjTreeToContextElementAttributes
+(
+  ConnectionInfo*  ciP,
+  KjNode*          entityNodeP,
+  KjNode*          createdAtP,
+  KjNode*          modifiedAtP,
+  ContextElement*  ceP,
+  char**           detailP
+)
 {
   // Iterate over the items of the entity
   for (KjNode *itemP = entityNodeP->value.firstChildP; itemP != NULL; itemP = itemP->next)
@@ -87,15 +91,15 @@ bool kjTreeToContextElementAttributes(
     if (itemP == modifiedAtP)
       continue;
 
-    // No key-values in batch ops
+    // No key-values in batch ops - all attrs must be objects
     if (itemP->type != KjObject)
     {
       *detailP = (char *)"attribute must be a JSON object";
       return false;
     }
 
-    KjNode *attrTypeNodeP = NULL;
-    ContextAttribute *caP = new ContextAttribute();
+    KjNode*           attrTypeNodeP = NULL;
+    ContextAttribute* caP           = new ContextAttribute();
 
     // orionldAttributeTreat treats the attribute, including expanding the attribute name and values, if applicable
     if (orionldAttributeTreat(ciP, itemP, caP, &attrTypeNodeP, detailP) == false)
@@ -111,6 +115,8 @@ bool kjTreeToContextElementAttributes(
   return true;
 }
 
+
+
 // ----------------------------------------------------------------------------
 //
 // entitySuccessPush -
@@ -121,6 +127,8 @@ static void entitySuccessPush(KjNode *successArrayP, const char *entityId)
 
   kjChildAdd(successArrayP, eIdP);
 }
+
+
 
 // ----------------------------------------------------------------------------
 //
@@ -144,19 +152,19 @@ static void entitySuccessPush(KjNode *successArrayP, const char *entityId)
 //
 static void entityErrorPush(KjNode *errorsArrayP, const char *entityId, OrionldResponseErrorType type, const char *title, const char *detail, int status)
 {
-  KjNode *objP = kjObject(orionldState.kjsonP, NULL);
-  KjNode *eIdP = kjString(orionldState.kjsonP, "entityId", entityId);
-  KjNode *problemDetailsP = kjObject(orionldState.kjsonP, "error");
-  KjNode *typeP = kjString(orionldState.kjsonP, "type", orionldErrorTypeToString(type));
-  KjNode *titleP = kjString(orionldState.kjsonP, "title", title);
-  KjNode *statusP = kjInteger(orionldState.kjsonP, "status", status);
+  KjNode *objP            = kjObject(orionldState.kjsonP, NULL);
+  KjNode *eIdP            = kjString(orionldState.kjsonP,  "entityId", entityId);
+  KjNode *problemDetailsP = kjObject(orionldState.kjsonP,  "error");
+  KjNode *typeP           = kjString(orionldState.kjsonP,  "type",     orionldErrorTypeToString(type));
+  KjNode *titleP          = kjString(orionldState.kjsonP,  "title",    title);
+  KjNode *statusP         = kjInteger(orionldState.kjsonP, "status",   status);
 
   kjChildAdd(problemDetailsP, typeP);
   kjChildAdd(problemDetailsP, titleP);
 
   if (detail != NULL)
   {
-    KjNode *detailP = kjString(orionldState.kjsonP, "detail", detail);
+    KjNode* detailP = kjString(orionldState.kjsonP, "detail", detail);
     kjChildAdd(problemDetailsP, detailP);
   }
 
@@ -167,6 +175,8 @@ static void entityErrorPush(KjNode *errorsArrayP, const char *entityId, OrionldR
 
   kjChildAdd(errorsArrayP, objP);
 }
+
+
 
 // ----------------------------------------------------------------------------
 //
@@ -181,6 +191,8 @@ static void entityIdPush(KjNode *entityIdsArrayP, const char *entityId)
   kjChildAdd(entityIdsArrayP, eIdP);
 }
 
+
+
 // ---------------------------------------------------------------------------------------------------
 //
 // entityIdAndCreDateFromDbPush - The function objective is add ID field and creDate from DB entities,
@@ -188,8 +200,8 @@ static void entityIdPush(KjNode *entityIdsArrayP, const char *entityId)
 //
 static void entityIdAndCreDateFromDbPush(KjNode *entityIdAndCreDateArrayP, const char *entityId, double creDate)
 {
-  KjNode *objP = kjObject(orionldState.kjsonP, NULL);
-  KjNode *eIdP = kjString(orionldState.kjsonP, "id", entityId);
+  KjNode *objP     = kjObject(orionldState.kjsonP, NULL);
+  KjNode *eIdP     = kjString(orionldState.kjsonP, "id", entityId);
   KjNode *creDateP = kjInteger(orionldState.kjsonP, "creDate", creDate);
 
   kjChildAdd(objP, eIdP);
@@ -197,6 +209,8 @@ static void entityIdAndCreDateFromDbPush(KjNode *entityIdAndCreDateArrayP, const
 
   kjChildAdd(entityIdAndCreDateArrayP, objP);
 }
+
+
 
 // ----------------------------------------------------------------------------
 //
@@ -243,19 +257,19 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
 
   UpdateContextRequest mongoRequest;
   UpdateContextResponse mongoResponse;
-  KjNode *createdAtP = NULL;
-  KjNode *modifiedAtP = NULL;
-  KjNode *successArrayP = kjArray(orionldState.kjsonP, "success");
-  KjNode *errorsArrayP = kjArray(orionldState.kjsonP, "errors");
-  KjNode *entityIdsArrayP = kjArray(orionldState.kjsonP, "entityIds");
-  KjNode *entityIdAndCreDateArrayP = kjArray(orionldState.kjsonP, "entitiesIdAndCreDate");
+  KjNode* createdAtP = NULL;
+  KjNode* modifiedAtP = NULL;
+  KjNode* successArrayP = kjArray(orionldState.kjsonP, "success");
+  KjNode* errorsArrayP = kjArray(orionldState.kjsonP, "errors");
+  KjNode* entityIdsArrayP = kjArray(orionldState.kjsonP, "entityIds");
+  KjNode* entityIdAndCreDateArrayP = kjArray(orionldState.kjsonP, "entitiesIdAndCreDate");
   char   *detail;
 
   ciP->httpStatusCode = SccOk;
 
   mongoRequest.updateActionType = ActionTypeAppend;
 
-  for (KjNode *entityNodeP = orionldState.requestTree->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
+  for (KjNode* entityNodeP = orionldState.requestTree->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
   {
     OBJECT_CHECK(entityNodeP, kjValueType(entityNodeP->type));
 
@@ -265,14 +279,13 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
     // As we will remove items from the tree, we need to save the 'next-pointer' a priori
     // If not, after removing an item, its next pointer point to NULL and the for-loop (if used) is ended
     //
-    KjNode *itemP = entityNodeP->value.firstChildP;
-    KjNode *entityIdNodeP = NULL;
-    KjNode *entityTypeNodeP = NULL;
-    bool duplicatedType = false;
-    bool duplicatedId = false;
-
-    KjNode* entityNodeCreDateP    = kjLookup(entityNodeP, "createdAt");
-    KjNode* entityNodeModDateP    = kjLookup(entityNodeP, "modifiedAt");
+    KjNode*  itemP                 = entityNodeP->value.firstChildP;
+    KjNode*  entityIdNodeP         = NULL;
+    KjNode*  entityTypeNodeP       = NULL;
+    bool     duplicatedType        = false;
+    bool     duplicatedId          = false;
+    KjNode*  entityNodeCreDateP    = kjLookup(entityNodeP, "createdAt");
+    KjNode*  entityNodeModDateP    = kjLookup(entityNodeP, "modifiedAt");
 
     if (entityNodeCreDateP != NULL)  // Ignore "createdAt" if present in incoming payload
       kjChildRemove(entityNodeP, entityNodeCreDateP);
@@ -369,12 +382,12 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
     //
     // Both Entity::id and Entity::type are OK
     //
-    char *entityId = entityIdNodeP->value.s;
-    char *entityType = entityTypeNodeP->value.s;
-    ContextElement *ceP = new ContextElement();  // FIXME: Any way I can avoid to allocate ?
-    EntityId *entityIdP = &ceP->entityId;
-    char* typeExpanded;
-    bool  valueMayBeExpanded  = false;
+    char*           entityId            = entityIdNodeP->value.s;
+    char*           entityType          = entityTypeNodeP->value.s;
+    ContextElement* ceP                 = new ContextElement();  // FIXME: Any way I can avoid to allocate ?
+    EntityId*       entityIdP           = &ceP->entityId;
+    bool            valueMayBeExpanded  = false;
+    char*           typeExpanded;
 
     mongoRequest.updateActionType = ActionTypeAppendStrict;
     entityIdP->id = entityId;
@@ -388,7 +401,7 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
       continue;
     }
 
-    entityIdP->type = typeExpanded;
+    entityIdP->type      = typeExpanded;
     entityIdP->isPattern = "false";
 
 #if 0
@@ -405,9 +418,7 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
     }
 
     if (orionldState.uriParamOptions.replace == true)
-    {
       entityIdPush(entityIdsArrayP, entityId);
-    }
 
     mongoRequest.contextElementVector.push_back(ceP);
 
@@ -432,13 +443,14 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
       {
         for (unsigned int ix = 0; ix < mongoRequest.contextElementVector.vec.size(); ix++)
         {
-          int entityIx                                 = 0;
-          bool isAbleToPushIntoEntityIdsArray          = true;
-          std::vector<ContextElement*> ceMongoReqVecP  = mongoRequest.contextElementVector.vec;
-          const char *entityIdMongoReq                 = ceMongoReqVecP[ix]->entityId.id.c_str();
-          const char *typeMongoReq                     = ceMongoReqVecP[ix]->entityId.type.c_str();
-          const char* typeMongoReqAlias;
-          typeMongoReqAlias                            = orionldContextItemAliasLookup(orionldState.contextP, typeMongoReq, NULL, NULL);
+          int                           entityIx                        = 0;
+          bool                          isAbleToPushIntoEntityIdsArray  = true;
+          std::vector<ContextElement*>  ceMongoReqVecP                  = mongoRequest.contextElementVector.vec;
+          const char*                   entityIdMongoReq                = ceMongoReqVecP[ix]->entityId.id.c_str();
+          const char*                   typeMongoReq                    = ceMongoReqVecP[ix]->entityId.type.c_str();
+          const char*                   typeMongoReqAlias;
+
+          typeMongoReqAlias = orionldContextItemAliasLookup(orionldState.contextP, typeMongoReq, NULL, NULL);
 
           LM_TMP(("EntityId: %s", entityIdMongoReq));
           LM_TMP(("Type: %s", typeMongoReqAlias));
@@ -447,9 +459,10 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
           for (KjNode* entityNodeP = entitiesFromDbP->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
           {
             KjNode* itemFromDbP = entityNodeP->value.firstChildP;
-            char   *id     = NULL;
-            char   *type   = NULL;
-            double creDate = 0;
+            char*   id          = NULL;
+            char*   type        = NULL;
+            double  creDate     = 0;
+
             while (itemFromDbP != NULL)
             {
               LM_TMP(("UPSERT: Got item '%s' of entity %d", itemFromDbP->name, entityIx));
@@ -481,16 +494,14 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
               }
               itemFromDbP = itemFromDbP->next;
             }
+
             if (strcmp(entityIdMongoReq, id) == false)
             {
               if (strcmp(typeMongoReqAlias, type) != false)
               {
                 isAbleToPushIntoEntityIdsArray = false;
-                LM_TMP(("TYPE DIFFIRENT!!! -> index: %d", ix));
-                LM_TMP(("entityIdMongoReq:  %s | id:   %s", entityIdMongoReq,  id));
-                LM_TMP(("typeMongoReqAlias: %s | type: %s", typeMongoReqAlias, type));
-                entityErrorPush(errorsArrayP, entityIdMongoReq, OrionldBadRequestData, "incoming type must be equal to type from DB", "entity::type", 400);
-                mongoRequest.contextElementVector.vec.erase(mongoRequest.contextElementVector.vec.begin()+ix);
+                entityErrorPush(errorsArrayP, entityIdMongoReq, OrionldBadRequestData, "attempt to modify entity::type", typeMongoReqAlias, 400);
+                mongoRequest.contextElementVector.vec.erase(mongoRequest.contextElementVector.vec.begin() + ix);
               }
               else
               {
@@ -534,11 +545,18 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
                                            ciP->apiVersion,
                                            NGSIV2_NO_FLAVOUR);
 
+  //
+  // FIXME: This loop seems to exist only to put back the correct creDate for the entities after calling mongoUpdateContext
+  //        First of all, it doesn't seem to be working, and second: it provokes ONE mongo access per entity in the entity vector.
+  //        This is of course extremely slow and needs to be fixed in another way.
+  //        The call to 'mongoUpdateContext' should be modified to set the creDate correctly already.
+  //        - And this loop should be removed.
+  //
   for (KjNode* entityNodeP = entityIdAndCreDateArrayP->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
   {
     KjNode*  itemFromDbP  = entityNodeP->value.firstChildP;
-    char     *entityId    = NULL;
-    KjNode   *creDateNode = NULL;
+    char*     entityId    = NULL;
+    KjNode*   creDateNode = NULL;
 
     while (itemFromDbP != NULL)
     {

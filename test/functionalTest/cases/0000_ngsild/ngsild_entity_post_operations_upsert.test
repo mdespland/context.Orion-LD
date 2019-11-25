@@ -237,13 +237,13 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "errors": [],
     "success": [
         "urn:ngsi-ld:Vehicle:00001",
         "urn:ngsi-ld:Vehicle:00002",
         "urn:ngsi-ld:Vehicle:00003",
         "urn:ngsi-ld:Vehicle:00004"
-    ],
-    "errors": []
+    ]
 }
 
 
@@ -387,13 +387,13 @@ Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http:/
 Date: REGEX(.*)
 
 {
+    "errors": [],
     "success": [
         "urn:ngsi-ld:Vehicle:00002",
         "urn:ngsi-ld:Vehicle:00003",
         "urn:ngsi-ld:Vehicle:00001",
         "urn:ngsi-ld:Vehicle:00004"
-    ],
-    "errors": []
+    ]
 }
 
 
