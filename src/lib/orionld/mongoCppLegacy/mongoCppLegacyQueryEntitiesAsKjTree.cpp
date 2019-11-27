@@ -47,6 +47,14 @@ extern "C"
 //
 // mongoCppLegacyQueryEntitiesAsKjTree -
 //
+// This function extracts (from mongo) the entities whose ID are in the vector 'entityIdsArray'.
+// Instead of returning the complete information of the entities, only three fields are returned per entity, namely:
+//   * Entity ID
+//   * Entity Type
+//   * Entity Creation Date
+//
+// FIXME: This function should be called mongoCppLegacyEntityListLookupWithIdTypeCreDate()
+//
 KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
 {
   char collectionPath[256];
@@ -63,18 +71,21 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
   mongo::BSONObjBuilder    filter;
   mongo::BSONObjBuilder    inObj;
   mongo::BSONArrayBuilder  idList;
+  mongo::BSONObjBuilder    fields;
 
   for (KjNode* idNodeP = entityIdsArray->value.firstChildP; idNodeP != NULL; idNodeP = idNodeP->next)
   {
     idList.append(idNodeP->value.s);
   }
+
   inObj.append("$in", idList.arr());
   filter.append("_id.id", inObj.obj());
 
-  // Especify the filds to return
-  mongo::BSONObjBuilder    fields;
-  fields.append("_id.id", 1);
-  fields.append("type", 1);
+  //
+  // Specify the fields to return
+  //
+  fields.append("_id.id",  1);
+  fields.append("type",    1);
   fields.append("creDate", 1);
 
   mongo::BSONObj fieldsToReturn = fields.obj();
@@ -89,9 +100,9 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
 
   cursorP = connectionP->query(collectionPath, query, 0, 0, &fieldsToReturn);
 
-  // Now convert bson result to kjtree
-  KjNode* entitiesTree = kjArray(orionldState.kjsonP, NULL);
-  int limitOp = 0;
+  // Create to Kj-Tree that will hold the entities of the query
+  KjNode*  entitiesTree = kjArray(orionldState.kjsonP, NULL);
+  int      limitOp      = 0;
 
   while (cursorP->more())
   {
@@ -102,7 +113,7 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
 
     bsonObj = cursorP->nextSafe();
 
-    // LM_TMP(("BSONN: %s", bsonObj.toString().c_str()));
+    // Convert the Entity from BSON Object to Kj-Tree
     entityObj = mongoCppLegacyKjTreeFromBsonObj(&bsonObj, &title, &detail);
 
     if (entityObj == NULL)
@@ -111,6 +122,7 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
       continue;
     }
 
+    // Add the Entity to the entity-tree
     kjChildAdd(entitiesTree, entityObj);
 
     //

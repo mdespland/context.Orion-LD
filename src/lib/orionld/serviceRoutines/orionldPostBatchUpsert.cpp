@@ -212,6 +212,142 @@ static void entityIdAndCreDateFromDbPush(KjNode *entityIdAndCreDateArrayP, const
 
 
 
+// -----------------------------------------------------------------------------
+//
+// entityIdCheck -
+//
+static bool entityIdCheck(KjNode* entityIdNodeP, bool duplicatedId, KjNode* errorsArrayP)
+{
+  // Entity ID is mandatory
+  if (entityIdNodeP == NULL)
+  {
+    LM_W(("Bad Input (mandatory field missing: entity::id)"));
+    entityErrorPush(errorsArrayP, "no entity::id", OrionldBadRequestData, "mandatory field missing", "entity::id", 400);
+    return false;
+  }
+
+  // Entity ID must be a string
+  if (entityIdNodeP->type != KjString)
+  {
+    LM_W(("Bad Input (entity::id not a string)"));
+    entityErrorPush(errorsArrayP, "invalid entity::id", OrionldBadRequestData, "field with invalid type", "entity::id", 400);
+    return false;
+  }
+
+  // Entity ID must be a valid URI
+  char* detail;
+  if (!urlCheck(entityIdNodeP->value.s, &detail) && !urnCheck(entityIdNodeP->value.s, &detail))
+  {
+    LM_W(("Bad Input (entity::id is a string but not a valid URI)"));
+    entityErrorPush(errorsArrayP, entityIdNodeP->value.s, OrionldBadRequestData, "Not a URI", entityIdNodeP->value.s, 400);
+    return false;
+  }
+
+  // Entity ID must not be duplicated
+  if (duplicatedId == true)
+  {
+    LM_W(("Bad Input (Duplicated entity::id)"));
+    entityErrorPush(errorsArrayP, entityIdNodeP->value.s, OrionldBadRequestData, "Duplicated field", "entity::id", 400);
+    return false;
+  }
+
+  return true;
+}
+
+
+
+// -----------------------------------------------------------------------------
+//
+// entityTypeCheck -
+//
+static bool entityTypeCheck(KjNode* entityTypeNodeP, bool duplicatedType, char* entityId, KjNode* errorsArrayP)
+{
+  // Entity TYPE is mandatory
+  if (entityTypeNodeP == NULL)
+  {
+    LM_W(("Bad Input (mandatory field missing: entity::type)"));
+    entityErrorPush(errorsArrayP, entityId, OrionldBadRequestData, "mandatory field missing", "entity::type", 400);
+    return false;
+  }
+
+  // Entity TYPE must not be duplicated
+  if (duplicatedType == true)
+  {
+    LM_W(("Bad Input (Duplicated entity::type)"));
+    entityErrorPush(errorsArrayP, entityId, OrionldBadRequestData, "Duplicated field", "entity::type", 400);
+    return false;
+  }
+
+  // Entity TYPE must be a string
+  if (entityTypeNodeP->type != KjString)
+  {
+    LM_W(("Bad Input (entity::type not a string)"));
+    entityErrorPush(errorsArrayP, entityId, OrionldBadRequestData, "field with invalid type", "entity::type", 400);
+    return false;
+  }
+
+  return true;
+}
+
+
+
+// -----------------------------------------------------------------------------
+//
+// entityFieldsExtract -
+//
+static bool entityFieldsExtract(KjNode* entityNodeP, char** entityIdP, char** entityTypeP, KjNode* errorsArrayP)
+{
+  KjNode*  itemP            = entityNodeP->value.firstChildP;
+  bool     duplicatedType   = false;
+  bool     duplicatedId     = false;
+  KjNode*  entityIdNodeP    = NULL;
+  KjNode*  entityTypeNodeP  = NULL;
+
+  while (itemP != NULL)
+  {
+    KjNode* next = itemP->next;
+
+    if (SCOMPARE3(itemP->name, 'i', 'd', 0))
+    {
+      if (entityIdNodeP != NULL)
+        duplicatedId = true;
+      else
+      {
+        entityIdNodeP = itemP;
+        *entityIdP    = itemP->value.s;
+      }
+      kjChildRemove(entityNodeP, itemP);
+    }
+    else if (SCOMPARE5(itemP->name, 't', 'y', 'p', 'e', 0))
+    {
+      if (entityTypeNodeP != NULL)  // Duplicated 'type' in payload?
+        duplicatedType = true;
+      else
+      {
+        entityTypeNodeP = itemP;
+        *entityTypeP    = itemP->value.s;
+      }
+
+      kjChildRemove(entityNodeP, itemP);
+    }
+    else if (SCOMPARE10(itemP->name, 'c', 'r', 'e', 'a', 't', 'e', 'd', 'A', 't', 0))
+      kjChildRemove(entityNodeP, itemP);
+    else if (SCOMPARE11(itemP->name, 'm', 'o', 'd', 'i', 'f', 'i', 'e', 'd', 'A', 't', 0))
+      kjChildRemove(entityNodeP, itemP);
+
+    itemP = next;
+  }
+
+  if (entityIdCheck(entityIdNodeP, duplicatedId, errorsArrayP) == false)
+    return false;
+  if (entityTypeCheck(entityTypeNodeP, duplicatedType, entityIdNodeP->value.s, errorsArrayP) == false)
+    return false;
+
+  return true;
+}
+
+
+
 // ----------------------------------------------------------------------------
 //
 // orionldPostEntityOperationsUpsert -
@@ -251,163 +387,58 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
     return false;
   }
 
-  //
-  // Here we treat the "?options=update" mode
-  //
-
-  UpdateContextRequest mongoRequest;
+  UpdateContextRequest  mongoRequest;
   UpdateContextResponse mongoResponse;
-  KjNode* createdAtP = NULL;
-  KjNode* modifiedAtP = NULL;
-  KjNode* successArrayP = kjArray(orionldState.kjsonP, "success");
-  KjNode* errorsArrayP = kjArray(orionldState.kjsonP, "errors");
-  KjNode* entityIdsArrayP = kjArray(orionldState.kjsonP, "entityIds");
-  KjNode* entityIdAndCreDateArrayP = kjArray(orionldState.kjsonP, "entitiesIdAndCreDate");
-  char   *detail;
+  KjNode*               createdAtP               = NULL;
+  KjNode*               modifiedAtP              = NULL;
+  KjNode*               successArrayP            = kjArray(orionldState.kjsonP, "success");
+  KjNode*               errorsArrayP             = kjArray(orionldState.kjsonP, "errors");
+  KjNode*               entityIdsArrayP          = NULL;  // will be created only if needed
+  KjNode*               entityIdAndCreDateArrayP = kjArray(orionldState.kjsonP, "entitiesIdAndCreDate");
+  char*                 detail;
 
   ciP->httpStatusCode = SccOk;
 
-  mongoRequest.updateActionType = ActionTypeAppend;
-
+  //
+  // Loop over every Entity in the incoming Array of Entities (orionldState.requestTree), to:
+  // - check for validity (duplicated fields, mandatory fields present, correct JSON types, etc)
+  // - expand entity::type
+  // - populate ContextElement for mongoBackend
+  // - if (options==replace), create a KjNode array with all Entity::ID - for removal
+  //
   for (KjNode* entityNodeP = orionldState.requestTree->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
   {
     OBJECT_CHECK(entityNodeP, kjValueType(entityNodeP->type));
 
     //
-    // First, extract Entity::id and Entity::type
+    // First, extract Entity::id and Entity::type and remove them from the entity tree 'entityNodeP'
+    // The function 'entityFieldsExtract' does this, but it also detects duplicated fields and removes them.
+    // On error, 'entityFieldsExtract' returns false and we restart the loop, skipping that Entity.
     //
-    // As we will remove items from the tree, we need to save the 'next-pointer' a priori
-    // If not, after removing an item, its next pointer point to NULL and the for-loop (if used) is ended
-    //
-    KjNode*  itemP                 = entityNodeP->value.firstChildP;
-    KjNode*  entityIdNodeP         = NULL;
-    KjNode*  entityTypeNodeP       = NULL;
-    bool     duplicatedType        = false;
-    bool     duplicatedId          = false;
-    KjNode*  entityNodeCreDateP    = kjLookup(entityNodeP, "createdAt");
-    KjNode*  entityNodeModDateP    = kjLookup(entityNodeP, "modifiedAt");
+    char* entityId;
+    char* entityType;
 
-    if (entityNodeCreDateP != NULL)  // Ignore "createdAt" if present in incoming payload
-      kjChildRemove(entityNodeP, entityNodeCreDateP);
-
-    if (entityNodeModDateP != NULL)  // Ignore "modifiedAt" if present in incoming payload
-      kjChildRemove(entityNodeP, entityNodeModDateP);
-
-    //
-    // We only check for duplicated entries in this loop.
-    // The rest is taken care of after we've looked up entity::id
-    //
-    while (itemP != NULL)
-    {
-      if (SCOMPARE3(itemP->name, 'i', 'd', 0))
-      {
-        if (entityIdNodeP != NULL)
-          duplicatedId = true;
-        else
-          entityIdNodeP = itemP;
-
-        itemP = itemP->next;  // Point to the next item BEFORE the current one is removed
-        kjChildRemove(entityNodeP, entityIdNodeP);
-      }
-      else if (SCOMPARE5(itemP->name, 't', 'y', 'p', 'e', 0))
-      {
-        if (entityTypeNodeP != NULL)  // Duplicated 'type' in payload?
-          duplicatedType = true;
-        else
-          entityTypeNodeP = itemP;
-
-        itemP = itemP->next;  // Point to the next item BEFORE the current one is removed
-        kjChildRemove(entityNodeP, entityTypeNodeP);
-      }
-      else
-        itemP = itemP->next;
-    }
-
-    // Entity ID is mandatory
-    if (entityIdNodeP == NULL)
-    {
-      LM_W(("Bad Input (mandatory field missing: entity::id)"));
-      entityErrorPush(errorsArrayP, "no entity::id", OrionldBadRequestData, "mandatory field missing", "entity::id", 400);
+    if (entityFieldsExtract(entityNodeP, &entityId, &entityType, errorsArrayP) == false)
       continue;
-    }
 
-    // Entity ID must be a string
-    if (entityIdNodeP->type != KjString)
-    {
-      LM_W(("Bad Input (entity::id not a string)"));
-      entityErrorPush(errorsArrayP, "invalid entity::id", OrionldBadRequestData, "field with invalid type", "entity::id", 400);
-      continue;
-    }
-
-    // Entity ID must be a valid URI
-    if (!urlCheck(entityIdNodeP->value.s, &detail) && !urnCheck(entityIdNodeP->value.s, &detail))
-    {
-      LM_W(("Bad Input (entity::id is a string but not a valid URI)"));
-      entityErrorPush(errorsArrayP, entityIdNodeP->value.s, OrionldBadRequestData, "Not a URI", entityIdNodeP->value.s, 400);
-      continue;
-    }
-
-    // Entity ID must not be duplicated
-    if (duplicatedId == true)
-    {
-      LM_W(("Bad Input (Duplicated entity::id)"));
-      entityErrorPush(errorsArrayP, entityIdNodeP->value.s, OrionldBadRequestData, "Duplicated field", "entity::id", 400);
-      continue;
-    }
-
-    // Entity TYPE is mandatory
-    if (entityTypeNodeP == NULL)
-    {
-      LM_W(("Bad Input (mandatory field missing: entity::type)"));
-      entityErrorPush(errorsArrayP, entityIdNodeP->value.s, OrionldBadRequestData, "mandatory field missing", "entity::type", 400);
-      continue;
-    }
-
-    // Entity TYPE must not be duplicated
-    if (duplicatedType == true)
-    {
-      LM_W(("Bad Input (Duplicated entity::type)"));
-      entityErrorPush(errorsArrayP, entityIdNodeP->value.s, OrionldBadRequestData, "Duplicated field", "entity::type", 400);
-      continue;
-    }
-
-    // Entity TYPE must be a string
-    if (entityTypeNodeP->type != KjString)
-    {
-      LM_W(("Bad Input (entity::type not a string)"));
-      entityErrorPush(errorsArrayP, entityIdNodeP->value.s, OrionldBadRequestData, "field with invalid type", "entity::type", 400);
-      continue;
-    }
-
-    //
-    // Both Entity::id and Entity::type are OK
-    //
-    char*           entityId            = entityIdNodeP->value.s;
-    char*           entityType          = entityTypeNodeP->value.s;
     ContextElement* ceP                 = new ContextElement();  // FIXME: Any way I can avoid to allocate ?
     EntityId*       entityIdP           = &ceP->entityId;
     bool            valueMayBeExpanded  = false;
     char*           typeExpanded;
 
-    mongoRequest.updateActionType = ActionTypeAppendStrict;
     entityIdP->id = entityId;
 
     typeExpanded = orionldContextItemExpand(orionldState.contextP, entityType, &valueMayBeExpanded, true, NULL);
     if (typeExpanded == NULL)
     {
-      LM_E(("orionldUriExpand failed: %s", detail));
-      entityErrorPush(errorsArrayP, entityIdNodeP->value.s, OrionldBadRequestData, "unable to expand entity::type", detail, 400);
+      LM_E(("orionldContextItemExpand failed: %s", detail));
+      entityErrorPush(errorsArrayP, entityId, OrionldBadRequestData, "unable to expand entity::type", detail, 400);
       delete ceP;
       continue;
     }
 
     entityIdP->type      = typeExpanded;
     entityIdP->isPattern = "false";
-
-#if 0
-    entityIdP->creDate   = getCurrentTime();  // FIXME: Only if newly created. I think mongoBackend takes care of this - so, outdeffed
-    entityIdP->modDate   = getCurrentTime();
-#endif
 
     if (kjTreeToContextElementAttributes(ciP, entityNodeP, createdAtP, modifiedAtP, ceP, &detail) == false)
     {
@@ -418,122 +449,133 @@ bool orionldPostBatchUpsert(ConnectionInfo *ciP)
     }
 
     if (orionldState.uriParamOptions.replace == true)
+    {
+      if (entityIdsArrayP == NULL)
+        entityIdsArrayP = kjArray(orionldState.kjsonP, "entityIds");
+
       entityIdPush(entityIdsArrayP, entityId);
+      LM_TMP(("UPSERT: Entity %s to be erased and recreated", entityId));
+    }
+    else
+      LM_TMP(("UPSERT: Entity %s to be created", entityId));
 
     mongoRequest.contextElementVector.push_back(ceP);
-
-    orionldState.payloadIdNode = NULL;
-    orionldState.payloadTypeNode = NULL;
   }
 
-  if (orionldState.uriParamOptions.replace == true)
+  //
+  // If ?options=replace is used, then the entities that already exist are removed from the database.
+  // After that, they are recreated, but the entity id, type, and creDate must remain intact (as they were in the database).
+  //
+  // Remember, all entities that are to be removed are in "entityIdsArrayP", added to this temporal array by the previous loop
+  // Also, all entities, to be removed or not, are added to "mongoRequest.contextElementVector".
+  //
+  // This new loop needs to extract the creDate (originating from the database) and copy it correctly into the entities inside "mongoRequest.contextElementVector".
+  // Also, for those entities that are to be removed, we need to check that the entity::type isn't altered - that would be an error
+  // 
+  if ((orionldState.uriParamOptions.replace == true) && (entityIdsArrayP != NULL))
   {
-    if (entityIdsArrayP->value.firstChildP != NULL)
+    KjNode* entitiesFromDbP = dbQueryEntitiesAsKjTree(entityIdsArrayP);  // This is a query to the databas
+
+    if (entitiesFromDbP == NULL)
+      LM_TMP(("UPSERT: dbEntityLookupMany found no entities - nothing to remove - we're done here"));
+    else
     {
-      LM_TMP(("UPSERT: Calling dbEntityLookupMany"));
-      KjNode* entitiesFromDbP = dbQueryEntitiesAsKjTree(entityIdsArrayP);
-
-      LM_TMP(("UPSERT: back from dbEntityLookupMany"));
-
       entityIdsArrayP = kjArray(orionldState.kjsonP, "entityIds");
 
-      if (entitiesFromDbP == NULL)
-        LM_TMP(("UPSERT: dbEntityLookupMany found no entities - nothing to remove - we're done here"));
-      else
+      LM_TMP(("UPSERT: REPLACE:  Looping over all entities that are to be replaced/inserted"));
+      for (unsigned int ix = 0; ix < mongoRequest.contextElementVector.vec.size(); ix++)
       {
-        for (unsigned int ix = 0; ix < mongoRequest.contextElementVector.vec.size(); ix++)
+        int                           entityIx                        = 0;
+        bool                          isAbleToPushIntoEntityIdsArray  = true;
+        std::vector<ContextElement*>  ceMongoReqVecP                  = mongoRequest.contextElementVector.vec;
+        const char*                   entityIdMongoReq                = ceMongoReqVecP[ix]->entityId.id.c_str();
+        const char*                   typeMongoReq                    = ceMongoReqVecP[ix]->entityId.type.c_str();
+        const char*                   typeMongoReqAlias;
+
+        typeMongoReqAlias = orionldContextItemAliasLookup(orionldState.contextP, typeMongoReq, NULL, NULL);
+
+        LM_TMP(("UPSERT: Looping over the entities to be replaced"));
+
+        for (KjNode* entityNodeP = entitiesFromDbP->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
         {
-          int                           entityIx                        = 0;
-          bool                          isAbleToPushIntoEntityIdsArray  = true;
-          std::vector<ContextElement*>  ceMongoReqVecP                  = mongoRequest.contextElementVector.vec;
-          const char*                   entityIdMongoReq                = ceMongoReqVecP[ix]->entityId.id.c_str();
-          const char*                   typeMongoReq                    = ceMongoReqVecP[ix]->entityId.type.c_str();
-          const char*                   typeMongoReqAlias;
+          KjNode* itemFromDbP = entityNodeP->value.firstChildP;
+          char*   id          = NULL;
+          char*   type        = NULL;
+          double  creDate     = 0;
 
-          typeMongoReqAlias = orionldContextItemAliasLookup(orionldState.contextP, typeMongoReq, NULL, NULL);
-
-          LM_TMP(("EntityId: %s", entityIdMongoReq));
-          LM_TMP(("Type: %s", typeMongoReqAlias));
-          LM_TMP(("UPSERT: Looping over the entities to be replaced"));
-
-          for (KjNode* entityNodeP = entitiesFromDbP->value.firstChildP; entityNodeP != NULL; entityNodeP = entityNodeP->next)
+          while (itemFromDbP != NULL)
           {
-            KjNode* itemFromDbP = entityNodeP->value.firstChildP;
-            char*   id          = NULL;
-            char*   type        = NULL;
-            double  creDate     = 0;
+            LM_TMP(("UPSERT: Got item '%s' of entity %d", itemFromDbP->name, entityIx));
 
-            while (itemFromDbP != NULL)
+            if (SCOMPARE4(itemFromDbP->name, '_', 'i', 'd', 0))
             {
-              LM_TMP(("UPSERT: Got item '%s' of entity %d", itemFromDbP->name, entityIx));
-
-              if (SCOMPARE4(itemFromDbP->name, '_', 'i', 'd', 0))
+              KjNode* _idContentP = itemFromDbP->value.firstChildP;
+              while (_idContentP != NULL)
               {
-                KjNode* _idContentP = itemFromDbP->value.firstChildP;
-                while (_idContentP != NULL)
+                if (SCOMPARE3(_idContentP->name, 'i', 'd', 0))
                 {
-                  if (SCOMPARE3(_idContentP->name, 'i', 'd', 0))
-                  {
-                    id = _idContentP->value.s;
-                    LM_TMP(("UPSERT: id: %s", id));
-                  }
-                  else if (SCOMPARE5(_idContentP->name, 't', 'y', 'p', 'e', 0))
-                  {
-                    char* alias;
-                    alias = orionldContextItemAliasLookup(orionldState.contextP, _idContentP->value.s, NULL, NULL);
-                    type = alias;
-                    LM_TMP(("UPSERT: type: %s", type));
-                  }
-                  _idContentP = _idContentP->next;
+                  id = _idContentP->value.s;
+                  LM_TMP(("UPSERT: id: %s", id));
                 }
+                else if (SCOMPARE5(_idContentP->name, 't', 'y', 'p', 'e', 0))
+                {
+                  char* alias;
+                  alias = orionldContextItemAliasLookup(orionldState.contextP, _idContentP->value.s, NULL, NULL);
+                  type = alias;
+                  LM_TMP(("UPSERT: type: %s", type));
+                }
+                _idContentP = _idContentP->next;
               }
-              else if (SCOMPARE8(itemFromDbP->name, 'c', 'r', 'e', 'D', 'a', 't', 'e', 0))
-              {
-                creDate = itemFromDbP->value.i;
-                LM_TMP(("UPSERT: creDate: %d", creDate));
-              }
-              itemFromDbP = itemFromDbP->next;
             }
-
-            if (strcmp(entityIdMongoReq, id) == false)
+            else if (SCOMPARE8(itemFromDbP->name, 'c', 'r', 'e', 'D', 'a', 't', 'e', 0))
             {
-              if (strcmp(typeMongoReqAlias, type) != false)
-              {
-                isAbleToPushIntoEntityIdsArray = false;
-                entityErrorPush(errorsArrayP, entityIdMongoReq, OrionldBadRequestData, "attempt to modify entity::type", typeMongoReqAlias, 400);
-                mongoRequest.contextElementVector.vec.erase(mongoRequest.contextElementVector.vec.begin() + ix);
-              }
-              else
-              {
-                entityIdAndCreDateFromDbPush(entityIdAndCreDateArrayP, id, creDate);
-              }
+              creDate = itemFromDbP->value.i;
+              LM_TMP(("UPSERT: creDate: %d", creDate));
             }
-            ++entityIx;
+            itemFromDbP = itemFromDbP->next;
           }
-          if (isAbleToPushIntoEntityIdsArray)
-            entityIdPush(entityIdsArrayP, entityIdMongoReq);
+
+          if (strcmp(entityIdMongoReq, id) == false)
+          {
+            if (strcmp(typeMongoReqAlias, type) != false)
+            {
+              isAbleToPushIntoEntityIdsArray = false;
+              entityErrorPush(errorsArrayP, entityIdMongoReq, OrionldBadRequestData, "attempt to modify entity::type", typeMongoReqAlias, 400);
+              mongoRequest.contextElementVector.vec.erase(mongoRequest.contextElementVector.vec.begin() + ix);
+            }
+            else
+            {
+              entityIdAndCreDateFromDbPush(entityIdAndCreDateArrayP, id, creDate);
+            }
+          }
+          ++entityIx;
         }
 
-        if (entitiesFromDbP->value.firstChildP != NULL)
+        if (isAbleToPushIntoEntityIdsArray)
+          entityIdPush(entityIdsArrayP, entityIdMongoReq);
+      }
+
+      if (entitiesFromDbP->value.firstChildP != NULL)
+      {
+        if (dbEntityBatchDelete(entityIdsArrayP) == false)
         {
-          if (dbEntityBatchDelete(entityIdsArrayP) == false)
-          {
-            LM_E(("mongoCppLegacyEntityBatchDelete returned false"));
-            ciP->httpStatusCode = SccBadRequest;
-            if (orionldState.responseTree == NULL)
-              orionldErrorResponseCreate(OrionldBadRequestData, "Database Error", "mongoCppLegacyEntityBatchDelete");
-            return false;
-          }
+          LM_E(("mongoCppLegacyEntityBatchDelete returned false"));
+          ciP->httpStatusCode = SccBadRequest;
+          if (orionldState.responseTree == NULL)
+            orionldErrorResponseCreate(OrionldBadRequestData, "Database Error", "mongoCppLegacyEntityBatchDelete");
+          return false;
         }
       }
     }
   }
+
 
   //
   // Call mongoBackend - to create/modify the entities
   // In case of REPLACE, all entities have been removed from the DB prior to this call, so, they will all be created.
   //
   LM_TMP(("UPSERT: Calling mongoUpdateContext to create %d entities", mongoRequest.contextElementVector.size()));
+  mongoRequest.updateActionType = ActionTypeAppendStrict;
   ciP->httpStatusCode = mongoUpdateContext(&mongoRequest,
                                            &mongoResponse,
                                            orionldState.tenant,
