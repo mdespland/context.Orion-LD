@@ -149,16 +149,12 @@ static bool entityFieldsExtractSimple(KjNode* entityNodeP, char** entityIdP, cha
     {
       *entityIdP = itemP->value.s;
       kjChildRemove(entityNodeP, itemP);
-      LM_TMP(("UPSERT: Found id '%s' and removed it", *entityIdP));
     }
     else if (SCOMPARE5(itemP->name, 't', 'y', 'p', 'e', 0))
     {
       *entityTypeP = itemP->value.s;
       kjChildRemove(entityNodeP, itemP);
-      LM_TMP(("UPSERT: Found type '%s' and removed it", *entityTypeP));
     }
-    else
-      LM_TMP(("UPSERT: Found '%s' - never mind", itemP->name));
 
     itemP = next;
   }
@@ -254,8 +250,6 @@ static bool entityIdCheck(KjNode* entityIdNodeP, bool duplicatedId, KjNode* erro
 //
 static bool entityTypeCheck(KjNode* entityTypeNodeP, bool duplicatedType, char* entityId, bool typeMandatory, KjNode* errorsArrayP)
 {
-  LM_TMP(("KZ: Entity %s: entityTypeNodeP at %p, typeMandatory == %s, duplicatedType: %s", entityId, entityTypeNodeP, K_FT(typeMandatory), K_FT(duplicatedType)));
-
   // Entity TYPE is mandatory?
   if ((typeMandatory == true) && (entityTypeNodeP == NULL))
   {
@@ -299,10 +293,8 @@ static bool entityIdAndTypeGet(KjNode* entityNodeP, char** idP, char** typeP, Kj
   *idP   = NULL;
   *typeP = NULL;
 
-  LM_TMP(("KZ: Getting id and type for an entity"));
   for (KjNode* itemP = entityNodeP->value.firstChildP; itemP != NULL; itemP = itemP->next)
   {
-    LM_TMP(("KZ: got a '%s'", itemP->name));
     if (SCOMPARE3(itemP->name, 'i', 'd', 0))
     {
       if (idNodeP != NULL)
@@ -317,8 +309,6 @@ static bool entityIdAndTypeGet(KjNode* entityNodeP, char** idP, char** typeP, Kj
       else
         typeNodeP = itemP;
     }
-    else
-      LM_TMP(("UPSERT: never mind '%s'", itemP->name));
   }
 
   if (entityIdCheck(idNodeP, idDuplicated, errorsArrayP) == false)
@@ -416,12 +406,11 @@ static bool kjTreeToContextElementAttributes
 //
 // kjTreeToUpdateContextRequest -
 //
-void kjTreeToUpdateContextRequest(ConnectionInfo* ciP, UpdateContextRequest* ucrP, KjNode* treeP, KjNode* errorsArrayP)
+static void kjTreeToUpdateContextRequest(ConnectionInfo* ciP, UpdateContextRequest* ucrP, KjNode* treeP, KjNode* errorsArrayP)
 {
   KjNode* next;
   KjNode* entityP = treeP->value.firstChildP;
 
-  LM_TMP(("UPSERT: In kjTreeToUpdateContextRequest"));
   while (entityP != NULL)
   {
     next = entityP->next;
@@ -441,22 +430,8 @@ void kjTreeToUpdateContextRequest(ConnectionInfo* ciP, UpdateContextRequest* ucr
     char*  entityType = NULL;
     char*  entityTypeExpanded;
 
-    // <DEBUG>
-    char debugBuf[1024];
-    kjRender(orionldState.kjsonP, entityP, debugBuf, sizeof(debugBuf));
-    LM_TMP(("UPSERT: entity before extraction: %s", debugBuf));
-    // </DEBUG>
-    
     entityFieldsExtractSimple(entityP, &entityId, &entityType);
     
-    // <DEBUG>
-    kjRender(orionldState.kjsonP, entityP, debugBuf, sizeof(debugBuf));
-    LM_TMP(("UPSERT: entity after extraction: %s", debugBuf));
-    LM_TMP(("UPSERT: entity id:   %s", entityId));
-    LM_TMP(("UPSERT: entity type: %s", entityType));
-    // </DEBUG>
-
-    LM_TMP(("UPSERT: expanding entity type '%s' (in context at %p)", entityType, orionldState.contextP));
     entityTypeExpanded = orionldContextItemExpand(orionldState.contextP, entityType, NULL, true, NULL);
     if (entityTypeExpanded == NULL)
     {
@@ -465,7 +440,6 @@ void kjTreeToUpdateContextRequest(ConnectionInfo* ciP, UpdateContextRequest* ucr
       entityP =	next;
       continue;
     }
-    LM_TMP(("UPSERT: expanded entity type '%s' to '%s'", entityType, entityTypeExpanded));
 
     ContextElement* ceP        = new ContextElement();  // FIXME: Any way I can avoid to allocate ?
     EntityId*       entityIdP  = &ceP->entityId;
@@ -545,13 +519,11 @@ KjNode* removeArrayEntityLookup(KjNode* removeArray, char* entityId)
 //
 bool typeCheckForNonExistingEntities(KjNode* incomingTree, KjNode* idTypeAndCreDateFromDb, KjNode* errorsArrayP, KjNode* removeArray)
 {
-  LM_TMP(("KZ: In typeCheckForNonExistingEntities"));
   KjNode* inNodeP = incomingTree->value.firstChildP;
   KjNode* next;
 
   while (inNodeP != NULL)
   {
-    LM_TMP(("KZ: Treating entity at %p", inNodeP));
     //
     // entities that weren't found in the DB MUST contain entity::type
     //
@@ -564,11 +536,9 @@ bool typeCheckForNonExistingEntities(KjNode* incomingTree, KjNode* idTypeAndCreD
       next = inNodeP->next;
       kjChildRemove(incomingTree, inNodeP);
       inNodeP = next;
-      LM_TMP(("KZ: Removed node %p from incomingTree. next is:", inNodeP));
       continue;
     }
 
-    LM_TMP(("KZ: entity is: %s", inEntityIdNodeP->value.s));
     KjNode* dbEntityId = NULL;
 
     // Lookup the entity::id in what came from the database - if anything at all came
@@ -577,7 +547,6 @@ bool typeCheckForNonExistingEntities(KjNode* incomingTree, KjNode* idTypeAndCreD
 
     if (dbEntityId == NULL)  // This Entity is to be created - "type" is mandatory!
     {
-      LM_TMP(("KZ: entity '%s' did not exist - MUST have 'type' field", inEntityIdNodeP->value.s));
       KjNode* inEntityTypeNodeP = kjLookup(inNodeP, "type");
 
       if (inEntityTypeNodeP == NULL)
@@ -594,15 +563,11 @@ bool typeCheckForNonExistingEntities(KjNode* incomingTree, KjNode* idTypeAndCreD
         inNodeP =	next;
         continue;
       }
-      LM_TMP(("KZ: entity '%s' did not exist but has the 'type' field - all OK", inEntityIdNodeP->value.s));
     }
-    else
-      LM_TMP(("KZ: entity '%s' already exists - no need to have entity::type", inEntityIdNodeP->value.s));
 
     inNodeP = inNodeP->next;
   }
 
-  LM_TMP(("KZ: typeCheckForNonExistingEntities returns OK"));
   return true;
 }
 
@@ -647,27 +612,12 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
     return false;
   }
 
-  // <DEBUG>
-  if (orionldState.uriParamOptions.replace == true)
-    LM_TMP(("UPSERT: replace mode"));
-  else
-    LM_TMP(("UPSERT: update mode"));
-  // </DEBUG>
-
 
   //
   // if (replace)
   // {
   //   01. Create "idArray" from the "incomingTree", with error handling
-  //       Foreach entity in incomingTree:
-  //       01.1 Call entityFieldsExtract
-  //       01.2 If entityFieldsExtract returns false:
-  //            01.2.1 remove entity from incomingTree
-  //            01.2.3 add error by calling entityErrorPush()
-  //       01.3 ELSE: add entity to idArray
-  //
   //   02. Get "idTypeAndCredateFromDb" by calling dbQueryEntitiesAsKjTree(idArray);
-  //
   //   03. Creation Date from DB entities, and type-check
   //       - Make sure that no entity in the incomingTree contains a "type" != type in db for that entity
   //       - Add creDate from DB to incomingTree
@@ -684,11 +634,13 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
   //            03.5.1 remove entity from idArray
   //            03.5.2 add error by calling entityErrorPush()
   //       03.6 Add creDate to entity-pointer in "incomingTree"
+  //       04. Make sure all entities that did not exist hav a type in the incoming payload
+  //       05. Remove the entities in "idArray" from DB
   // }
   //
-  // 04. Remove the entities in "idArray" from DB
-  // 05. Fill in UpdateContextRequest from "incomingTree"
-  // 06. Call mongoBackend with AppendStrict - as all already existing entities have been removed
+  // 06. Fill in UpdateContextRequest from "incomingTree"
+  // 07. Set 'modDate' as "RIGHT NOW" for all entities
+  // 08. Call mongoBackend with AppendStrict - as all already existing entities have been removed
   //
   KjNode*               incomingTree   = orionldState.requestTree;
   KjNode*               idArray        = kjArray(orionldState.kjsonP, NULL);
@@ -697,16 +649,9 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
   KjNode*               entityP;
   KjNode*               next;
 
-  // <DEBUG>
-  char debugBuf[1024];
-  kjRender(orionldState.kjsonP, incomingTree, debugBuf, sizeof(debugBuf));
-  LM_TMP(("KZ: incomingTree 1: %s", debugBuf));
-  // </DEBUG>
-  
   //
   // 01. Create idArray as an array of entity IDs, extracted from orionldState.requestTree
   //
-  LM_TMP(("KZ: Creating idArray as an array of entity IDs"));
   entityP = incomingTree->value.firstChildP;
   while (entityP)
   {
@@ -715,25 +660,11 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
     char* entityId;
     char* entityType;
 
-    kjRender(orionldState.kjsonP, incomingTree, debugBuf, sizeof(debugBuf));
-    LM_TMP(("KZ: incomingTree before entityIdAndTypeGet: %s", debugBuf));
-
-    kjRender(orionldState.kjsonP, entityP, debugBuf, sizeof(debugBuf));
-    LM_TMP(("KZ: entityP before entityIdAndTypeGet: %s", debugBuf));
-
     // entityIdAndTypeGet calls entityIdCheck/entityTypeCheck that adds the entity in errorsArrayP if needed
     if (entityIdAndTypeGet(entityP, &entityId, &entityType, errorsArrayP) == true)
-    {
-      LM_TMP(("UPSERT: adding entity '%s' to idArray", entityId));
       entityIdPush(idArray, entityId);
-    }
     else
-    {
       kjChildRemove(incomingTree, entityP);
-    }
-
-    kjRender(orionldState.kjsonP, incomingTree, debugBuf, sizeof(debugBuf));
-    LM_TMP(("KZ: incomingTree after entityIdAndTypeGet: %s", debugBuf));
 
     entityP = next;
   }
@@ -744,39 +675,7 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
   //     whose Entity::Id is part of the array "idArray".
   //     The result is "idTypeAndCredateFromDb" - an array of "tiny" entities with { id, type and creDate }
   //
-  kjRender(orionldState.kjsonP, idArray, debugBuf, sizeof(debugBuf));
-  LM_TMP(("UPSERT: idArray before calling dbQueryEntitiesAsKjTree: %s", debugBuf));
-
-  LM_TMP(("UPSERT: Getting { id, type and creDate } for all entities in 'inArray' from DB"));
   KjNode* idTypeAndCreDateFromDb = dbQueryEntitiesAsKjTree(idArray);
-  LM_TMP(("UPSERT: dbQueryEntitiesAsKjTree gave me a KjNode tree at %p", idTypeAndCreDateFromDb));
-
-  kjRender(orionldState.kjsonP, incomingTree, debugBuf, sizeof(debugBuf));
-  LM_TMP(("UPSERT: incomingTree 2: %s", debugBuf));
-
-  // <DEBUG>
-  if (idTypeAndCreDateFromDb != NULL)
-  {
-    LM_TMP(("UPSERT: idTypeAndCreDateFromDb is not NULL"));
-    int entities = 0;
-    for (KjNode* entityP = idTypeAndCreDateFromDb->value.firstChildP; entityP != NULL; entityP = entityP->next)
-    {
-      ++entities;
-      for (KjNode* itemP = entityP->value.firstChildP; itemP != NULL; itemP = itemP->next)
-      {
-        if (itemP->type == KjString)
-          LM_TMP(("UPSERT: %s: %s", itemP->name, itemP->value.s));
-        else if (itemP->type == KjInt)
-          LM_TMP(("UPSERT: %s: %d", itemP->name, itemP->value.i));
-        else
-          LM_TMP(("UPSERT: %s: %s", itemP->name, kjValueType(itemP->type)));
-      }
-    }
-    LM_TMP(("UPSERT: %d entities in idTypeAndCreDateFromDb", entities));
-  }
-  // </DEBUG>
-
-
 
   //
   // 03. Creation Date from DB entities, and type-check
@@ -828,31 +727,25 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
           // - removed from incomingTree
           // - not added to "removeArray"
           //
-          LM_TMP(("UPSERT: entity '%s' types differ: '%s' in incoming payload, '%s' in DB - removing it and reporting error", idInDb, typeInPayload, typeInDb));
           entityErrorPush(errorsArrayP, idInDb, OrionldBadRequestData, "non-matching entity type", typeInPayload, 400);
           kjChildRemove(incomingTree, entityP);
           entityP = next;
           continue;
         }
-        else
-          LM_TMP(("UPSERT: the type for entity '%s' is OK", idInDb));
       }
       else
       {
         // Add 'type' to entity in incoming tree, if necessary
         KjNode* typeNodeP = kjString(orionldState.kjsonP, "type", typeInDb);
         kjChildAdd(entityP, typeNodeP);
-        LM_TMP(("UPSERT: Added 'type': '%s' to entity in incomingTree", typeInDb));
       }
 
       //
       // Add creDate from DB to the entity of the incoming tree
       //
-      LM_TMP(("UPSERT creDate in DB: %d", creDateInDb));
       KjNode* creDateNodeP = kjInteger(orionldState.kjsonP, "creDate", creDateInDb);
       kjChildAdd(entityP, creDateNodeP);
       orionldState.keepCreDate = true;
-      LM_TMP(("UPSERT: Added 'creDate' to entity in incomingTree"));
 
       //
       // Add the Entity-ID to "removeArray" for later removal, before re-creation
@@ -881,7 +774,7 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
   //
   if (removeArray == NULL)
     removeArray = kjArray(orionldState.kjsonP, NULL);
-  LM_TMP(("Checking that entities that did not already exist have the mandatory 'type' field"));
+
   typeCheckForNonExistingEntities(incomingTree, idTypeAndCreDateFromDb, errorsArrayP, removeArray);
 
 
@@ -889,12 +782,7 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
   // 05. Remove the entities in "removeArray" from DB
   //
   if ((removeArray != NULL) && (removeArray->value.firstChildP != NULL))
-  {
-    LM_TMP(("UPSERT: removing %d entities before re-creating them", entitiesToRemove));
     dbEntityBatchDelete(removeArray);
-  }
-  else
-    LM_TMP(("UPSERT: no removal of entities necessary"));
     
   //
   // 06. Fill in UpdateContextRequest from "incomingTree"
@@ -903,22 +791,16 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
 
   mongoRequest.updateActionType = ActionTypeAppendStrict;
 
-  kjRender(orionldState.kjsonP, incomingTree, debugBuf, sizeof(debugBuf));
-  LM_TMP(("UPSERT: incomingTree 3: %s", debugBuf));
-
-  LM_TMP(("UPSERT: calling kjTreeToUpdateContextRequest. incomingTree at %p", incomingTree));
   kjTreeToUpdateContextRequest(ciP, &mongoRequest, incomingTree, errorsArrayP);
-  LM_TMP(("UPSERT: after kjTreeToUpdateContextRequest"));
 
 
   //
   // 07. Set 'modDate' as "RIGHT NOW"
   //
-  time_t  now          = time(NULL);
-  LM_TMP(("UPSERT modDate (now): %d", now));
+  time_t now = time(NULL);
+
   for (unsigned int ix = 0; ix < mongoRequest.contextElementVector.size(); ++ix)
   {
-    LM_TMP(("UPSERT: Setting modDate to %d for entity '%s'", now, mongoRequest.contextElementVector[ix]->entityId.id.c_str()));
     mongoRequest.contextElementVector[ix]->entityId.modDate = now;
   }
   
@@ -929,7 +811,6 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
   //
   UpdateContextResponse mongoResponse;
 
-  LM_TMP(("UPSERT: Calling mongoUpdateContext to create %d entities", mongoRequest.contextElementVector.size()));
   ciP->httpStatusCode = mongoUpdateContext(&mongoRequest,
                                            &mongoResponse,
                                            orionldState.tenant,
