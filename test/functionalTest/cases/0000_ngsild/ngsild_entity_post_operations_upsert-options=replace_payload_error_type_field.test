@@ -213,7 +213,7 @@ Date: REGEX(.*)
 02. Update all four entities. Vehicle:00001 with a entity::type that differs
 ============================================================================
 HTTP/1.1 200 OK
-Content-Length: 295
+Content-Length: 289
 Content-Type: application/json
 Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
 Date: REGEX(.*)
@@ -225,15 +225,15 @@ Date: REGEX(.*)
             "error": {
                 "detail": "Motorcycle",
                 "status": 400,
-                "title": "attempt to modify entity::type",
+                "title": "non-matching entity type",
                 "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
             }
         }
     ],
     "success": [
+        "urn:ngsi-ld:Vehicle:00002",
         "urn:ngsi-ld:Vehicle:00003",
-        "urn:ngsi-ld:Vehicle:00004",
-        "urn:ngsi-ld:Vehicle:00002"
+        "urn:ngsi-ld:Vehicle:00004"
     ]
 }
 

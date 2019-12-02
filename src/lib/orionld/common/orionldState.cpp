@@ -156,6 +156,8 @@ void orionldStateInit(void)
 
   orionldState.prefixCache.index     = 0;
   orionldState.prefixCache.items     = 0;
+
+  orionldState.keepCreDate           = false;
 }
 
 

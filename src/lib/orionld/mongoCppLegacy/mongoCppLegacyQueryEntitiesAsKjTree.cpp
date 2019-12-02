@@ -35,10 +35,9 @@ extern "C"
 #include "logMsg/traceLevels.h"                                          // Lmt*
 
 #include "mongoBackend/MongoGlobal.h"                                    // getMongoConnection, releaseMongoConnection, ...
+#include "mongoBackend/safeMongo.h"                                      // getStringFieldF, ...
 #include "orionld/common/orionldState.h"                                 // orionldState, dbName, mongoEntitiesCollectionP
 #include "orionld/db/dbCollectionPathGet.h"                              // dbCollectionPathGet
-#include "orionld/db/dbConfiguration.h"                                  // dbDataToKjTree, dbDataFromKjTree
-#include "orionld/mongoCppLegacy/mongoCppLegacyKjTreeFromBsonObj.h"      // mongoCppLegacyKjTreeFromBsonObj
 #include "orionld/mongoCppLegacy/mongoCppLegacyQueryEntitiesAsKjTree.h"  // Own interface
 
 
@@ -65,8 +64,6 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
     return NULL;
   }
 
-  // LM_TMP(("Collection Path: %s", collectionPath));
-
   // Build the filter for the query
   mongo::BSONObjBuilder    filter;
   mongo::BSONObjBuilder    inObj;
@@ -84,52 +81,55 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
   //
   // Specify the fields to return
   //
-  fields.append("_id.id",  1);
-  fields.append("type",    1);
+  fields.append("_id",     1);  // "id" and "type" are inside "_id"
   fields.append("creDate", 1);
 
-  mongo::BSONObj fieldsToReturn = fields.obj();
+  mongo::BSONObj                        fieldsToReturn = fields.obj();
+  mongo::Query                          query(filter.obj());
+  mongo::DBClientBase*                  connectionP    = getMongoConnection();
+  std::auto_ptr<mongo::DBClientCursor>  cursorP        = connectionP->query(collectionPath, query, 0, 0, &fieldsToReturn);
 
 
-  mongo::DBClientBase* connectionP = getMongoConnection();
-  std::auto_ptr<mongo::DBClientCursor>  cursorP;
-  mongo::Query         query(filter.obj());
+  KjNode*  entitiesArray = NULL;
+  int      entities     = 0;
 
-  // Debugging
-  // LM_TMP(("LARYQUERY: filter: %s", query.toString().c_str()));
-
-  cursorP = connectionP->query(collectionPath, query, 0, 0, &fieldsToReturn);
-
-  // Create to Kj-Tree that will hold the entities of the query
-  KjNode*  entitiesTree = kjArray(orionldState.kjsonP, NULL);
-  int      limitOp      = 0;
-
-  while (cursorP->more())
+  while (moreSafe(cursorP))
   {
-    mongo::BSONObj  bsonObj;
-    KjNode*         entityObj;
-    char*           title;
-    char*           detail;
+    mongo::BSONObj bsonObj;
+    std::string    errorString;
 
-    bsonObj = cursorP->nextSafe();
-
-    // Convert the Entity from BSON Object to Kj-Tree
-    entityObj = mongoCppLegacyKjTreeFromBsonObj(&bsonObj, &title, &detail);
-
-    if (entityObj == NULL)
+    if (!nextSafeOrErrorF(cursorP, &bsonObj, &errorString))
     {
-      LM_E(("Unable to create KjNode tree from mongo::BSONObj '%s'", bsonObj.toString().c_str()));
+      LM_E(("Internal Error (unable to extract entity from database: %s)", errorString.c_str()));
       continue;
     }
 
-    // Add the Entity to the entity-tree
-    kjChildAdd(entitiesTree, entityObj);
+    mongo::BSONObj     idField      = getObjectFieldF(bsonObj, "_id");
+    std::string        idString     = getStringFieldF(idField, "id");
+    std::string        typeString   = getStringFieldF(idField, "type");
+    int                creDate      = getIntFieldF(bsonObj, "creDate");
+    KjNode*            entityTree   = kjObject(orionldState.kjsonP, NULL);
+    KjNode*            idNodeP      = kjString(orionldState.kjsonP,  "id",      idString.c_str());
+    KjNode*            typeNodeP    = kjString(orionldState.kjsonP,  "type",    typeString.c_str());
+    KjNode*            creDateNodeP = kjInteger(orionldState.kjsonP, "creDate", creDate);
 
-    //
+    kjChildAdd(entityTree, idNodeP);
+    kjChildAdd(entityTree, typeNodeP);
+    kjChildAdd(entityTree, creDateNodeP);
+
+    char debugBuffer[512];
+    kjRender(orionldState.kjsonP, entityTree, debugBuffer, sizeof(debugBuffer));
+
+    // Create the entity array if it doesn't already exist
+    if (entitiesArray == NULL)
+      entitiesArray = kjArray(orionldState.kjsonP, NULL);
+
+    // Add the Entity to the entity array
+    kjChildAdd(entitiesArray, entityTree);
+
     // A limit of 100 entities has been established.
-    //
-    ++limitOp;
-    if (limitOp >= 100)
+    ++entities;
+    if (entities >= 100)
     {
       LM_W(("Too many entities - breaking loop at 100"));
       break;
@@ -139,5 +139,5 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
 
   releaseMongoConnection(connectionP);
 
-  return entitiesTree;
+  return entitiesArray;
 }

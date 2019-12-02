@@ -206,6 +206,11 @@ typedef struct OrionldConnectionState
   mongoc_client_t*        mongoClient;
   mongoc_database_t*      mongoDatabase;
 #endif
+
+  //
+  // Instructions for mongoBackend
+  //
+  bool                    keepCreDate;
 } OrionldConnectionState;
 
 

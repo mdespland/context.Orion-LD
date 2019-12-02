@@ -4034,8 +4034,15 @@ void processContextElement
         // Set action type
         setActionType(notifyCerP, NGSI_MD_ACTIONTYPE_APPEND);
 
-        // Set creaDate and modDate times
-        notifyCerP->contextElement.entityId.creDate = now;
+        // Set creDate and modDate times
+        if (orionldState.keepCreDate == false)
+        {
+          LM_TMP(("UPSERT: Setting Entity creDate to NOW (old value for creDate: %d)", notifyCerP->contextElement.entityId.creDate));
+          notifyCerP->contextElement.entityId.creDate = now;
+        }
+        else
+          LM_TMP(("UPSERT: Keeping old creDate (%d)", notifyCerP->contextElement.entityId.creDate));
+
         notifyCerP->contextElement.entityId.modDate = now;
 
         for (unsigned int ix = 0; ix < notifyCerP->contextElement.contextAttributeVector.size(); ix++)

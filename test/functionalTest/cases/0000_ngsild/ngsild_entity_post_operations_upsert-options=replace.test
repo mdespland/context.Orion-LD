@@ -132,12 +132,12 @@ E2_T6_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:ent
 E2_T6_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})' | grep modDate | head -1)
 E3_T6_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E3"})' | grep creDate | head -1)
 E3_T6_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E3"})' | grep modDate | head -1)
-echo $E1_T6_creDate
-echo $E1_T6_modDate
-echo $E2_T6_creDate
-echo $E2_T6_modDate
-echo $E3_T6_creDate
-echo $E3_T6_modDate
+echo E1: $E1_T6_creDate
+echo E1: $E1_T6_modDate
+echo E2: $E2_T6_creDate
+echo E2: $E2_T6_modDate
+echo E3: $E3_T6_creDate
+echo E3: $E3_T6_modDate
 echo
 echo
 
@@ -291,19 +291,19 @@ Date: REGEX(.*)
 
 06. T6: Extract creDate and modDate of E1, E2 and E3 from mongo
 ===============================================================
-"creDate" : REGEX(.*),
-"modDate" : REGEX(.*),
-"creDate" : REGEX(.*),
-"modDate" : REGEX(.*),
-"creDate" : REGEX(.*),
-"modDate" : REGEX(.*),
+E1: "creDate" : REGEX(.*),
+E1: "modDate" : REGEX(.*),
+E2: "creDate" : REGEX(.*),
+E2: "modDate" : REGEX(.*),
+E3: "creDate" : REGEX(.*),
+E3: "modDate" : REGEX(.*),
 
 
 07. Make sure all creDate/modDates are correct
 ==============================================
 E1::creDate is OK
 E1::modDate is OK
-E2::creDate has changed!!!
+E2::creDate is OK
 E2::modDate is OK
 
 
