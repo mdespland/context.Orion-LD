@@ -431,13 +431,13 @@ static void kjTreeToUpdateContextRequest(ConnectionInfo* ciP, UpdateContextReque
     char*  entityTypeExpanded;
 
     entityFieldsExtractSimple(entityP, &entityId, &entityType);
-    
+
     entityTypeExpanded = orionldContextItemExpand(orionldState.contextP, entityType, NULL, true, NULL);
     if (entityTypeExpanded == NULL)
     {
       LM_E(("orionldContextItemExpand failed for '%s': %s", entityType, detail));
       entityErrorPush(errorsArrayP, entityId, OrionldBadRequestData, "unable to expand entity::type", detail, 400);
-      entityP =	next;
+      entityP = next;
       continue;
     }
 
@@ -498,7 +498,7 @@ static void entityTypeAndCreDateGet(KjNode* dbEntityP, char** idP, char** typeP,
 
 // -----------------------------------------------------------------------------
 //
-// removeArrayRemoveEntity - 
+// removeArrayRemoveEntity -
 //
 KjNode* removeArrayEntityLookup(KjNode* removeArray, char* entityId)
 {
@@ -560,7 +560,7 @@ bool typeCheckForNonExistingEntities(KjNode* incomingTree, KjNode* idTypeAndCreD
 
         next = inNodeP->next;
         kjChildRemove(incomingTree, inNodeP);
-        inNodeP =	next;
+        inNodeP = next;
         continue;
       }
     }
@@ -805,7 +805,7 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
   {
     mongoRequest.contextElementVector[ix]->entityId.modDate = now;
   }
-  
+
 
   //
   // 08. Call mongoBackend - to create/modify the entities
