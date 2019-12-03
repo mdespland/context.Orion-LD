@@ -577,7 +577,7 @@ bool typeCheckForNonExistingEntities(KjNode* incomingTree, KjNode* idTypeAndCreD
 //
 // orionldPostEntityOperationsUpsert -
 //
-// POST /ngsu-ld/v1/entityOperations/upsert
+// POST /ngsi-ld/v1/entityOperations/upsert
 //
 // From the spec:
 //   This operation allows creating a batch of NGSI-LD Entities, updating each of them if they already exist.
@@ -743,9 +743,10 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
       //
       // Add creDate from DB to the entity of the incoming tree
       //
-      KjNode* creDateNodeP = kjInteger(orionldState.kjsonP, "creDate", creDateInDb);
-      kjChildAdd(entityP, creDateNodeP);
-      orionldState.keepCreDate = true;
+      KjNode* creDateNodeP = kjInteger(orionldState.kjsonP, idInDb, creDateInDb);
+      if (orionldState.creDatesP == NULL)
+        orionldState.creDatesP = kjObject(orionldState.kjsonP, NULL);
+      kjChildAdd(orionldState.creDatesP, creDateNodeP);
 
       //
       // Add the Entity-ID to "removeArray" for later removal, before re-creation
@@ -783,7 +784,8 @@ bool orionldPostBatchUpsert(ConnectionInfo* ciP)
   //
   if ((removeArray != NULL) && (removeArray->value.firstChildP != NULL))
     dbEntityBatchDelete(removeArray);
-    
+
+
   //
   // 06. Fill in UpdateContextRequest from "incomingTree"
   //

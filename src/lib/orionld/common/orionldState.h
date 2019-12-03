@@ -137,14 +137,11 @@ typedef struct OrionldConnectionState
   bool                    linkHeaderAdded;
   bool                    noLinkHeader;
   OrionldContext*         contextP;
-  bool                    contextToBeFreed;
   ApiVersion              apiVersion;
   int                     requestNo;
   KjNode*                 locationAttributeP;           // This assumes we have only ONE Geo-Location attribute ...
   char*                   geoType;
   KjNode*                 geoCoordsP;
-  int64_t                 overriddenCreationDate;
-  int64_t                 overriddenModificationDate;
   bool                    entityCreated;                // If an entity is created, if complex context, it must be stored
   char*                   entityId;
   OrionldUriParamOptions  uriParamOptions;
@@ -210,7 +207,7 @@ typedef struct OrionldConnectionState
   //
   // Instructions for mongoBackend
   //
-  bool                    keepCreDate;
+  KjNode*                 creDatesP;
 } OrionldConnectionState;
 
 

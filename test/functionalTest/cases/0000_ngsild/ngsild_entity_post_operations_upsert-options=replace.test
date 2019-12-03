@@ -26,7 +26,7 @@ Entity Creation and Retrieval
 --SHELL-INIT--
 export BROKER=orionld
 dbInit CB
-brokerStart CB 212-249
+brokerStart CB 0-255
 
 --SHELL--
 
@@ -76,10 +76,10 @@ echo
 
 echo "03. T3: Extract creDate and modDate of E1 and E2 from mongo (E1_T3_creDate, E1_T3_modDate, E2_T3_creDate, E2_T3_modDate)"
 echo "========================================================================================================================"
-E1_T3_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})' | grep creDate | head -1)
-E1_T3_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})' | grep modDate | head -1)
-E2_T3_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})' | grep creDate | head -1)
-E2_T3_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})' | grep modDate | head -1)
+E1_T3_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})' | grep '^	"creDate"')
+E1_T3_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})' | grep '^	"modDate"')
+E2_T3_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})' | grep '^	"creDate"')
+E2_T3_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})' | grep '^	"modDate"')
 echo $E1_T3_creDate
 echo $E1_T3_modDate
 echo $E2_T3_creDate
@@ -126,12 +126,12 @@ echo
 
 echo "06. T6: Extract creDate and modDate of E1, E2 and E3 from mongo"
 echo "==============================================================="
-E1_T6_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})' | grep creDate | head -1)
-E1_T6_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})' | grep modDate | head -1)
-E2_T6_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})' | grep creDate | head -1)
-E2_T6_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})' | grep modDate | head -1)
-E3_T6_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E3"})' | grep creDate | head -1)
-E3_T6_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E3"})' | grep modDate | head -1)
+E1_T6_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})' | grep '^	"creDate"')
+E1_T6_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E1"})' | grep '^	"modDate"')
+E2_T6_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})' | grep '^	"creDate"')
+E2_T6_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E2"})' | grep '^	"modDate"')
+E3_T6_creDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E3"})' | grep '^	"creDate"')
+E3_T6_modDate=$(mongoCmd2 ftest 'db.entities.findOne({"_id.id": "urn:ngsi-ld:entity:E3"})' | grep '^	"modDate"')
 echo E1: $E1_T6_creDate
 echo E1: $E1_T6_modDate
 echo E2: $E2_T6_creDate
@@ -161,6 +161,8 @@ fi
 if [ "$E2_T6_creDate" != "$E2_T3_creDate" ]
 then
   echo "E2::creDate has changed!!!"
+  echo $E2_T3_creDate
+  echo $E2_T6_creDate
 else
   echo "E2::creDate is OK"
 fi
