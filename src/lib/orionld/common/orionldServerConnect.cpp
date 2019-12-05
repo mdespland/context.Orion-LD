@@ -39,7 +39,7 @@
 //
 // orionldServerConnect -
 //
-int orionldServerConnect(char* ip, unsigned short portNo)
+int orionldServerConnect(char* ip, uint16_t portNo)
 {
   int                 fd;
   struct hostent*     heP;
@@ -69,8 +69,6 @@ int orionldServerConnect(char* ip, unsigned short portNo)
     close(fd);
     LM_E(("Unable to connect to host/port: %s:%d", ip, portNo));
   }
-
-  LM_TMP(("NFY: Connected to server %s:%d", ip, portNo));
 
   return fd;
 }

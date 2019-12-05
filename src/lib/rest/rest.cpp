@@ -676,10 +676,7 @@ static void requestCompleted
   struct timespec  reqEndTime;
 
   if (orionldState.notify == true)
-  {
-    LM_TMP(("NFY: Rest request has finished - now time to send notifications"));
     orionldNotify();
-  }
 
   if ((ciP->payload != NULL) && (ciP->payload != static_buffer))
   {

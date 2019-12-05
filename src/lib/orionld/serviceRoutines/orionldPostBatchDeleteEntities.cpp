@@ -27,23 +27,24 @@ extern "C"
 #include "kjson/KjNode.h"                                               // KjNode
 #include "kjson/kjBuilder.h"                                            // kjString, kjObject, ...
 #include "kjson/kjRender.h"                                             // kjRender
+#include "kjson/kjLookup.h"                                             // kjLookup
 }
 
 #include "logMsg/logMsg.h"                                              // LM_*
 #include "logMsg/traceLevels.h"                                         // Lmt*
 
-#include "rest/ConnectionInfo.h"                                        // ConnectionInfo
-#include "ngsi10/UpdateContextRequest.h"                                // UpdateContextRequest
-#include "ngsi10/UpdateContextResponse.h"                               // UpdateContextResponse
-#include "orionld/common/SCOMPARE.h"                                    // SCOMPAREx
-#include "orionld/common/urlCheck.h"                                    // urlCheck
-#include "orionld/common/urnCheck.h"                                    // urnCheck
-#include "orionld/common/orionldState.h"                                // orionldState
-#include "orionld/common/orionldErrorResponse.h"                        // orionldErrorResponseCreate
-#include "orionld/db/dbEntityBatchDelete.h"                             // dbEntityBatchDelete.h
-#include "orionld/mongoCppLegacy/mongoCppLegacyEntityBatchDelete.h"     // mongoCppLegacyEntityBatchDelete
-#include "orionld/mongoCppLegacy/mongoCppLegacyQueryEntitiesAsKjTree.h" // mongoCppLegacyQueryEntitiesAsKjTree
-#include "orionld/serviceRoutines/orionldPostBatchDeleteEntities.h"     // Own interface
+#include "rest/ConnectionInfo.h"                                         // ConnectionInfo
+#include "ngsi10/UpdateContextRequest.h"                                 // UpdateContextRequest
+#include "ngsi10/UpdateContextResponse.h"                                // UpdateContextResponse
+#include "orionld/common/SCOMPARE.h"                                     // SCOMPAREx
+#include "orionld/common/urlCheck.h"                                     // urlCheck
+#include "orionld/common/urnCheck.h"                                     // urnCheck
+#include "orionld/common/orionldState.h"                                 // orionldState
+#include "orionld/common/orionldErrorResponse.h"                         // orionldErrorResponseCreate
+#include "orionld/db/dbEntityBatchDelete.h"                              // dbEntityBatchDelete.h
+#include "orionld/mongoCppLegacy/mongoCppLegacyEntityBatchDelete.h"      // mongoCppLegacyEntityBatchDelete
+#include "orionld/mongoCppLegacy/mongoCppLegacyEntityListLookupWithIdTypeCreDate.h"  // mongoCppLegacyEntityListLookupWithIdTypeCreDate
+#include "orionld/serviceRoutines/orionldPostBatchDeleteEntities.h"      // Own interface
 
 
 
@@ -51,10 +52,15 @@ extern "C"
 //
 // orionldPostBatchDeleteEntities -
 //
+// This function receives an array of entity ids as parameter and performs the batch delete operation. 
+// It will remove a set of entities from the database.
+//
+// 
+//
 bool orionldPostBatchDeleteEntities(ConnectionInfo* ciP)
 {
-  KjNode* success   = kjArray(orionldState.kjsonP, "S");
-  KjNode* errors    = kjArray(orionldState.kjsonP, "E");
+  KjNode* success  = kjArray(orionldState.kjsonP, "S");
+  KjNode* errors   = kjArray(orionldState.kjsonP, "E");
   KjNode* errorObj;
   KjNode* nodeP;
 
@@ -67,7 +73,7 @@ bool orionldPostBatchDeleteEntities(ConnectionInfo* ciP)
   }
 
   //
-  // Making sure all items of the array are strings and valid URIs
+  // Making sure all array items are strings and valid URIs
   //
   for (KjNode* idNodeP = orionldState.requestTree->value.firstChildP; idNodeP != NULL; idNodeP = idNodeP->next)
   {
@@ -90,31 +96,31 @@ bool orionldPostBatchDeleteEntities(ConnectionInfo* ciP)
     }
   }
 
+  #if 0
+    if (mongoCppLegacyEntityListLookupWithIdTypeCreDate(orionldState.requestTree) == NULL)
+    {
+      LM_E(("mongoCppLegacyEntityListLookupWithIdTypeCreDate returned NULL"));
+      ciP->httpStatusCode = SccBadRequest;
+      if (orionldState.responseTree == NULL)
+        orionldErrorResponseCreate(OrionldBadRequestData, "Database Error", "mongoCppLegacyEntityListLookupWithIdTypeCreDate returned NULL");
+      return false;
+    }
+  #endif
+
   //
   // First get the entities from database to check if they exist
   //
-  KjNode* dbEntities = mongoCppLegacyQueryEntitiesAsKjTree(orionldState.requestTree);
-  
+  KjNode* dbEntities = mongoCppLegacyEntityListLookupWithIdTypeCreDate(orionldState.requestTree);
   if (dbEntities == NULL)
   {
-    LM_E(("mongoCppLegacyQueryEntitiesAsKjTree returned null"));
+    LM_E(("mongoCppLegacyEntityListLookupWithIdTypeCreDate returned NULL"));
     ciP->httpStatusCode = SccBadRequest;
-    if (orionldState.responseTree == NULL)
-      orionldErrorResponseCreate(OrionldBadRequestData, "Database Error", "mongoCppLegacyQueryEntitiesAsKjTree returned null");
-    return false;
-  }
-
-  if (dbEntities->value.firstChildP == NULL)
-  {
-    LM_E(("mongoCppLegacyQueryEntitiesAsKjTree returned empty array"));
-    ciP->httpStatusCode = SccBadRequest;
-    if (orionldState.responseTree == NULL)
-      orionldErrorResponseCreate(OrionldBadRequestData, "Invalid payload", "Entities were not found in database.");
+    orionldErrorResponseCreate(OrionldBadRequestData, "Entities not found", "Entities were not found in database.");
     return false;
   }
   
   //
-  // Now loop in array of entities from database to compare each id with the id from requestTree
+  // Now loop in the array of entities from database and compare each id with the id from requestTree
   //
   KjNode* reqEntityId = orionldState.requestTree->value.firstChildP;
   while (reqEntityId != NULL)
@@ -124,24 +130,12 @@ bool orionldPostBatchDeleteEntities(ConnectionInfo* ciP)
     
     for (KjNode* dbEntity = dbEntities->value.firstChildP; dbEntity != NULL; dbEntity = dbEntity->next)
     {
-      KjNode* dbEntity_Id = dbEntity->value.firstChildP;     // _id field
-      KjNode* dbEntityId  = dbEntity_Id->value.firstChildP;  // id field
-
-      if (SCOMPARE3(dbEntityId->name, 'i', 'd', 0))
+      KjNode* dbEntityId  = kjLookup(dbEntity, "id");
+      
+      if (strcmp(reqEntityId->value.s, dbEntityId->value.s) == 0)
       {
-        if (strcmp(reqEntityId->value.s, dbEntityId->value.s) == 0)
-        {
-          idExists = true;
-          break; // Found. No need to keep searching.
-        }
-      }
-      else
-      {
-        // There is no id field in entity object
-        LM_E(("mongoCppLegacyQueryEntitiesAsKjTree returned invalid entity object"));
-        ciP->httpStatusCode = SccReceiverInternalError;
-        orionldErrorResponseCreate(OrionldInternalError, "Internal Error", "mongoCppLegacyQueryEntitiesAsKjTree returned invalid entity object");
-        return false;
+        idExists = true;
+        break; // Found. No need to keep searching.
       }
     }
     if(idExists == false)
@@ -162,7 +156,9 @@ bool orionldPostBatchDeleteEntities(ConnectionInfo* ciP)
         kjChildRemove(orionldState.requestTree, reqEntityId);
       }
       else
+      {
         kjChildAdd(success, reqEntityId);
+      }
       
       reqEntityId = next;
   }
@@ -170,6 +166,7 @@ bool orionldPostBatchDeleteEntities(ConnectionInfo* ciP)
   //
   // Call batch delete function
   //
+
   if (mongoCppLegacyEntityBatchDelete(orionldState.requestTree) == false)
   {
     LM_E(("mongoCppLegacyEntityBatchDelete returned false"));
@@ -183,7 +180,7 @@ bool orionldPostBatchDeleteEntities(ConnectionInfo* ciP)
     orionldState.responseTree = kjObject(orionldState.kjsonP, NULL);
 
     kjChildAdd(orionldState.responseTree, success);
-    kjChildAdd(orionldState.responseTree, errors);    
+    kjChildAdd(orionldState.responseTree, errors);
     ciP->httpStatusCode = SccOk;
   }
 

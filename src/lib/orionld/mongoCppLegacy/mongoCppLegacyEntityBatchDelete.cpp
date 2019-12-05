@@ -56,8 +56,6 @@ bool mongoCppLegacyEntityBatchDelete(KjNode* entityIdsArray)
     return false;
   }
 
-  LM_TMP(("LARYSSE DB: Collection Path: %s", collectionPath));
-
   mongo::DBClientBase*         connectionP  = getMongoConnection();
   mongo::BulkOperationBuilder  bulk         = connectionP->initializeUnorderedBulkOp(collectionPath);
   const mongo::WriteConcern    writeConcern;
@@ -73,6 +71,6 @@ bool mongoCppLegacyEntityBatchDelete(KjNode* entityIdsArray)
 
   bulk.execute(&writeConcern, &writeResults);
   releaseMongoConnection(connectionP);
-  
+
   return true;
 }

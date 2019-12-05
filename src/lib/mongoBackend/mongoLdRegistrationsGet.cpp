@@ -34,8 +34,7 @@
 #include "orionld/common/orionldState.h"                       // orionldState
 #include "orionld/common/urlCheck.h"                           // urlCheck
 #include "orionld/common/orionldErrorResponse.h"               // orionldErrorResponseCreate
-#include "orionld/context/orionldAliasLookup.h"                // orionldAliasLookup
-#include "orionld/context/orionldUriExpand.h"                  // orionldUriExpand
+#include "orionld/context/orionldContextItemExpand.h"          // orionldContextItemExpand
 #include "mongoBackend/MongoGlobal.h"                          // getMongoConnection
 #include "mongoBackend/safeMongo.h"                            // moreSafe
 #include "mongoBackend/connectionOperations.h"                 // collectionRangedQuery
@@ -69,7 +68,6 @@ static bool uriParamIdToFilter(mongo::BSONObjBuilder* queryBuilderP, char* idLis
 
   for (int ix = 0; ix < ids; ix++)
   {
-    LM_TMP(("_id: %s", idVec[ix].c_str()));
     bsonArray.append(idVec[ix]);
   }
 
@@ -91,8 +89,6 @@ static bool uriParamIdToFilter(mongo::BSONObjBuilder* queryBuilderP, char* idLis
 static bool uriParamIdPatternToFilter(mongo::BSONObjBuilder* queryBuilderP, char* idPattern, std::string* detailsP)
 {
   mongo::BSONObjBuilder  bsonInExpression;
-
-  LM_TMP(("uriParamIdPatternToFilter ss: %s", idPattern));
 
   if (idPattern[0] == 0)
   {
@@ -138,8 +134,6 @@ static bool uriParamTypeToFilter(mongo::BSONObjBuilder* queryBuilderP, char* typ
     return false;
   }
 
-  char typeExpanded[256];
-
   for (int ix = 0; ix < types; ix++)
   {
     char* type = (char*) typeVec[ix].c_str();
@@ -151,12 +145,7 @@ static bool uriParamTypeToFilter(mongo::BSONObjBuilder* queryBuilderP, char* typ
     }
     else
     {
-      if (orionldUriExpand(orionldState.contextP, type, typeExpanded, sizeof(typeExpanded), NULL, &details) == false)
-      {
-        orionldErrorResponseCreate(OrionldBadRequestData, "Error during URI expansion of entity type", details);
-        return false;
-      }
-
+      char* typeExpanded = orionldContextItemExpand(orionldState.contextP, type, NULL, true, NULL);
       bsonArray.append(typeExpanded);
     }
   }
@@ -193,8 +182,6 @@ static bool uriParamAttrsToFilter(mongo::BSONObjBuilder* queryBuilderP, char* at
     return false;
   }
 
-  char attrExpanded[256];
-
   for (int ix = 0; ix < attrs; ix++)
   {
     char* attr = (char*) attrsVec[ix].c_str();
@@ -206,12 +193,7 @@ static bool uriParamAttrsToFilter(mongo::BSONObjBuilder* queryBuilderP, char* at
     }
     else
     {
-      if (orionldUriExpand(orionldState.contextP, attr, attrExpanded, sizeof(attrExpanded), NULL, &details) == false)
-      {
-        orionldErrorResponseCreate(OrionldBadRequestData, "Error during URI expansion of entity attribute", details);
-        return false;
-      }
-
+      char* attrExpanded = orionldContextItemExpand(orionldState.contextP, attr, NULL, true, NULL);
       bsonArray.append(attrExpanded);
     }
   }
@@ -270,8 +252,6 @@ bool mongoLdRegistrationsGet
 
   query = queryBuilder.obj();  // Here all the filters added to queryBuilder are "merged" into 'query'
   query.sort(BSON("_id" << 1));
-
-  // LM_TMP(("KZ: query: %s", query.toString().c_str()));
 
   TIME_STAT_MONGO_READ_WAIT_START();
   reqSemTake(__FUNCTION__, "Mongo GET Registrations", SemReadOp, &reqSemTaken);

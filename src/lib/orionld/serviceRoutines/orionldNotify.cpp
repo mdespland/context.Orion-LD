@@ -60,14 +60,12 @@ static void ipPortAndRest(char* ipport, char** ipP, unsigned short* portP, char*
   unsigned short   portNo  = 80;  // What should be the default port?
   char*            rest;
 
-  LM_TMP(("NFY: ipport == '%s'", ipport));
   //
   // Starts with http:// ...
   //
   ip = strchr(ipport, '/');
   ip += 2;
   rest = ip;
-  LM_TMP(("NFY: Host: %s", ip));
 
   colon = strchr(ip, ':');
   if (colon != NULL)
@@ -77,16 +75,11 @@ static void ipPortAndRest(char* ipport, char** ipP, unsigned short* portP, char*
     rest = &colon[1];
   }
 
-  LM_TMP(("NFY: Host: %s", ip));
-  LM_TMP(("NFY: Port: %d", portNo));
-  LM_TMP(("NFY: Rest: %s (not ready)", rest));
-
   *ipP   = ip;
   *portP = portNo;
 
   rest = strchr(rest, '/');
   *restP = rest;
-  LM_TMP(("NFY: Rest: %s (ready)", rest));
 }
 
 
@@ -97,8 +90,6 @@ static void ipPortAndRest(char* ipport, char** ipP, unsigned short* portP, char*
 //
 static void responseTreat(OrionldNotificationInfo* niP, char* buf, int bufLen)
 {
-  LM_TMP(("NFY: Reading from endpoint of subscription '%s'", niP->subscriptionId));
-
   int    nb             = read(niP->fd, buf, bufLen);
   char*  firstLine      = NULL;
   char*  endOfFirstLine = NULL;
@@ -126,7 +117,6 @@ static void responseTreat(OrionldNotificationInfo* niP, char* buf, int bufLen)
   //
   // FIXME: Read the rest of the message, using select
   //
-  LM_TMP(("NFY: First line of notification response: %s", firstLine));
   niP->allOK = true;
 }
 
@@ -184,8 +174,6 @@ void orionldNotify(void)
     snprintf(nowString, sizeof(nowString), "1970-01-01T00:00:00Z");
   }
 
-  LM_TMP(("NFY: Sending %d notifications", orionldState.notificationRecords));
-
   for (int ix = 0; ix < orionldState.notificationRecords; ix++)
   {
     OrionldNotificationInfo*  niP = &orionldState.notificationInfo[ix];
@@ -217,14 +205,16 @@ void orionldNotify(void)
       ioVec[2].iov_len  = 35;
 
       // Add @context to payload
-      if (orionldState.contextP == NULL)
+      if ((orionldState.contextP == NULL) || (orionldState.contextP == orionldCoreContextP))
       {
-        // Core Context
-        KjNode* contextNodeP = kjString(orionldState.kjsonP, "@context", ORIONLD_CORE_CONTEXT_URL);
-        kjChildAdd(notificationTree, contextNodeP);
+        orionldState.contextP = orionldCoreContextP;
+        KjNode* contextStringNodeP = kjString(orionldState.kjsonP, "@context", ORIONLD_CORE_CONTEXT_URL);
+        kjChildAdd(notificationTree, contextStringNodeP);
       }
-      else
+      else if (orionldState.contextP->tree != NULL)
         kjChildAdd(notificationTree, orionldState.contextP->tree);
+      else
+        LM_E(("Internal Error (context has no tree ...)"));
     }
     else
     {
@@ -270,14 +260,9 @@ void orionldNotify(void)
     kjChildAdd(notificationTree, subscriptionIdNodeP);
     kjChildAdd(notificationTree, notifiedAtNodeP);
     kjChildAdd(notificationTree, dataNodeP);
-
     kjChildAdd(dataNodeP, niP->attrsForNotification);
 
-    // LM_TMP(("NFY: Notification %d - calling kjRender to render payload body", ix));
     kjRender(orionldState.kjsonP, notificationTree, payload, payloadLen);
-    // payload = (char*) "No Payload!";
-    // LM_TMP(("NFY: Notification %d - after rendering payload body", ix));
-    // LM_TMP(("NFY: payload: %s", payload));
 
     int sizeLeftForLen = 16;  // sizeof(contentLenHeader) - 16
     contentLength = strlen(payload);
@@ -301,7 +286,6 @@ void orionldNotify(void)
 
     niP->connected = true;
 
-    LM_TMP(("NFY: Sending notification for subscription '%s'", niP->subscriptionId));
     if (writev(niP->fd, ioVec, ioVecLen) == -1)
     {
       close(niP->fd);

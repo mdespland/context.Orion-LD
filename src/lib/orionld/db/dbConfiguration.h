@@ -25,7 +25,6 @@
 *
 * Author: Ken Zangelin
 */
-
 extern "C"
 {
 #include "kjson/KjNode.h"                                        // KjNode
@@ -62,13 +61,13 @@ typedef bool    (*DbSubscriptionMatchCallback)(const char* entityId, KjNode* sub
 // Function pointer types for the DB interface
 //
 typedef KjNode* (*DbEntityLookupFunction)(const char* entityId);
+typedef KjNode* (*DbEntityLookupManyFunction)(KjNode* requestTree);
 typedef bool    (*DbEntityUpdateFunction)(const char* entityId, KjNode* requestTree);
 typedef bool    (*DbEntityBatchDeleteFunction)(KjNode* entityIdsArray);
 typedef KjNode* (*DbDataToKjTreeFunction)(const void* dbData, char** titleP, char** detailsP);
 typedef void    (*DbDataFromKjTreeFunction)(KjNode* nodeP, void* dbDataP);
-typedef bool    (*DbEntityOperationsUpsertFunction)(KjNode* requestTree);
 typedef void    (*DbSubscriptionMatchEntityIdAndAttributes)(const char* entityId, KjNode* currentEntityTree, KjNode* incomingRequestTree, DbSubscriptionMatchCallback callback);
-typedef KjNode* (*DbQueryEntitiesAsKjTree)(KjNode* entityIdsArray);
+typedef KjNode* (*DbEntityListLookupWithIdTypeCreDate)(KjNode* entityIdsArray);
 
 
 
@@ -77,12 +76,12 @@ typedef KjNode* (*DbQueryEntitiesAsKjTree)(KjNode* entityIdsArray);
 // Function pointers for the DB interface
 //
 extern DbEntityLookupFunction                   dbEntityLookup;
+extern DbEntityLookupManyFunction               dbEntityLookupMany;
 extern DbEntityUpdateFunction                   dbEntityUpdate;
 extern DbEntityBatchDeleteFunction              dbEntityBatchDelete;
 extern DbDataToKjTreeFunction                   dbDataToKjTree;
 extern DbDataFromKjTreeFunction                 dbDataFromKjTree;
 extern DbSubscriptionMatchEntityIdAndAttributes dbSubscriptionMatchEntityIdAndAttributes;
-extern DbEntityOperationsUpsertFunction         dbEntityOperationsUpsert;
-extern DbQueryEntitiesAsKjTree                  dbQueryEntitiesAsKjTree;
+extern DbEntityListLookupWithIdTypeCreDate      dbEntityListLookupWithIdTypeCreDate;
 
 #endif  // SRC_LIB_ORIONLD_DB_DBCONFIGURATION_H_

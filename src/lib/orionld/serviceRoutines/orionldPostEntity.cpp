@@ -26,6 +26,7 @@
 
 extern "C"
 {
+#include "kbase/kMacros.h"                                       // K_VEC_SIZE
 #include "kjson/kjBuilder.h"                                     // kjChildRemove
 #include "kjson/kjRender.h"                                      // kjRender
 #include "kjson/kjLookup.h"                                      // kjLookup
@@ -52,9 +53,9 @@ extern "C"
 #include "orionld/common/eqForDot.h"                             // eqForDot
 #include "orionld/db/dbEntityLookup.h"                           // dbEntityLookup
 #include "orionld/db/dbEntityUpdate.h"                           // dbEntityUpdate
-#include "orionld/context/orionldUriExpand.h"                    // orionldUriExpand
-#include "orionld/context/orionldAliasLookup.h"                  // orionldAliasLookup
-#include "orionld/context/orionldValueExpand.h"                  // orionldValueExpand
+#include "orionld/context/orionldContextItemExpand.h"            // orionldContextItemExpand
+#include "orionld/context/orionldContextValueExpand.h"           // orionldContextValueExpand
+#include "orionld/context/orionldContextItemAliasLookup.h"       // orionldContextItemAliasLookup
 #include "orionld/serviceRoutines/orionldPostEntity.h"           // Own Interface
 
 
@@ -123,14 +124,12 @@ bool kjTreeToContextElement(ConnectionInfo* ciP, KjNode* requestTreeP, ContextEl
 
 
     char* detail;
-    LM_TMP(("NFY: calling orionldAttributeTreat for attribute '%s'", kNodeP->name));
     if (orionldAttributeTreat(ciP, kNodeP, caP, &attrTypeNodeP, &detail) == false)
     {
       LM_E(("orionldAttributeTreat failed: %s", detail));
       delete caP;
       return false;
     }
-    LM_TMP(("NFY: after orionldAttributeTreat for attribute '%s'", caP->name.c_str()));
 
     if (attrTypeNodeP != NULL)
       ceP->contextAttributeVector.push_back(caP);
@@ -191,8 +190,6 @@ bool kjNodeAttributeMerge(KjNode* sourceP, KjNode* updateP)
     kjChildAdd(sourceP, mdNamesP);
   }
 
-  LM_TMP(("NFY: In kjNodeAttributeMerge for attribute '%s'", updateP->name));
-
   while (nodeP != NULL)
   {
     KjNode* next = nodeP->next;
@@ -203,17 +200,14 @@ bool kjNodeAttributeMerge(KjNode* sourceP, KjNode* updateP)
     if (strcmp(nodeP->name, "object") == 0)
       nodeP->name = (char*) "value";
 
-    LM_TMP(("NFY: Checking item %d of updateP: %s (next at %p)", ix, nodeP->name, nodeP->next));
     KjNode* sameNodeInSourceP = kjLookup(sourceP, nodeP->name);
 
     if (sameNodeInSourceP != NULL)
     {
-      LM_TMP(("NFY: Found '%s' member in source - removing it", sameNodeInSourceP->name));
       kjChildRemove(sourceP, sameNodeInSourceP);
       // NOT removing the name from "mdNames"
     }
 
-    LM_TMP(("NFY: Adding '%s' member to toplevel/mdP/mdNamesP of SOURCE", nodeP->name));
 
     //
     // Should the item be added to right under the attribute, or as a metadata?
@@ -244,15 +238,12 @@ bool kjNodeAttributeMerge(KjNode* sourceP, KjNode* updateP)
 
       char* nameWithDots = kaStrdup(&orionldState.kalloc, nodeP->name);
 
-      LM_TMP(("DOT: replacing dots for EQs in '%s'", nodeP->name));
       dotForEq(nodeP->name);  // Changing DOTs for EQs for the name of the METADATA
-      LM_TMP(("DOT: replaced dots for EQs in '%s'", nodeP->name));
       kjChildAdd(mdP, nodeP);
       if (sameNodeInSourceP == NULL)
         kjChildAdd(mdNamesP, kjString(orionldState.kjsonP, "", nameWithDots));
     }
     ++ix;
-    LM_TMP(("NFY: Treated item %d of updateP: %s (next at %p)", ix, nodeP->name, nodeP->next));
 
     nodeP = next;
   }
@@ -317,23 +308,6 @@ void kjModDateSet(KjNode* attrP)
 
 
 
-#if 0
-// -----------------------------------------------------------------------------
-//
-// kjTreeLog - DEBUGGING FUNCTION - To Be Removed
-//
-static void kjTreeLog(const char* comment, KjNode* nodeP)
-{
-  char buf[2048];
-
-  kjRender(orionldState.kjsonP, nodeP, buf, sizeof(buf));
-
-  LM_TMP(("NFY: %s: %s", comment, buf));
-}
-#endif
-
-
-
 // -----------------------------------------------------------------------------
 //
 // objectToValue -
@@ -348,10 +322,7 @@ static void objectToValue(KjNode* attrP)
     KjNode* objectNodeP = kjLookup(attrP, "object");
 
     if (objectNodeP != NULL)
-    {
-      LM_TMP(("KZ: Changing 'object' for 'value' for Relationship '%s'", attrP->name));
       objectNodeP->name = (char*) "value";
-    }
   }
 }
 
@@ -385,7 +356,6 @@ static void kjAttributePropertiesToMetadataVector(KjNode* attrP)
 
   for (KjNode* propP = attrP->value.firstChildP; propP != NULL; propP = propP->next)
   {
-    LM_TMP(("NFY: Looking for md/mdNames - found '%s'", propP->name));
     if (strcmp(propP->name, "md") == 0)
       mdP = propP;
     else if (strcmp(propP->name, "mdNames") == 0)
@@ -396,7 +366,6 @@ static void kjAttributePropertiesToMetadataVector(KjNode* attrP)
   {
     mdNamesP = kjArray(orionldState.kjsonP, "mdNames");
     kjChildAdd(attrP, mdNamesP);
-    LM_TMP(("NFY: Added 'mdNames'"));
   }
 
   //
@@ -423,8 +392,6 @@ static void kjAttributePropertiesToMetadataVector(KjNode* attrP)
 
     next = propP->next;
 
-    LM_TMP(("NFY: Should the attr-property '%s' be moved to md/mdNames?", propP->name));
-
     if (strcmp(propName, "type") == 0)
     {}
     else if (strcmp(propName, "creDate") == 0)
@@ -447,10 +414,8 @@ static void kjAttributePropertiesToMetadataVector(KjNode* attrP)
       {
         mdP = kjObject(orionldState.kjsonP, "md");
         kjChildAdd(attrP, mdP);
-        LM_TMP(("NFY: Added 'md'"));
       }
 
-      LM_TMP(("NFY: Yes - '%s' is moved to md/mdNames", propP->name));
       kjChildRemove(attrP, propP);
       objectToValue(propP);
       kjChildAdd(mdP, propP);
@@ -469,7 +434,6 @@ static void kjAttributePropertiesToMetadataVector(KjNode* attrP)
 //
 bool kjTreeMergeAddNewAttrsOverwriteExisting(KjNode* sourceTree, KjNode* modTree, char** titleP, char** detailsP)
 {
-  LM_TMP(("NFY: In kjTreeMergeAddNewAttrsOverwriteExisting"));
   //
   // The data model of Orion is that all attributes go in toplevel::attrs
   // So, we need to reposition "sourceTree" so that it points to the sourceTree::atts
@@ -530,21 +494,15 @@ bool kjTreeMergeAddNewAttrsOverwriteExisting(KjNode* sourceTree, KjNode* modTree
     //     - add slot in "attrNames"
     //
     KjNode* sourceTreeAttrP = NULL;
-    LM_TMP(("NFY: Looking for '%s'", modAttrP->name));
+
     if ((sourceTreeAttrP = kjLookup(attrsP, modAttrP->name)) != NULL)
     {
-      LM_TMP(("NFY: Found it - calling kjNodeAttributeMerge"));
       kjNodeAttributeMerge(sourceTreeAttrP, modAttrP);
       kjModDateSet(sourceTreeAttrP);
     }
     else
     {
-      LM_TMP(("NFY: Did not find it ('%s') - adding as new", modAttrP->name));
-
-      // kjTreeLog("Adding attribute", modAttrP);
-
       // Remove modAttrP from modTree and add to sourceTree
-      LM_TMP(("NFY: Remove modAttrP '%s' from modTree and add to sourceTree", modAttrP->name));
       kjChildRemove(modTree, modAttrP);
       kjAttributePropertiesToMetadataVector(modAttrP);
       kjChildAdd(attrsP, modAttrP);
@@ -564,9 +522,7 @@ bool kjTreeMergeAddNewAttrsOverwriteExisting(KjNode* sourceTree, KjNode* modTree
       char*    attrNameWithDots = kaStrdup(&orionldState.kalloc, modAttrP->name);
       KjNode*  attrNameNodeP;
 
-      LM_TMP(("DOT: putting dots back for '%s', to add to 'attrNames'", attrNameWithDots));
       eqForDot(attrNameWithDots);
-      LM_TMP(("DOT: put dots back for '%s', to add to 'attrNames'", attrNameWithDots));
 
       attrNameNodeP = kjString(orionldState.kjsonP, NULL, attrNameWithDots);
       kjChildAdd(attrNamesP, attrNameNodeP);
@@ -588,8 +544,6 @@ static bool expandAttrNames(KjNode* treeP, char** detailsP)
 {
   for (KjNode* attrP = treeP->value.firstChildP; attrP != NULL; attrP = attrP->next)
   {
-    char expanded[512];  // Can't use kaAlloc until I know the length of the expanded name ...
-
     if (strcmp(attrP->name, "type") == 0)
       continue;
     if (strcmp(attrP->name, "value") == 0)   // FIXME: Only if "Property"
@@ -601,30 +555,22 @@ static bool expandAttrNames(KjNode* treeP, char** detailsP)
     // FIXME: ignore also createdAt, modifiedAt, ... ?
     //
 
-
     bool  valueToBeExpanded  = false;
 
-    LM_TMP(("NFY: expanding name of attribute '%s'", attrP->name));
-    if (orionldUriExpand(orionldState.contextP, attrP->name, expanded, sizeof(expanded), &valueToBeExpanded, detailsP) == false)
-      return false;
-
-    attrP->name = kaStrdup(&orionldState.kalloc, expanded);
+    attrP->name = orionldContextItemExpand(orionldState.contextP, attrP->name, &valueToBeExpanded, true, NULL);
 
     //
     // Expand the value, if necessary (if the @context says so)
     //
     if (valueToBeExpanded == true)
-      orionldValueExpand(attrP);
+      orionldContextValueExpand(attrP);
 
 
     //
     // Expand also sub-attr names
     //
-    LM_TMP(("NFY: expanding name of sub-attributes of '%s'", attrP->name));
-
     for (KjNode* subAttrP = attrP->value.firstChildP; subAttrP != NULL; subAttrP = subAttrP->next)
     {
-      LM_TMP(("NFY: %s", subAttrP->name));
       if (strcmp(subAttrP->name, "type") == 0)
         continue;
       if (strcmp(subAttrP->name, "value") == 0)   // FIXME: Only if "Property"
@@ -632,18 +578,13 @@ static bool expandAttrNames(KjNode* treeP, char** detailsP)
       if (strcmp(subAttrP->name, "object") == 0)  // FIXME: Only if "Relationship"
         continue;
 
-      LM_TMP(("NFY: expanding name of sub-attribute '%s' of '%s'", subAttrP->name, attrP->name));
-      if (orionldUriExpand(orionldState.contextP, subAttrP->name, expanded, sizeof(expanded), &valueToBeExpanded, detailsP) == false)
-        return false;
-      subAttrP->name = kaStrdup(&orionldState.kalloc, expanded);
-
-      LM_TMP(("NFY: expanded name of sub-attribute '%s' of '%s'", subAttrP->name, attrP->name));
+      subAttrP->name = orionldContextItemExpand(orionldState.contextP, subAttrP->name, &valueToBeExpanded, true, NULL);
 
       //
       // Expand the value, if ...
       //
       if (valueToBeExpanded == true)
-        orionldValueExpand(subAttrP);
+        orionldContextValueExpand(subAttrP);
     }
   }
 
@@ -657,12 +598,19 @@ static bool expandAttrNames(KjNode* treeP, char** detailsP)
 //
 // subscriptionMatchCallback -
 //
+// This is the callback function for dbSubscriptionMatchEntityIdAndAttributes().
+// Its purpose is to fill the notification vector 'orionldState.notificationInfo'
+// which is used by the function orionldNotify() to send notifications.
+//
+// orionldNotify() is called after the entire request has been treated, and responded, in the last function of
+// any request: requestCompleted() in rest/rest.cpp.
+//
 static bool subscriptionMatchCallback
 (
   const char*  entityId,
-  KjNode*      subscriptionTree,
-  KjNode*      currentEntityTree,
-  KjNode*      incomingRequestTree
+  KjNode*      subscriptionTree,     // the subscription, taken from the db
+  KjNode*      currentEntityTree,    // what was in the database (for entityId)
+  KjNode*      incomingRequestTree   // what was in the incoming payload
 )
 {
   KjNode*  idP               = NULL;
@@ -711,10 +659,7 @@ static bool subscriptionMatchCallback
       now = time(NULL);
 
       if (lastNotificationP->value.i + throttlingP->value.i > now)
-      {
-        LM_TMP(("NFY: No notification to be sent due to throttling (%d). Now: %d, lastNotification: %d", throttlingP->value.i, now, lastNotification));
         return false;
-      }
     }
   }
 #endif
@@ -724,30 +669,35 @@ static bool subscriptionMatchCallback
     if (now == 0)
       now = time(NULL);
 
-    LM_TMP(("NFY: Subscription expires at: %llu. Right now is: %d", expirationP->value.i, now));
-
     if (now > expirationP->value.i)
-    {
-      LM_TMP(("NFY: No notification to be sent due to expired subscription (expires: %llu, now: %llu)", expirationP->value.i, now));
       return false;
-    }
   }
 
   bool allAttributesInNotification = false;
   if ((attrsP == NULL) || (attrsP->value.firstChildP == NULL))
-  {
     allAttributesInNotification = true;
-    LM_TMP(("NFY: 'attrs' is not present or EMPTY - notification to be done with the entire UPDATE"));
+
+
+  //
+  // Is there room in the notificationInfo vector?
+  //
+
+  // FIXME semTake for orionldState.notificationInfo/notificationRecords
+  if ((unsigned int) orionldState.notificationRecords >= K_VEC_SIZE(orionldState.notificationInfo))
+  {
+    LM_W(("SUB: No room in orionldState.notificationInfo - notification dropped"));
+    return false;
   }
-  else
-    LM_TMP(("NFY: 'attrs' is present - its value will decide what to include in the notification"));
+
 
   //
   // Creating the attribute list that the Notification will be based on
   //
+
   OrionldNotificationInfo*  niP = &orionldState.notificationInfo[orionldState.notificationRecords];
 
-  orionldState.notificationRecords += 1;  // For next callback
+  orionldState.notificationRecords += 1;  // For next callback - FIXME: will need a semaphore for this
+  // FIXME semGive for orionldState.notificationInfo/notificationRecords
 
   niP->subscriptionId       = idP->value.s;
   niP->reference            = referenceP->value.s;
@@ -764,12 +714,10 @@ static bool subscriptionMatchCallback
     // ALL attributes ... simply clone the incoming request - LEAK
     // FIXME: kjClone(&orionldState.kalloc, incomingRequestTree)
     //
-    LM_TMP(("NFY2: ALL attributes - Cloning the entire incoming request for later notification (sub: %s)", niP->subscriptionId));
     niP->attrsForNotification = kjClone(incomingRequestTree);
   }
   else
   {
-    LM_TMP(("NFY2: Some attributes - picking attributes for later notification (sub: %s)", niP->subscriptionId));
     niP->attrsForNotification = kjObject(orionldState.kjsonP, NULL);  // Invent other Kjson-pointer - this one dies when request ends
 
     //
@@ -782,8 +730,6 @@ static bool subscriptionMatchCallback
     //
     for (KjNode* attrP = attrsP->value.firstChildP; attrP != NULL; attrP = attrP->next)
     {
-      dotForEq(attrP->value.s);  // Must compare with '=' instead of '.' in attribute name
-
       KjNode* reqAttrP        = kjLookup(incomingRequestTree, attrP->value.s);  // Look up the attribute in the incoming request, and ...
       KjNode* currentAttrVecP = NULL;
 
@@ -792,6 +738,8 @@ static bool subscriptionMatchCallback
       //
       if (reqAttrP == NULL)
       {
+        dotForEq(attrP->value.s);  // Must compare with '=' instead of '.' in attribute name (when from DB)
+
         if (currentAttrVecP == NULL)
         {
           currentAttrVecP = kjLookup(currentEntityTree, "attrs");
@@ -801,57 +749,44 @@ static bool subscriptionMatchCallback
 
         char* attrNameWithEq = kaStrdup(&orionldState.kalloc, attrP->value.s);
 
-        LM_TMP(("DOT: replacing dots for EQs in '%s'", attrNameWithEq));
         dotForEq(attrNameWithEq);
-        LM_TMP(("DOT: replaced dots for EQs in '%s'", attrNameWithEq));
         reqAttrP = kjLookup(currentAttrVecP, attrNameWithEq);
 
         if (reqAttrP == NULL)
         {
-          LM_W(("NFY: The attribute '%s' (%s) is nowhere to be found", attrNameWithEq, attrP->value.s));
+          LM_W(("SUB: The attribute '%s' (%s) is nowhere to be found", attrNameWithEq, attrP->value.s));
 
           //
           // If also not found in the original entity, then it can't be included in the Notification
           //
           return false;
         }
-        LM_TMP(("NFY: Found attribute '%s' in Original Entity", attrP->value.s));
       }
-      else
-        LM_TMP(("NFY: Found attribute '%s' in Incoming Request", attrP->value.s));
 
       KjNode* aP = kjClone(reqAttrP);
 
       kjChildAdd(niP->attrsForNotification, aP);
-      LM_TMP(("NFY: Added the attribute '%s' to the attribute list on which the notification will be based", aP->name));
     }
   }
+
 
   //
   // Lookup aliases for the attributes
   //
-  LM_TMP(("NFY2: Lookup aliases for the attributes of sub %s", niP->subscriptionId));
   for (KjNode* aP = niP->attrsForNotification->value.firstChildP; aP != NULL; aP = aP->next)
   {
     //
     // Put back '.' instead of '=' for the attribute name
     //
-    LM_TMP(("NFY2: Putting back '.' instead of '=': %s", aP->name));
     eqForDot(aP->name);
-    LM_TMP(("NFY2: Put back '.' instead of '=': %s", aP->name));
 
     //
     // Lookup alias for attribute name in the context
     //
-    char* alias = orionldAliasLookup(orionldState.contextP, aP->name, NULL);
+    const char* alias = orionldContextItemAliasLookup(orionldState.contextP, aP->name, NULL, NULL);
 
     if (alias != NULL)
-    {
-      LM_TMP(("NFY2: Changing longname '%s' for shortname '%s'", aP->name, alias));
-      aP->name = alias;
-    }
-    else
-      LM_TMP(("NFY2: No alias found for longname'%s'", aP->name));
+      aP->name = (char*) alias;  // Death to C++ !!!
   }
 
   //
@@ -862,8 +797,6 @@ static bool subscriptionMatchCallback
   KjNode* entityIdNodeP = kjString(orionldState.kjsonP, "id",   entityId);
 
   kjChildAdd(niP->attrsForNotification, entityIdNodeP);
-
-  LM_TMP(("NFY: %d notification records created", orionldState.notificationRecords));
 
   return true;
 }
@@ -888,7 +821,6 @@ bool orionldNotifyForAttrList(const char* entityId, KjNode* currentEntityTree, K
 //
 bool orionldPostEntityOverwrite(ConnectionInfo* ciP)
 {
-  LM_TMP(("NFY: In orionldPostEntityOverwrite"));
   //
   // Forwarding and Subscriptions will be taken care of later.
   // For now, just local updates
@@ -900,12 +832,19 @@ bool orionldPostEntityOverwrite(ConnectionInfo* ciP)
   // 3. Write to mongo
   //
   char*   entityId           = orionldState.wildcard[0];
-  KjNode* currentEntityTree = dbEntityLookup(entityId);
+  KjNode* currentEntityTree  = dbEntityLookup(entityId);
   char*   title;
   char*   details;
 
+  //
+  // This function needs to replace dots (.) for equal signs (=) for attribute names and thus need to destroy the values in the incoming payload
+  // After looking up longnames for entity-type and attribute names, and making the KjNode::name point to strings in the context cache,
+  // we will need to clone the tree, so that we don't destroy the cache when changing '.' for '='
+  //
+  KjNode* requestTree = orionldState.requestTree;  // kjClone(&orionldState.kalloc, orionldState.requestTree) ?
+
   // Expand attribute names
-  if (expandAttrNames(orionldState.requestTree, &details) == false)
+  if (expandAttrNames(requestTree, &details) == false)
   {
     ciP->httpStatusCode = SccReceiverInternalError;
     orionldErrorResponseCreate(OrionldBadRequestData, "Can't expand attribute names", details);
@@ -930,8 +869,7 @@ bool orionldPostEntityOverwrite(ConnectionInfo* ciP)
   // in rest.cpp, function requestCompleted().
   //
 
-  LM_TMP(("DOT: Calling orionldNotifyForAttrList where EQs are needed"));
-  orionldNotifyForAttrList(entityId, currentEntityTree, orionldState.requestTree);
+  orionldNotifyForAttrList(entityId, currentEntityTree, requestTree);
 
   if (currentEntityTree == NULL)
   {
@@ -940,14 +878,32 @@ bool orionldPostEntityOverwrite(ConnectionInfo* ciP)
     return false;
   }
 
-  // Merge orionldState.requestTree with currentEntityTree
-  if (kjTreeMergeAddNewAttrsOverwriteExisting(currentEntityTree, orionldState.requestTree, &title, &details) == false)
+  //
+  // Change the dots in attributes for EQ-signs which is how they must be stored in mongo
+  // - This gives problems for the context cache ...
+  //
+  for (KjNode* attrNodeP = requestTree->value.firstChildP; attrNodeP != NULL; attrNodeP = attrNodeP->next)
+  {
+    dotForEq(attrNodeP->name);
+  }
+
+
+  // Merge requestTree with currentEntityTree
+  if (kjTreeMergeAddNewAttrsOverwriteExisting(currentEntityTree, requestTree, &title, &details) == false)
   {
     ciP->httpStatusCode = SccReceiverInternalError;
     orionldErrorResponseCreate(OrionldInternalError, title, details);
+
+    //
+    // Put back the dots, to not destroy the context-cache
+    //
+    for (KjNode* attrNodeP = requestTree->value.firstChildP; attrNodeP != NULL; attrNodeP = attrNodeP->next)
+    {
+      eqForDot(attrNodeP->name);
+    }
+
     return false;
   }
-
 
   //
   // Set the modification date of the entity
@@ -961,6 +917,14 @@ bool orionldPostEntityOverwrite(ConnectionInfo* ciP)
   // All OK - set HTTP STatus Code
   //
   ciP->httpStatusCode = SccNoContent;
+
+  //
+  // Here we can put back the dots
+  //
+  for (KjNode* attrNodeP = requestTree->value.firstChildP; attrNodeP != NULL; attrNodeP = attrNodeP->next)
+  {
+    eqForDot(attrNodeP->name);
+  }
 
   return true;
 }
@@ -998,15 +962,12 @@ bool orionldPostEntityOverwrite(ConnectionInfo* ciP)
 //
 bool orionldPostEntity(ConnectionInfo* ciP)
 {
-  LM_TMP(("NFY: In orionldPostEntity"));
-
   // Is the payload not a JSON object?
   OBJECT_CHECK(orionldState.requestTree, kjValueType(orionldState.requestTree->type));
 
   if (orionldState.uriParamOptions.noOverwrite == false)
     return orionldPostEntityOverwrite(ciP);
 
-  LM_TMP(("NFY: still in orionldPostEntity"));
   // 1. Check that the entity exists
   if (mongoEntityExists(orionldState.wildcard[0], orionldState.tenant) == false)
   {

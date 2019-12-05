@@ -53,8 +53,8 @@ extern "C"
 #include "orionld/common/urnCheck.h"                             // urnCheck
 #include "orionld/common/orionldState.h"                         // orionldState
 #include "orionld/common/orionldAttributeTreat.h"                // orionldAttributeTreat
-#include "orionld/context/orionldUriExpand.h"                    // orionldUriExpand
 #include "orionld/common/orionldEntityPayloadCheck.h"            // orionldEntityPayloadCheck
+#include "orionld/context/orionldContextItemExpand.h"            // orionldContextItemExpand
 #include "orionld/serviceRoutines/orionldPostEntities.h"         // Own interface
 
 
@@ -112,30 +112,12 @@ bool orionldPostEntities(ConnectionInfo* ciP)
   entityIdP = &mongoRequest.contextElementVector[0]->entityId;
   mongoRequest.updateActionType = ActionTypeAppend;
 
-  entityIdP->id        = entityId;
-  entityIdP->type      = (orionldState.payloadTypeNode != NULL)? orionldState.payloadTypeNode->value.s : NULL;
-  entityIdP->isPattern = "false";
-  entityIdP->creDate   = getCurrentTime();
-  entityIdP->modDate   = getCurrentTime();
-
-
-  //
-  // Entity TYPE
-  //
+  entityIdP->id            = entityId;
+  entityIdP->isPattern     = "false";
+  entityIdP->creDate       = getCurrentTime();
+  entityIdP->modDate       = getCurrentTime();
   entityIdP->isTypePattern = false;
-
-  LM_T(LmtUriExpansion, ("Looking up uri expansion for the entity type '%s'", entityType));
-  LM_T(LmtUriExpansion, ("------------- uriExpansion for Entity Type starts here ------------------------------"));
-
-  char* expandedType = kaAlloc(&orionldState.kalloc, 512);
-
-  if (orionldUriExpand(orionldState.contextP, entityType, expandedType, 512, NULL, &detail) == false)
-  {
-    orionldErrorResponseCreate(OrionldBadRequestData, "Error expanding 'entity type'", detail);
-    mongoRequest.release();
-    return false;
-  }
-  entityIdP->type = expandedType;
+  entityIdP->type          = orionldContextItemExpand(orionldState.contextP, entityType, NULL, true, NULL);
 
 
   //
@@ -152,7 +134,6 @@ bool orionldPostEntities(ConnectionInfo* ciP)
     KjNode*           attrTypeNodeP  = NULL;
     char*             detail         = (char*) "none";
 
-    LM_TMP(("EXPAND: Treating attribute '%s'", kNodeP->name));
     if (orionldAttributeTreat(ciP, kNodeP, caP, &attrTypeNodeP, &detail) == false)
     {
       LM_E(("orionldAttributeTreat failed: %s", detail));
@@ -160,7 +141,7 @@ bool orionldPostEntities(ConnectionInfo* ciP)
       mongoRequest.release();
       return false;
     }
-    LM_TMP(("EXPAND: Treated attribute '%s'", caP->name.c_str()));
+
     if (attrTypeNodeP != NULL)
       ceP->contextAttributeVector.push_back(caP);
     else
@@ -171,7 +152,6 @@ bool orionldPostEntities(ConnectionInfo* ciP)
   //
   // Mongo
   //
-  LM_TMP(("VEX: Calling mongoUpdateContext"));
   ciP->httpStatusCode = mongoUpdateContext(&mongoRequest,
                                            &mongoResponse,
                                            orionldState.tenant,
