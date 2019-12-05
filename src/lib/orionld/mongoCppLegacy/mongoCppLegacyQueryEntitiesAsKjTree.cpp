@@ -89,7 +89,7 @@ KjNode* mongoCppLegacyQueryEntitiesAsKjTree(KjNode* entityIdsArray)
 
   cursorP = connectionP->query(collectionPath, query, 0, 0, &fieldsToReturn);
 
-  // Now convert bson result to kjtree
+  // Now convert the bson result to kjtree
   KjNode* entitiesTree = kjArray(orionldState.kjsonP, NULL);
   int limitOp = 0;
 

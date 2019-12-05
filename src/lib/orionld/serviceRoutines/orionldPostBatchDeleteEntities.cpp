@@ -35,6 +35,7 @@ extern "C"
 #include "rest/ConnectionInfo.h"                                        // ConnectionInfo
 #include "ngsi10/UpdateContextRequest.h"                                // UpdateContextRequest
 #include "ngsi10/UpdateContextResponse.h"                               // UpdateContextResponse
+#include "orionld/common/SCOMPARE.h"                                    // SCOMPAREx
 #include "orionld/common/urlCheck.h"                                    // urlCheck
 #include "orionld/common/urnCheck.h"                                    // urnCheck
 #include "orionld/common/orionldState.h"                                // orionldState
@@ -52,7 +53,10 @@ extern "C"
 //
 bool orionldPostBatchDeleteEntities(ConnectionInfo* ciP)
 {
-  LM_TMP(("LARYSSE: Payload is a JSON %s", kjValueType(orionldState.requestTree->type)));
+  KjNode* success   = kjArray(orionldState.kjsonP, "S");
+  KjNode* errors    = kjArray(orionldState.kjsonP, "E");
+  KjNode* errorObj;
+  KjNode* nodeP;
 
   if (orionldState.requestTree->type != KjArray)
   {
@@ -63,7 +67,7 @@ bool orionldPostBatchDeleteEntities(ConnectionInfo* ciP)
   }
 
   //
-  // Making sure all items of the array are stringa and valid URIs
+  // Making sure all items of the array are strings and valid URIs
   //
   for (KjNode* idNodeP = orionldState.requestTree->value.firstChildP; idNodeP != NULL; idNodeP = idNodeP->next)
   {
@@ -85,16 +89,87 @@ bool orionldPostBatchDeleteEntities(ConnectionInfo* ciP)
       return false;
     }
   }
-/*
-  if (mongoCppLegacyQueryEntitiesAsKjTree(orionldState.requestTree) == NULL)
+
+  //
+  // First get the entities from database to check if they exist
+  //
+  KjNode* dbEntities = mongoCppLegacyQueryEntitiesAsKjTree(orionldState.requestTree);
+  
+  if (dbEntities == NULL)
   {
-    LM_E(("mongoCppLegacyQueryEntitiesAsKjTree returned NULL"));
+    LM_E(("mongoCppLegacyQueryEntitiesAsKjTree returned null"));
     ciP->httpStatusCode = SccBadRequest;
     if (orionldState.responseTree == NULL)
-      orionldErrorResponseCreate(OrionldBadRequestData, "Database Error", "mongoCppLegacyQueryEntitiesAsKjTree");
+      orionldErrorResponseCreate(OrionldBadRequestData, "Database Error", "mongoCppLegacyQueryEntitiesAsKjTree returned null");
     return false;
   }
-*/
+
+  if (dbEntities->value.firstChildP == NULL)
+  {
+    LM_E(("mongoCppLegacyQueryEntitiesAsKjTree returned empty array"));
+    ciP->httpStatusCode = SccBadRequest;
+    if (orionldState.responseTree == NULL)
+      orionldErrorResponseCreate(OrionldBadRequestData, "Invalid payload", "Entities were not found in database.");
+    return false;
+  }
+  
+  //
+  // Now loop in array of entities from database to compare each id with the id from requestTree
+  //
+  KjNode* reqEntityId = orionldState.requestTree->value.firstChildP;
+  while (reqEntityId != NULL)
+  {
+    KjNode* next  = reqEntityId->next;
+    bool idExists = false;
+    
+    for (KjNode* dbEntity = dbEntities->value.firstChildP; dbEntity != NULL; dbEntity = dbEntity->next)
+    {
+      KjNode* dbEntity_Id = dbEntity->value.firstChildP;     // _id field
+      KjNode* dbEntityId  = dbEntity_Id->value.firstChildP;  // id field
+
+      if (SCOMPARE3(dbEntityId->name, 'i', 'd', 0))
+      {
+        if (strcmp(reqEntityId->value.s, dbEntityId->value.s) == 0)
+        {
+          idExists = true;
+          break; // Found. No need to keep searching.
+        }
+      }
+      else
+      {
+        // There is no id field in entity object
+        LM_E(("mongoCppLegacyQueryEntitiesAsKjTree returned invalid entity object"));
+        ciP->httpStatusCode = SccReceiverInternalError;
+        orionldErrorResponseCreate(OrionldInternalError, "Internal Error", "mongoCppLegacyQueryEntitiesAsKjTree returned invalid entity object");
+        return false;
+      }
+    }
+    if(idExists == false)
+      {
+        // Entity not found. Reporting error.
+
+        // entityId field
+        errorObj = kjObject(orionldState.kjsonP, NULL);
+        nodeP    = kjString(orionldState.kjsonP, "entityId", reqEntityId->value.s);
+        kjChildAdd(errorObj, nodeP);
+
+        // error field
+        nodeP    = kjString(orionldState.kjsonP, "error", "Entity not found in database.");
+        kjChildAdd(errorObj, nodeP);
+        kjChildAdd(errors, errorObj);
+
+        // Remove id not found from payload
+        kjChildRemove(orionldState.requestTree, reqEntityId);
+      }
+      else
+        kjChildAdd(success, reqEntityId);
+      
+      reqEntityId = next;
+  }
+
+  //
+  // Call batch delete function
+  //
   if (mongoCppLegacyEntityBatchDelete(orionldState.requestTree) == false)
   {
     LM_E(("mongoCppLegacyEntityBatchDelete returned false"));
@@ -104,7 +179,13 @@ bool orionldPostBatchDeleteEntities(ConnectionInfo* ciP)
     return false;
   }
   else
+  {
+    orionldState.responseTree = kjObject(orionldState.kjsonP, NULL);
+
+    kjChildAdd(orionldState.responseTree, success);
+    kjChildAdd(orionldState.responseTree, errors);    
     ciP->httpStatusCode = SccOk;
+  }
 
   return true;
 }

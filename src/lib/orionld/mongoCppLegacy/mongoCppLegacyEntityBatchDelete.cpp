@@ -47,7 +47,7 @@ extern "C"
 // mongoCppLegacyEntityBatchDelete -
 //
 bool mongoCppLegacyEntityBatchDelete(KjNode* entityIdsArray)
-{              
+{
   char collectionPath[256];
 
   if (dbCollectionPathGet(collectionPath, sizeof(collectionPath), "entities") == -1)
