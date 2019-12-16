@@ -23,7 +23,8 @@ sudo yum install make cmake gcc-c++ scons
 Libraries that aren't built from source code:
 
 ```bash
-sudo yum install boost-devel libcurl-devel gnutls-devel libgcrypt-devel openssl-devel libuuid-devel cyrus-sasl-devel
+sudo yum install boost-devel libcurl-devel gnutls-devel libgcrypt-devel openssl-devel libuuid-devel cyrus-sasl-devel libicu libicu-devel
+
 ```
 
 ## Download and build dependency libraries from source code
@@ -194,18 +195,6 @@ cd ~/git
 git clone https://github.com/FIWARE/context.Orion-LD.git
 cd context.Orion-LD
 make install
-```
-
-If you got that error:
-
-```bash
-/bin/ld: cannot find -licuuc
-/bin/ld: cannot find -licudata
-```
-
-Run this command bellow:
-```bash
-yum install libicu yum install libicu-devel
 ```
 
 At the end of `make install`, the makefile wants to copy the executable (orionld) to /usr/bin, and more files under /usr.
