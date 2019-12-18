@@ -123,10 +123,7 @@ int mongoSubCacheItemInsert(const char* tenant, const BSONObj& sub)
   //        Should check whether the subscription was created with NGSI-LD or not
   //        I can always check idField.toString().c_str() ...
   //
-  if (orionldState.apiVersion == NGSI_LD_V1)
-    cSubP->subscriptionId        = strdup(idField.toString().c_str());
-  else
-    cSubP->subscriptionId        = strdup(idField.OID().toString().c_str());
+  cSubP->subscriptionId        = strdup(idField.toString().c_str());
 #else
   cSubP->subscriptionId        = strdup(idField.OID().toString().c_str());
 #endif
