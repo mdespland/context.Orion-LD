@@ -67,7 +67,7 @@ bool kjTreeToEntity(UpdateContextRequest* ucrP, KjNode* treeP)
       ucrP->contextElementVector[0]->entityId.creDate = attrP->value.f;
     else if (strcmp(attrP->name, "modDate") == 0)
       ucrP->contextElementVector[0]->entityId.modDate = attrP->value.f;
-    else  if (strcmp(attrP->name, "attrs") == 0) // Attribute Vector
+    else  if (strcmp(attrP->name, "attrs") == 0)  // Attribute Vector
     {
       for (KjNode* aP = attrP->value.firstChildP; aP != NULL; aP = aP->next)
       {

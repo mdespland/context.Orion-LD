@@ -23,6 +23,8 @@
 * Author: Ken Zangelin
 */
 #include <string.h>                                              // strlen
+#include <string>                                                // std::string
+#include <vector>                                                // std::vector
 
 extern "C"
 {
@@ -145,7 +147,7 @@ void attrToDb(KjNode* dbAttrsP, KjNode* dbAttrNamesP, KjNode* attrP)
 // - "md"
 // - "mdNames"
 //
-static void kjTreePresent(const char* prefix, const char* what, KjNode* tree)
+void kjTreePresent(const char* prefix, const char* what, KjNode* tree)
 {
   LM_TMP(("%s: ---------------- %s -------------------", prefix, what));
   for (KjNode* eNodeP = tree->value.firstChildP; eNodeP != NULL; eNodeP = eNodeP->next)
@@ -176,7 +178,6 @@ static void kjTreePresent(const char* prefix, const char* what, KjNode* tree)
     }
     else
       LM_TMP(("%s: Other: '%s'", prefix, eNodeP->name));
-
   }
   LM_TMP(("%s: -----------------------------------------------------------", prefix));
 }
@@ -239,7 +240,7 @@ bool orionldPostEntity(ConnectionInfo* ciP)
     return false;
   }
 
-  kjTreePresent("MKT", "DB-Tree IN", entityFromDb);
+  // kjTreePresent("MKT", "DB-Tree IN", entityFromDb);
 
   //
   // 2. Merge entity from mongo with attrs from DB
@@ -260,7 +261,7 @@ bool orionldPostEntity(ConnectionInfo* ciP)
     return false;
   }
 
-  kjTreePresent("MKT", "Payload-Tree IN", orionldState.requestTree);
+  // kjTreePresent("MKT", "Payload-Tree IN", orionldState.requestTree);
 
   // For all attrs in incoming payload
   KjNode* attrP = orionldState.requestTree->value.firstChildP;
@@ -320,7 +321,7 @@ bool orionldPostEntity(ConnectionInfo* ciP)
     }
   }
 
-  kjTreePresent("MKT", "Merged-Tree IN", entityFromDb);
+  // kjTreePresent("MKT", "Merged-Tree IN", entityFromDb);
 
   // 3. Create UpdateContext from the KjNode tree 'entity from mongo'
   ParseData        parseData;
@@ -354,7 +355,7 @@ bool orionldPostEntity(ConnectionInfo* ciP)
     for (unsigned int mdIx = 0; mdIx < aP->metadataVector.size(); mdIx++)
     {
       Metadata* mdP = aP->metadataVector[mdIx];
-      
+
       LM_TMP(("MKT:   sub-attr %d. Name: %s", mdIx, mdP->name.c_str()));
       LM_TMP(("MKT:   sub-attr %d. Type: %s", mdIx, mdP->type.c_str()));
       LM_TMP(("MKT:   sub-attr %d. Value of type %s", mdIx, valueTypeName(mdP->valueType)));
