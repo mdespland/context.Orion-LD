@@ -70,6 +70,25 @@ header2.append('\s*orionld at fiware dot org$')
 
 verbose = True
 
+is_app_orionld_path = False
+
+soft_links = [
+    'CMakeLists.txt',
+    'orionRestServices.cpp',
+    'orionRestServices.h',
+    'orionld.cpp',
+    'orionldRestServices.cpp',
+    'orionldRestServices.h',
+    'version.h'
+]
+
+def not_contains_soft_link_file(file):
+    if str(file) in soft_links:
+        return False
+    return True
+        
+
+
 # check_file returns an error string in the case of error or empty string if everything goes ok
 def check_file(file):
     # The license header doesn't necessarily starts in the first line, e.g. due to a #define in a .h file
@@ -248,20 +267,25 @@ for root, dirs, files in os.walk(dir):
             bad += 1
             continue
 
+        error = ''
         filename = os.path.join(root, file)
-        error = check_file(filename)
+
+        if 'src/app/orionld/' in filename:
+            is_app_orionld_path = True
+        
+        if is_app_orionld_path and not_contains_soft_link_file(file):
+            error = check_file_orionld(filename)
+        elif is_app_orionld_path is False:
+            error = check_file_orionld(filename)
+
         if len(error) > 0:
-            error2 = check_file_orionld(filename)
-            if len(error2) > 0:
-                print filename + ': ' + error
-                bad += 1
-            else:
-                good += 1
+            print filename + ': ' + error
+            bad += 1
         else:
-            # DEBUG
-            # print filename + ': OK'
             good += 1
 
+# src/lib/orionld/
+# src/app/orionld
 print '--------------'
 print 'Summary:'
 print '   good:    {good}'.format(good=str(good))
