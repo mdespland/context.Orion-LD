@@ -68,25 +68,8 @@ header2.append('\s*$')
 header2.append('\s*For those usages not covered by this license please contact with$')
 header2.append('\s*orionld at fiware dot org$')
 
-verbose = True
-
-is_app_orionld_path = False
-
-soft_links = [
-    'CMakeLists.txt',
-    'orionRestServices.cpp',
-    'orionRestServices.h',
-    'orionld.cpp',
-    'orionldRestServices.cpp',
-    'orionldRestServices.h',
-    'version.h'
-]
-
-def not_contains_soft_link_file(file):
-    if str(file) in soft_links:
-        return False
-    return True
-        
+verbose    = True
+is_orionld = False
 
 
 # check_file returns an error string in the case of error or empty string if everything goes ok
@@ -270,13 +253,22 @@ for root, dirs, files in os.walk(dir):
         error = ''
         filename = os.path.join(root, file)
 
+        if os.path.islink(filename):
+            continue
+
         if 'src/app/orionld/' in filename:
-            is_app_orionld_path = True
-        
-        if is_app_orionld_path and not_contains_soft_link_file(file):
+            is_orionld = True
+        elif 'src/lib/orionld/' in filename:
+            is_orionld = True
+        elif 'test/functionalTest/cases/0000_ngsild' in filename:
+            is_orionld = True
+        else:
+            is_orionld = False
+
+        if is_orionld:
             error = check_file_orionld(filename)
-        elif is_app_orionld_path is False:
-            error = check_file_orionld(filename)
+        else:
+            error = check_file(filename)
 
         if len(error) > 0:
             print filename + ': ' + error
