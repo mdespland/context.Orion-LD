@@ -100,35 +100,8 @@ static bool orionldForwardPatchAttribute
 
   if (orionldState.forwardAttrsCompacted == true)
   {
-    KjNode*         regContextNodeP;
-    OrionldContext* regContextP = NULL;
-
+    attrName = orionldContextItemAliasLookup(orionldState.contextP, attrName, NULL, NULL);
     LM_TMP(("FWD: Compacting Attribute Name '%s'", attrName));
-    regContextNodeP = kjLookup(registrationP, "@context");
-
-    //
-    // For now - if a @context present in the registration, usae it
-    //           else, use the one of the current request
-    //
-    if (regContextNodeP != NULL)
-    {
-      LM_TMP(("FWD: Found a context node in the registration - looking it up"));
-      OrionldProblemDetails pd;
-      regContextP = orionldContextFromTree(NULL, false, regContextNodeP, &pd);
-    }
-
-    if (regContextP == NULL)
-    {
-      LM_TMP(("FWD: regContextP == NULL - using the context of the current request"));
-      regContextP = orionldState.contextP;
-    }
-
-    LM_TMP(("FWD: using @context '%s'", regContextP->url));
-
-    if (regContextP != NULL)
-      attrName = orionldContextItemAliasLookup(regContextP, attrName, NULL, NULL);
-
-    LM_TMP(("FWD: attrName: '%s'", attrName));
   }
 
 
