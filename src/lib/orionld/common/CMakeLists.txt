@@ -47,6 +47,7 @@ SET (SOURCES
     eqForDot.cpp
     OrionldProblemDetails.cpp
     entityErrorPush.cpp
+    qAliasCompact.cpp
     # qTreeToBson.cpp
 )
 
