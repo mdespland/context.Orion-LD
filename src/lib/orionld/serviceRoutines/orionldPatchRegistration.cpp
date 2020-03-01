@@ -24,24 +24,25 @@
 */
 extern "C"
 {
-#include "kjson/kjLookup.h"                                    // kjLookup
-#include "kjson/kjBuilder.h"                                   // kjChildAdd, ...
+#include "kjson/kjLookup.h"                                     // kjLookup
+#include "kjson/kjBuilder.h"                                    // kjChildAdd, ...
 }
 
-#include "logMsg/logMsg.h"                                     // LM_*
-#include "logMsg/traceLevels.h"                                // Lmt*
+#include "logMsg/logMsg.h"                                      // LM_*
+#include "logMsg/traceLevels.h"                                 // Lmt*
 
-#include "common/globals.h"                                    // parse8601Time
-#include "rest/ConnectionInfo.h"                               // ConnectionInfo
+#include "common/globals.h"                                     // parse8601Time
+#include "rest/ConnectionInfo.h"                                // ConnectionInfo
 
-#include "orionld/common/CHECK.h"                              // STRING_CHECK, ...
-#include "orionld/common/orionldState.h"                       // orionldState
-#include "orionld/common/orionldErrorResponse.h"               // orionldErrorResponseCreate
-#include "orionld/common/geoJsonCheck.h"                       // geoJsonCheck
-#include "orionld/context/orionldContextItemExpand.h"          // orionldContextItemExpand
-#include "orionld/context/orionldContextValueExpand.h"         // orionldContextValueExpand
-#include "orionld/db/dbConfiguration.h"                        // dbRegistrationGet, dbRegistrationReplace
-#include "orionld/serviceRoutines/orionldPatchRegistration.h"  // Own Interface
+#include "orionld/common/CHECK.h"                               // STRING_CHECK, ...
+#include "orionld/common/orionldState.h"                        // orionldState
+#include "orionld/common/orionldErrorResponse.h"                // orionldErrorResponseCreate
+#include "orionld/common/geoJsonCheck.h"                        // geoJsonCheck
+#include "orionld/context/orionldContextItemExpand.h"           // orionldContextItemExpand
+#include "orionld/context/orionldContextValueExpand.h"          // orionldContextValueExpand
+#include "orionld/context/orionldContextItemAlreadyExpanded.h"  // orionldContextItemAlreadyExpanded
+#include "orionld/db/dbConfiguration.h"                         // dbRegistrationGet, dbRegistrationReplace
+#include "orionld/serviceRoutines/orionldPatchRegistration.h"   // Own Interface
 
 
 
@@ -72,28 +73,6 @@ do                                                                              
 
 // -----------------------------------------------------------------------------
 //
-// alreadyExpanded -
-//
-static bool alreadyExpanded(char* value)
-{
-  if (value == NULL)
-    return false;
-
-  for (int ix = 0; ix < 10; ix++)
-  {
-    if (value[ix] == 0)
-      return false;
-    else if (value[ix] == ':')
-      return true;
-  }
-
-  return false;
-}
-
-
-
-// -----------------------------------------------------------------------------
-//
 // longToInt -
 //
 static void longToInt(KjNode* nodeP)
@@ -114,7 +93,7 @@ static void longToInt(KjNode* nodeP)
 //
 // fixDbRegistration -
 //
-// As long long members are respresented as "xxx": { "$numberLong": "1234565678901234" }
+// As long long members are represented as "xxx": { "$numberLong": "1234565678901234" }
 // and this gives an error when trying to Update this, we simply change the object to an int.
 //
 // In a Registration, this must be done for "expiration", and "throttling".
@@ -590,7 +569,7 @@ static bool orionldCheckRegistrationInformationEntity(ConnectionInfo* ciP, KjNod
       // Expand, unless already expanded
       // If a ':' is found inside the first 10 chars, the value is assumed to be expanded ...
       //
-      if (alreadyExpanded(entityItemP->value.s) == false)
+      if (orionldContextItemAlreadyExpanded(entityItemP->value.s) == false)
         entityItemP->value.s = orionldContextItemExpand(orionldState.contextP, entityItemP->value.s, NULL, true, NULL);
     }
     else
@@ -657,7 +636,7 @@ static bool orionldCheckRegistrationInformation(ConnectionInfo* ciP, KjNode* inf
       {
         STRING_CHECK(propP, "Registration::information[X]::properties[X]");
         EMPTY_STRING_CHECK(propP, "Registration::information[X]::properties[X]");
-        if (alreadyExpanded(propP->value.s) == false)
+        if (orionldContextItemAlreadyExpanded(propP->value.s) == false)
           propP->value.s = orionldContextItemExpand(orionldState.contextP, propP->value.s, NULL, true, NULL);
       }
     }
@@ -669,7 +648,7 @@ static bool orionldCheckRegistrationInformation(ConnectionInfo* ciP, KjNode* inf
       {
         STRING_CHECK(relP, "Registration::information[X]::relationships[X]");
         EMPTY_STRING_CHECK(relP, "Registration::information[X]::relationships[X]");
-        if (alreadyExpanded(relP->value.s) == false)
+        if (orionldContextItemAlreadyExpanded(relP->value.s) == false)
           relP->value.s = orionldContextItemExpand(orionldState.contextP, relP->value.s, NULL, true, NULL);
       }
     }
@@ -1131,7 +1110,7 @@ bool orionldPatchRegistration(ConnectionInfo* ciP)
 
     next = propertyP->next;
 
-    if (alreadyExpanded(propertyP->name) == false)
+    if (orionldContextItemAlreadyExpanded(propertyP->name) == false)
       propertyP->name = orionldContextItemExpand(orionldState.contextP, propertyP->name, &valueMayBeExpanded, true, NULL);
 
     if ((dbPropertyP = kjLookup(dbPropertiesP, propertyP->name)) == NULL)
