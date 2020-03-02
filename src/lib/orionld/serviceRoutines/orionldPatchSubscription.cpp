@@ -24,23 +24,23 @@
 */
 extern "C"
 {
-#include "kjson/kjLookup.h"                                    // kjLookup
-#include "kjson/kjBuilder.h"                                   // kjChildAdd, ...
-#include "kjson/kjRender.h"                                    // kjRender
+#include "kjson/kjLookup.h"                                     // kjLookup
+#include "kjson/kjBuilder.h"                                    // kjChildAdd, ...
+#include "kjson/kjRender.h"                                     // kjRender
 }
 
-#include "logMsg/logMsg.h"                                     // LM_*
-#include "logMsg/traceLevels.h"                                // Lmt*
+#include "logMsg/logMsg.h"                                      // LM_*
+#include "logMsg/traceLevels.h"                                 // Lmt*
 
-#include "rest/ConnectionInfo.h"                               // ConnectionInfo
+#include "rest/ConnectionInfo.h"                                // ConnectionInfo
 
-#include "orionld/common/CHECK.h"                              // STRING_CHECK, ...
-#include "orionld/common/orionldState.h"                       // orionldState
-#include "orionld/common/orionldErrorResponse.h"               // orionldErrorResponseCreate
-#include "orionld/context/orionldContextItemExpand.h"          // orionldContextItemExpand
-#include "orionld/payloadCheck/pcheckEntityInfo.h"             // pcheckEntityInfo
-#include "orionld/db/dbConfiguration.h"                        // dbSubscriptionGet
-#include "orionld/serviceRoutines/orionldPatchSubscription.h"  // Own Interface
+#include "orionld/common/CHECK.h"                               // STRING_CHECK, ...
+#include "orionld/common/orionldState.h"                        // orionldState
+#include "orionld/common/orionldErrorResponse.h"                // orionldErrorResponseCreate
+#include "orionld/context/orionldContextItemExpand.h"           // orionldContextItemExpand
+#include "orionld/payloadCheck/pcheckEntities.h"                // pcheckEntities
+#include "orionld/db/dbConfiguration.h"                         // dbSubscriptionGet
+#include "orionld/serviceRoutines/orionldPatchSubscription.h"   // Own Interface
 
 
 
@@ -102,9 +102,9 @@ static bool ngsildCoordinatesToAPIv1Datamodel(ConnectionInfo* ciP, KjNode* coord
 
 // -----------------------------------------------------------------------------
 //
-// orionldCheckGeoQ -
+// pcheckGeoQ - FIXME: move to payloadCheck library
 //
-static bool orionldCheckGeoQ(ConnectionInfo* ciP, KjNode* geoqNodeP, const char* fieldName)
+static bool pcheckGeoQ(ConnectionInfo* ciP, KjNode* geoqNodeP)
 {
   //
   // Render the coordinates and convert it into a string - for the NGSIv1 database model
@@ -125,9 +125,9 @@ static bool orionldCheckGeoQ(ConnectionInfo* ciP, KjNode* geoqNodeP, const char*
 
 // -----------------------------------------------------------------------------
 //
-// orionldCheckEndpoint -
+// pcheckEndpoint - FIXME: move to payloadCheck library
 //
-bool orionldCheckEndpoint(ConnectionInfo* ciP, KjNode* endpointP, const char* fieldName)
+bool pcheckEndpoint(ConnectionInfo* ciP, KjNode* endpointP)
 {
   KjNode* uriP    = NULL;
   KjNode* acceptP = NULL;
@@ -173,9 +173,9 @@ bool orionldCheckEndpoint(ConnectionInfo* ciP, KjNode* endpointP, const char* fi
 
 // -----------------------------------------------------------------------------
 //
-// orionldCheckNotification -
+// pcheckNotification - FIXME: move to payloadCheck library
 //
-bool orionldCheckNotification(ConnectionInfo* ciP, KjNode* notificationP, const char* fieldName)
+bool pcheckNotification(ConnectionInfo* ciP, KjNode* notificationP)
 {
   KjNode* attributesP = NULL;
   KjNode* formatP     = NULL;
@@ -209,7 +209,7 @@ bool orionldCheckNotification(ConnectionInfo* ciP, KjNode* notificationP, const 
     {
       DUPLICATE_CHECK(endpointP, "endpoint", nItemP);
       OBJECT_CHECK(endpointP, "endpoint");
-      if (orionldCheckEndpoint(ciP, endpointP, "endpoint") == false)
+      if (pcheckEndpoint(ciP, endpointP) == false)
         return false;
     }
     else if (strcmp(nItemP->name, "status") == 0)
@@ -240,10 +240,10 @@ bool orionldCheckNotification(ConnectionInfo* ciP, KjNode* notificationP, const 
 
 // -----------------------------------------------------------------------------
 //
-// subscriptionPayloadCheck -
+// pcheckSubscription -
 //
 extern bool qAliasCompact(KjNode* qP, bool compact);
-static bool subscriptionPayloadCheck(ConnectionInfo* ciP, KjNode* subNodeP, bool idCanBePresent, KjNode** watchedAttributesPP, KjNode** timeIntervalPP, KjNode** qPP, KjNode** geoqPP)
+static bool pcheckSubscription(ConnectionInfo* ciP, KjNode* subNodeP, bool idCanBePresent, KjNode** watchedAttributesPP, KjNode** timeIntervalPP, KjNode** qPP, KjNode** geoqPP)
 {
   KjNode* idP                     = NULL;
   KjNode* typeP                   = NULL;
@@ -275,18 +275,18 @@ static bool subscriptionPayloadCheck(ConnectionInfo* ciP, KjNode* subNodeP, bool
     {
       if (idCanBePresent == false)
       {
-        orionldErrorResponseCreate(OrionldBadRequestData, "The Subscription ID cannot be modified", "Subscription::id");
+        orionldErrorResponseCreate(OrionldBadRequestData, "The Subscription ID cannot be modified", "id");
         ciP->httpStatusCode = SccBadRequest;
         return false;
       }
 
-      DUPLICATE_CHECK(idP, "Subscription::id", nodeP);
+      DUPLICATE_CHECK(idP, "id", nodeP);
       STRING_CHECK(nodeP, nodeP->name);
       URI_CHECK(nodeP, nodeP->name);
     }
     else if (strcmp(nodeP->name, "type") == 0)
     {
-      DUPLICATE_CHECK(typeP, "Subscription::type", nodeP);
+      DUPLICATE_CHECK(typeP, "type", nodeP);
       STRING_CHECK(nodeP, nodeP->name);
 
       if (strcmp(nodeP->value.s, "Subscription") != 0)
@@ -298,28 +298,23 @@ static bool subscriptionPayloadCheck(ConnectionInfo* ciP, KjNode* subNodeP, bool
     }
     else if (strcmp(nodeP->name, "name") == 0)
     {
-      DUPLICATE_CHECK(nameP, "Subscription::name", nodeP);
+      DUPLICATE_CHECK(nameP, "name", nodeP);
       STRING_CHECK(nodeP, nodeP->name);
     }
     else if (strcmp(nodeP->name, "description") == 0)
     {
-      DUPLICATE_CHECK(descriptionP, "Subscription::description", nodeP);
+      DUPLICATE_CHECK(descriptionP, "description", nodeP);
       STRING_CHECK(nodeP, nodeP->name);
     }
     else if (strcmp(nodeP->name, "entities") == 0)
     {
-      DUPLICATE_CHECK(entitiesP, "Subscription::entities", nodeP);
-      ARRAY_CHECK(nodeP, nodeP->name);
-      for (KjNode* entityP = nodeP->value.firstChildP; entityP != NULL; entityP = entityP->next)
-      {
-        OBJECT_CHECK(entityP, "Subscription::entities[X]");
-        if (pcheckEntityInfo(ciP, entityP) == false)
-          return false;
-      }
+      DUPLICATE_CHECK(entitiesP, "entities", nodeP);
+      if (pcheckEntities(ciP, entitiesP) == false)
+        return false;
     }
     else if (strcmp(nodeP->name, "watchedAttributes") == 0)
     {
-      DUPLICATE_CHECK(watchedAttributesP, "Subscription::watchedAttributes", nodeP);
+      DUPLICATE_CHECK(watchedAttributesP, "watchedAttributes", nodeP);
       ARRAY_CHECK(nodeP, nodeP->name);
       for (KjNode* itemP = nodeP->value.firstChildP; itemP != NULL; itemP = itemP->next)
       {
@@ -330,62 +325,61 @@ static bool subscriptionPayloadCheck(ConnectionInfo* ciP, KjNode* subNodeP, bool
     }
     else if (strcmp(nodeP->name, "timeInterval") == 0)
     {
-      DUPLICATE_CHECK(timeIntervalP, "Subscription::timeInterval", nodeP);
-      INTEGER_CHECK(nodeP, "Subscription::timeInterval");
+      DUPLICATE_CHECK(timeIntervalP, "timeInterval", nodeP);
+      INTEGER_CHECK(nodeP, "timeInterval");
       *timeIntervalPP = timeIntervalP;
     }
     else if (strcmp(nodeP->name, "q") == 0)
     {
-      DUPLICATE_CHECK(qP, "Subscription::q", nodeP);
-      STRING_CHECK(nodeP, "Subscription::q");
+      DUPLICATE_CHECK(qP, "q", nodeP);
+      STRING_CHECK(nodeP, "q");
       *qPP = qP;
       LM_TMP(("QP: qP at %p", qP));
       qAliasCompact(qP, false);
     }
     else if (strcmp(nodeP->name, "geoQ") == 0)
     {
-      DUPLICATE_CHECK(geoqP, "Subscription::geoQ", nodeP);
-      OBJECT_CHECK(nodeP, "Subscription::geoQ");
-      if (orionldCheckGeoQ(ciP, nodeP, "Subscription::geoQ") == false)
+      DUPLICATE_CHECK(geoqP, "geoQ", nodeP);
+      OBJECT_CHECK(nodeP, "geoQ");
+      if (pcheckGeoQ(ciP, nodeP) == false)
         return false;
       *geoqPP = geoqP;
       LM_TMP(("QP: geoqP at %p", geoqP));
     }
     else if (strcmp(nodeP->name, "csf") == 0)
     {
-      DUPLICATE_CHECK(csfP, "Subscription::csf", nodeP);
-      STRING_CHECK(nodeP, "Subscription::csf");
+      DUPLICATE_CHECK(csfP, "csf", nodeP);
+      STRING_CHECK(nodeP, "csf");
     }
     else if (strcmp(nodeP->name, "isActive") == 0)
     {
-      DUPLICATE_CHECK(isActiveP, "Subscription::isActive", nodeP);
-      BOOL_CHECK(nodeP, "Subscription::isActive");
+      DUPLICATE_CHECK(isActiveP, "isActive", nodeP);
+      BOOL_CHECK(nodeP, "isActive");
     }
     else if (strcmp(nodeP->name, "notification") == 0)
     {
-      DUPLICATE_CHECK(notificationP, "Subscription::notification", nodeP);
-      OBJECT_CHECK(nodeP, "Subscription::notification");
+      DUPLICATE_CHECK(notificationP, "notification", nodeP);
+      OBJECT_CHECK(nodeP, "notification");
     }
     else if (strcmp(nodeP->name, "expires") == 0)
     {
-      DUPLICATE_CHECK(expiresP, "Subscription::expires", nodeP);
-      STRING_CHECK(nodeP, "Subscription::expires");
-      DATETIME_CHECK(expiresP->value.s, dateTime, "Subscription::expires");
-      LM_TMP(("DT: Subscription::expires: %d", dateTime));
+      DUPLICATE_CHECK(expiresP, "expires", nodeP);
+      STRING_CHECK(nodeP, "expires");
+      DATETIME_CHECK(expiresP->value.s, dateTime, "expires");
     }
     else if (strcmp(nodeP->name, "throttling") == 0)
     {
-      DUPLICATE_CHECK(throttlingP, "Subscription::throttling", nodeP);
-      INTEGER_CHECK(nodeP, "Subscription::throttling");
+      DUPLICATE_CHECK(throttlingP, "throttling", nodeP);
+      INTEGER_CHECK(nodeP, "throttling");
     }
     else if (strcmp(nodeP->name, "temporalQ") == 0)
     {
-      DUPLICATE_CHECK(temporalqP, "Subscription::temporalQ", nodeP);
-      OBJECT_CHECK(nodeP, "Subscription::temporalQ");
+      DUPLICATE_CHECK(temporalqP, "temporalQ", nodeP);
+      OBJECT_CHECK(nodeP, "temporalQ");
     }
     else if (strcmp(nodeP->name, "status") == 0)
     {
-      orionldErrorResponseCreate(OrionldBadRequestData, "Attempt to modify Read-Only attribute", "Subscription::status");
+      orionldErrorResponseCreate(OrionldBadRequestData, "Attempt to modify Read-Only attribute", "status");
       ciP->httpStatusCode = SccBadRequest;
       return false;
     }
@@ -398,7 +392,7 @@ static bool subscriptionPayloadCheck(ConnectionInfo* ciP, KjNode* subNodeP, bool
     }
   }
 
-  if ((notificationP != NULL) && (orionldCheckNotification(ciP, notificationP, "subscription::notification") == false))
+  if ((notificationP != NULL) && (pcheckNotification(ciP, notificationP) == false))
       return false;
 
   return true;
@@ -722,7 +716,7 @@ static bool ngsildSubscriptionToAPIv1Datamodel(KjNode* patchTree)
     {
       fragmentP->name    = (char*) "expiration";
       fragmentP->type    = KjInt;
-      fragmentP->value.i = parse8601Time(fragmentP->value.s);  // FIXME: Already done in subscriptionPayloadCheck() ...
+      fragmentP->value.i = parse8601Time(fragmentP->value.s);  // FIXME: Already done in pcheckSubscription() ...
     }
   }
 
@@ -879,10 +873,10 @@ bool orionldPatchSubscription(ConnectionInfo* ciP)
   KjNode* qP                     = NULL;
   KjNode* geoqP                  = NULL;
 
-  LM_TMP(("SPAT: Calling subscriptionPayloadCheck"));
-  if (subscriptionPayloadCheck(ciP, orionldState.requestTree, false, &watchedAttributesNodeP, &timeIntervalNodeP, &qP, &geoqP) == false)
+  LM_TMP(("SPAT: Calling pcheckSubscription"));
+  if (pcheckSubscription(ciP, orionldState.requestTree, false, &watchedAttributesNodeP, &timeIntervalNodeP, &qP, &geoqP) == false)
   {
-    LM_E(("subscriptionPayloadCheck FAILED"));
+    LM_E(("pcheckSubscription FAILED"));
     return false;
   }
 

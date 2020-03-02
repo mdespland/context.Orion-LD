@@ -50,12 +50,16 @@ bool pcheckEntityInfo(ConnectionInfo* ciP, KjNode* entityP)
   KjNode* idPatternP  = NULL;
   KjNode* typeP       = NULL;
 
+  OBJECT_CHECK(entityP, "entities[X]");
+  EMPTY_OBJECT_CHECK(entityP, "entities[X]");
+
   for (KjNode* entityItemP = entityP->value.firstChildP; entityItemP != NULL; entityItemP = entityItemP->next)
   {
     if (strcmp(entityItemP->name, "id") == 0)
     {
       DUPLICATE_CHECK(idP, "entities[X]::id", entityItemP);
       STRING_CHECK(entityItemP, "entities[X]::id");
+      EMPTY_STRING_CHECK(entityItemP, "entities[X]::id");
       URI_CHECK(entityItemP, "entities[X]::id");
     }
     else if (strcmp(entityItemP->name, "idPattern") == 0)

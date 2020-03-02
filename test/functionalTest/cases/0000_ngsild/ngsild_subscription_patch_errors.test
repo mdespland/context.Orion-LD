@@ -1,0 +1,694 @@
+# Copyright 2019 FIWARE Foundation e.V.
+#
+# This file is part of Orion-LD Context Broker.
+#
+# Orion-LD Context Broker is free software: you can redistribute it and/or
+# modify it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# Orion-LD Context Broker is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero
+# General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with Orion-LD Context Broker. If not, see http://www.gnu.org/licenses/.
+#
+# For those usages not covered by this license please contact with
+# orionld at fiware dot org
+
+# VALGRIND_READY - to mark the test ready for valgrindTestSuite.sh
+
+--NAME--
+Error handling of PATCH of a subscription
+
+--SHELL-INIT--
+export BROKER=orionld
+dbInit CB
+brokerStart CB
+
+--SHELL--
+
+#
+# 01. Create a subscription with all fields
+# 02. Attempt to PATCH the subscription with a Subscription ID - see failure
+# 03. Attempt to PATCH the subscription with a payload data that is not a JSON object - see failure
+# 04. Attempt to PATCH the subscription with a 'type' that is not a string - see failure
+# 05. Attempt to PATCH the subscription with a 'type' string that is not 'Subscription' - see failure
+# 06. Attempt to PATCH the subscription with duplicate 'type' - see failure
+# 07. Attempt to PATCH the subscription with a 'name' that is not a string - see failure
+# 08. Attempt to PATCH the subscription with duplicate 'name' - see failure
+# 09. Attempt to PATCH the subscription with a 'description' that is not a string - see failure
+# 10. Attempt to PATCH the subscription with duplicate 'description' - see failure
+# 11. Attempt to PATCH the subscription with an 'entities' that is not an array
+# 12. Attempt to PATCH the subscription with an 'entities' as an empty array
+# 13. Attempt to PATCH the subscription with an 'entities' as an array of non-objects
+# 14. Attempt to PATCH the subscription with an 'entities' as an array with an empty object
+# 15. Attempt to PATCH the subscription with an 'entities[X]::id' that is not a string
+# 16. Attempt to PATCH the subscription with an 'entities[X]::id' that is an empty string
+# 17. Attempt to PATCH the subscription with an 'entities[X]::id' that is not a URI
+# 18. Attempt to PATCH the subscription with a duplicated 'entities[X]::id'
+# 19. Attempt to PATCH the subscription with an 'entities[X]::type' that is not a string
+# 20. Attempt to PATCH the subscription with an 'entities[X]::type' that is an empty string
+# 21. Attempt to PATCH the subscription with a duplicated 'entities[X]::type'
+# 22. Attempt to PATCH the subscription with an 'entities[X]' that has no 'type'
+# 23. Attempt to PATCH the subscription with an 'entities[X]::idPattern' that is not a string
+# 24. Attempt to PATCH the subscription with an 'entities[X]::idPattern' that is an empty string
+# 25. Attempt to PATCH the subscription with a duplicated 'entities[X]::idPattern'
+#
+
+echo "01. Create a subscription with all fields"
+echo "========================================="
+payload='{
+  "id": "urn:ngsi-ld:subscriptions:S01",
+  "type": "Subscription",
+  "name": "Test subscription S01",
+  "description": "Description of Test subscription S01",
+  "entities": [
+    {
+      "id": "urn:ngsi-ld:E01",
+      "type": "T1"
+    }
+  ],
+  "watchedAttributes": [ "P2" ],
+  "q": "P2>10",
+  "geoQ": {
+    "geometry": "Point",
+    "coordinates": [ 1, 2 ],
+    "georel": "near;maxDistance=2000",
+    "geoproperty": "geo0"
+  },
+  "csf": "not implemented",
+  "isActive": true,
+  "notification": {
+    "attributes": [ "P1", "P2", "A3" ],
+    "format": "keyValues",
+    "endpoint": {
+      "uri": "http://localhost:'$LISTENER_PORT'/notify",
+      "accept": "application/ld+json"
+    }
+  },
+  "expires": "2028-12-31T10:00:00",
+  "throttling": 5
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions --payload "$payload"
+echo
+echo
+
+
+echo "02. Attempt to PATCH the subscription with a Subscription ID - see failure"
+echo "=========================================================================="
+payload='{
+  "id": "urn:S1"
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "03. Attempt to PATCH the subscription with a payload data that is not a JSON object - see failure"
+echo "================================================================================================="
+payload='[
+  1,
+  2,
+  3
+]'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "04. Attempt to PATCH the subscription with a 'type' that is not a string - see failure"
+echo "======================================================================================"
+payload='{
+  "type": 12
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "05. Attempt to PATCH the subscription with a 'type' string that is not 'Subscription' - see failure"
+echo "==================================================================================================="
+payload='{
+  "type": "ContextSourceRegistration"
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "06. Attempt to PATCH the subscription with duplicate 'type' - see failure"
+echo "========================================================================="
+payload='{
+  "type": "Subscription",
+  "type": "Subscription"
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "07. Attempt to PATCH the subscription with a 'name' that is not a string - see failure"
+echo "======================================================================================"
+payload='{
+  "name": 7
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "08. Attempt to PATCH the subscription with duplicate 'name' - see failure"
+echo "========================================================================="
+payload='{
+  "name": "N1",
+  "name": "N2"
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "09. Attempt to PATCH the subscription with a 'description' that is not a string - see failure"
+echo "============================================================================================="
+payload='{
+  "description": 9
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "10. Attempt to PATCH the subscription with duplicate 'description' - see failure"
+echo "================================================================================"
+payload='{
+  "description": "D",
+  "description": "D"
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "11. Attempt to PATCH the subscription with an 'entities' that is not an array"
+echo "============================================================================="
+payload='{
+  "entities": 9
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "12. Attempt to PATCH the subscription with an 'entities' as an empty array"
+echo "=========================================================================="
+payload='{
+  "entities": []
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "13. Attempt to PATCH the subscription with an 'entities' as an array of non-objects"
+echo "==================================================================================="
+payload='{
+  "entities": [ 1, 2, 3 ]
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "14. Attempt to PATCH the subscription with an 'entities' as an array with an empty object"
+echo "========================================================================================="
+payload='{
+  "entities": [ {} ]
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "15. Attempt to PATCH the subscription with an 'entities[X]::id' that is not a string"
+echo "===================================================================================="
+payload='{
+  "entities": [ { "id": 12, "type": "T"} ]
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "16. Attempt to PATCH the subscription with an 'entities[X]::id' that is an empty string"
+echo "======================================================================================="
+payload='{
+  "entities": [ { "id": "", "type": "T"} ]
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "17. Attempt to PATCH the subscription with an 'entities[X]::id' that is not a URI"
+echo "================================================================================="
+payload='{
+  "entities": [ { "id": "not a uri", "type": "T"} ]
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "18. Attempt to PATCH the subscription with a duplicated 'entities[X]::id'"
+echo "========================================================================="
+payload='{
+  "entities": [ { "id": "urn:entities:E1", "id": "urn:entities:E1", "type": "T"} ]
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "19. Attempt to PATCH the subscription with an 'entities[X]::type' that is not a string"
+echo "======================================================================================"
+payload='{
+  "entities": [ { "type": 3 } ]
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "20. Attempt to PATCH the subscription with an 'entities[X]::type' that is an empty string"
+echo "========================================================================================="
+payload='{
+  "entities": [ { "type": "" } ]
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "21. Attempt to PATCH the subscription with a duplicated 'entities[X]::type'"
+echo "==========================================================================="
+payload='{
+  "entities": [ { "type": "T1", "type": "T1"} ]
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "22. Attempt to PATCH the subscription with an 'entities[X]' that has no 'type'"
+echo "=============================================================================="
+payload='{
+  "entities": [ { "id": "urn:entities:E1" } ]
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "23. Attempt to PATCH the subscription with an 'entities[X]::idPattern' that is not a string"
+echo "==========================================================================================="
+payload='{
+  "entities": [ { "idPattern": 23 } ]
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "24. Attempt to PATCH the subscription with an 'entities[X]::idPattern' that is an empty string"
+echo "=============================================================================================="
+payload='{
+  "entities": [ { "idPattern": "" } ]
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "25. Attempt to PATCH the subscription with a duplicated 'entities[X]::idPattern'"
+echo "================================================================================"
+payload='{
+  "entities": [ { "idPattern": "E1.*", "idPattern": "E1.*" } ]
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+--REGEXPECT--
+01. Create a subscription with all fields
+=========================================
+HTTP/1.1 201 Created
+Content-Length: 0
+Location: /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01
+Date: REGEX(.*)
+
+
+
+02. Attempt to PATCH the subscription with a Subscription ID - see failure
+==========================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 124
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "id",
+    "title": "The Subscription ID cannot be modified",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+03. Attempt to PATCH the subscription with a payload data that is not a JSON object - see failure
+=================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 170
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "The payload data for updating a subscription must be a JSON Object",
+    "title": "Invalid Subscription",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+04. Attempt to PATCH the subscription with a 'type' that is not a string - see failure
+======================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 105
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "type",
+    "title": "Not a JSON String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+05. Attempt to PATCH the subscription with a 'type' string that is not 'Subscription' - see failure
+===================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 144
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "ContextSourceRegistration",
+    "title": "Invalid value for Subscription Type",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+06. Attempt to PATCH the subscription with duplicate 'type' - see failure
+=========================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 104
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "type",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+07. Attempt to PATCH the subscription with a 'name' that is not a string - see failure
+======================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 105
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "name",
+    "title": "Not a JSON String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+08. Attempt to PATCH the subscription with duplicate 'name' - see failure
+=========================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 104
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "name",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+09. Attempt to PATCH the subscription with a 'description' that is not a string - see failure
+=============================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 112
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "description",
+    "title": "Not a JSON String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+10. Attempt to PATCH the subscription with duplicate 'description' - see failure
+================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 111
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "description",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+11. Attempt to PATCH the subscription with an 'entities' that is not an array
+=============================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 108
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "entities",
+    "title": "Not a JSON Array",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+12. Attempt to PATCH the subscription with an 'entities' as an empty array
+==========================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 103
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "entities",
+    "title": "Empty Array",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+13. Attempt to PATCH the subscription with an 'entities' as an array of non-objects
+===================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 112
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "entities[X]",
+    "title": "Not a JSON Object",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+14. Attempt to PATCH the subscription with an 'entities' as an array with an empty object
+=========================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 107
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "entities[X]",
+    "title": "Empty Object",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+15. Attempt to PATCH the subscription with an 'entities[X]::id' that is not a string
+====================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 116
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "entities[X]::id",
+    "title": "Not a JSON String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+16. Attempt to PATCH the subscription with an 'entities[X]::id' that is an empty string
+=======================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 111
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "entities[X]::id",
+    "title": "Empty String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+17. Attempt to PATCH the subscription with an 'entities[X]::id' that is not a URI
+=================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 108
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "entities[X]::id",
+    "title": "Not a URI",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+18. Attempt to PATCH the subscription with a duplicated 'entities[X]::id'
+=========================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 115
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "entities[X]::id",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+19. Attempt to PATCH the subscription with an 'entities[X]::type' that is not a string
+======================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 118
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "entities[X]::type",
+    "title": "Not a JSON String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+20. Attempt to PATCH the subscription with an 'entities[X]::type' that is an empty string
+=========================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 113
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "entities[X]::type",
+    "title": "Empty String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+21. Attempt to PATCH the subscription with a duplicated 'entities[X]::type'
+===========================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 117
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "entities[X]::type",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+22. Attempt to PATCH the subscription with an 'entities[X]' that has no 'type'
+==============================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 124
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "entities[X]::type",
+    "title": "Missing mandatory field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+23. Attempt to PATCH the subscription with an 'entities[X]::idPattern' that is not a string
+===========================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 123
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "entities[X]::idPattern",
+    "title": "Not a JSON String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+24. Attempt to PATCH the subscription with an 'entities[X]::idPattern' that is an empty string
+==============================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 118
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "entities[X]::idPattern",
+    "title": "Empty String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+25. Attempt to PATCH the subscription with a duplicated 'entities[X]::idPattern'
+================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 122
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "entities[X]::idPattern",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+--TEARDOWN--
+brokerStop CB
+dbDrop CB
+accumulatorStop
