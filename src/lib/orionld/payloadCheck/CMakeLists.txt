@@ -23,6 +23,18 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 SET (SOURCES
      pcheckEntityInfo.cpp
      pcheckEntities.cpp
+     pcheckGeoType.cpp
+     pcheckGeoqCoordinates.cpp
+     pcheckGeoqGeorel.cpp
+     pcheckGeoProperty.cpp
+     pcheckGeoQ.cpp
+     pcheckEndpoint.cpp
+     pcheckNotification.cpp
+     pcheckSubscription.cpp
+     pcheckInformationItem.cpp
+     pcheckInformation.cpp
+     pcheckTimeInterval.cpp
+     pcheckRegistration.cpp
 )
 
 # Include directories

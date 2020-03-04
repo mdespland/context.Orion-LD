@@ -1878,12 +1878,12 @@ Date: REGEX(.*)
 41. Attempt to PATCH the registration with an 'observationInterval' that is missing the 'start' field - see failure
 ===================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 133
+Content-Length: 112
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "observationInterval::start",
+    "detail": "start",
     "title": "Missing mandatory field",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -1892,12 +1892,12 @@ Date: REGEX(.*)
 42. Attempt to PATCH the registration with an 'observationInterval' that is missing the 'end' field - see failure
 =================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 131
+Content-Length: 110
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "observationInterval::end",
+    "detail": "end",
     "title": "Missing mandatory field",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -1906,12 +1906,12 @@ Date: REGEX(.*)
 43. Attempt to PATCH the registration with an 'observationInterval' with a duplicated 'start' field - see failure
 =================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 126
+Content-Length: 105
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "observationInterval::start",
+    "detail": "start",
     "title": "Duplicated field",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -1920,12 +1920,12 @@ Date: REGEX(.*)
 44. Attempt to PATCH the registration with an 'observationInterval' with a duplicated 'end' field - see failure
 ===============================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 124
+Content-Length: 103
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "observationInterval::end",
+    "detail": "end",
     "title": "Duplicated field",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -1934,12 +1934,12 @@ Date: REGEX(.*)
 45. Attempt to PATCH the registration with an 'observationInterval' with a 'start' field that is not a string - see failure
 ===========================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 127
+Content-Length: 106
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "observationInterval::start",
+    "detail": "start",
     "title": "Not a JSON String",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -1948,12 +1948,12 @@ Date: REGEX(.*)
 46. Attempt to PATCH the registration with an 'observationInterval' with a 'start' field that is not a valid DateTime - see failure
 ===================================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 132
+Content-Length: 111
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "observationInterval::start",
+    "detail": "start",
     "title": "Invalid DateTime value",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -1962,12 +1962,12 @@ Date: REGEX(.*)
 47. Attempt to PATCH the registration with an 'observationInterval' with an 'end' field that is not a string - see failure
 ==========================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 125
+Content-Length: 104
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "observationInterval::end",
+    "detail": "end",
     "title": "Not a JSON String",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -1976,12 +1976,12 @@ Date: REGEX(.*)
 48. Attempt to PATCH the registration with an 'observationInterval' with an 'end' field that is not a valid DateTime - see failure
 ==================================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 130
+Content-Length: 109
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "observationInterval::end",
+    "detail": "end",
     "title": "Invalid DateTime value",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -1990,13 +1990,13 @@ Date: REGEX(.*)
 49. Attempt to PATCH the registration with an 'observationInterval' with an invalid field 'xyz' - see failure
 =============================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 124
+Content-Length: 117
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
     "detail": "xyz",
-    "title": "Invalid field for observationInterval",
+    "title": "Invalid field for TimeInterval",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
 
@@ -2018,13 +2018,13 @@ Date: REGEX(.*)
 51. Attempt to PATCH the registration with a 'observationInterval' whose start>end - see failure
 ================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 147
+Content-Length: 143
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "observationInterval ends before it starts",
-    "title": "Inconsistent DateTimes",
+    "detail": "TimeInterval ends before it starts",
+    "title": "Inconsistent TimeInterval",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
 
@@ -2060,12 +2060,12 @@ Date: REGEX(.*)
 54. Attempt to PATCH the registration with an 'managementInterval' that is missing the 'start' field - see failure
 ==================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 132
+Content-Length: 112
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "managementInterval::start",
+    "detail": "start",
     "title": "Missing mandatory field",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -2074,12 +2074,12 @@ Date: REGEX(.*)
 55. Attempt to PATCH the registration with an 'managementInterval' that is missing the 'end' field - see failure
 ================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 130
+Content-Length: 110
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "managementInterval::end",
+    "detail": "end",
     "title": "Missing mandatory field",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -2088,12 +2088,12 @@ Date: REGEX(.*)
 56. Attempt to PATCH the registration with an 'managementInterval' with a duplicated 'start' field - see failure
 ================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 125
+Content-Length: 105
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "managementInterval::start",
+    "detail": "start",
     "title": "Duplicated field",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -2102,12 +2102,12 @@ Date: REGEX(.*)
 57. Attempt to PATCH the registration with an 'managementInterval' with a duplicated 'end' field - see failure
 ==============================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 123
+Content-Length: 103
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "managementInterval::end",
+    "detail": "end",
     "title": "Duplicated field",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -2116,12 +2116,12 @@ Date: REGEX(.*)
 58. Attempt to PATCH the registration with an 'managementInterval' with a 'start' field that is not a string - see failure
 ==========================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 126
+Content-Length: 106
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "managementInterval::start",
+    "detail": "start",
     "title": "Not a JSON String",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -2130,12 +2130,12 @@ Date: REGEX(.*)
 59. Attempt to PATCH the registration with an 'managementInterval' with a 'start' field that is not a valid DateTime - see failure
 ==================================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 131
+Content-Length: 111
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "managementInterval::start",
+    "detail": "start",
     "title": "Invalid DateTime value",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -2144,12 +2144,12 @@ Date: REGEX(.*)
 60. Attempt to PATCH the registration with an 'managementInterval' with an 'end' field that is not a string - see failure
 =========================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 124
+Content-Length: 104
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "managementInterval::end",
+    "detail": "end",
     "title": "Not a JSON String",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -2158,12 +2158,12 @@ Date: REGEX(.*)
 61. Attempt to PATCH the registration with an 'managementInterval' with an 'end' field that is not a valid DateTime - see failure
 =================================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 129
+Content-Length: 109
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "managementInterval::end",
+    "detail": "end",
     "title": "Invalid DateTime value",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
@@ -2172,13 +2172,13 @@ Date: REGEX(.*)
 62. Attempt to PATCH the registration with an 'managementInterval' with an invalid field 'xyz' - see failure
 ============================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 123
+Content-Length: 117
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
     "detail": "xyz",
-    "title": "Invalid field for managementInterval",
+    "title": "Invalid field for TimeInterval",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
 
@@ -2200,13 +2200,13 @@ Date: REGEX(.*)
 64. Attempt to PATCH the registration with a 'managementInterval' whose start>end - see failure
 ===============================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 146
+Content-Length: 143
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "managementInterval ends before it starts",
-    "title": "Inconsistent DateTimes",
+    "detail": "TimeInterval ends before it starts",
+    "title": "Inconsistent TimeInterval",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
 
@@ -2270,13 +2270,13 @@ Date: REGEX(.*)
 69. Attempt to PATCH the registration with a 'location' with a 'type' whose string is not a valid geometry name - see failure
 =============================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 109
+Content-Length: 105
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
     "detail": "punto",
-    "title": "invalid GeoJSON type",
+    "title": "invalid geometry",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
 
