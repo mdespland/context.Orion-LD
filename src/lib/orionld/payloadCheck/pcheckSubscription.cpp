@@ -179,12 +179,14 @@ bool pcheckSubscription
     {
       DUPLICATE_CHECK(expiresP, "expires", nodeP);
       STRING_CHECK(nodeP, "expires");
+      EMPTY_STRING_CHECK(nodeP, "expires");
       DATETIME_CHECK(expiresP->value.s, dateTime, "expires");
     }
     else if (strcmp(nodeP->name, "throttling") == 0)
     {
       DUPLICATE_CHECK(throttlingP, "throttling", nodeP);
-      INTEGER_CHECK(nodeP, "throttling");
+      NUMBER_CHECK(nodeP, "throttling");
+      POSITIVE_NUMBER_CHECK(nodeP, "throttling");
     }
     else if (strcmp(nodeP->name, "temporalQ") == 0)
     {

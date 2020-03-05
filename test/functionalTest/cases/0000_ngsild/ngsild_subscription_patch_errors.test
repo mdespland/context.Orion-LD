@@ -121,14 +121,60 @@ brokerStart CB
 # 49. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' has a point with only one number
 # 50. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' has a point with four numbers
 # 51. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' has a point with a non-number item
+# 52. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' has only three points
+# 53. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' aren't a closed circle
 #
-# 52. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' is not an array
-# 53. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' is not an array of arrays
-# 54. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' has a point with only one number
-# 55. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' has a point with four numbers
-# 56. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' has a point with a non-number item
+# 54. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' is not an array
+# 55. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' is not an array of arrays
+# 56. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' has a point with only one number
+# 57. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' has a point with four numbers
+# 58. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' has a point with a non-number item
+#
+# 59. Attempt to PATCH the subscription with a 'csf' that is not a string
+# 60. Attempt to PATCH the subscription with a duplicated 'csf'
+# 61. Attempt to PATCH the subscription with a 'isActive' that is not a boolean
+# 62. Attempt to PATCH the subscription with a duplicated 'isActive'
+#
+# 63. Attempt to PATCH the subscription with a 'notification' that is not an object
+# 64. Attempt to PATCH the subscription with a 'notification' that is an empty object
+# 65. Attempt to PATCH the subscription with a duplicated 'notification'
+#
+# 66. Attempt to PATCH the subscription with a 'notification:attributes' that is not an array
+# 67. Attempt to PATCH the subscription with a 'notification:attributes' that is an empty array
+# 68. Attempt to PATCH the subscription with a duplicated 'notification:attributes'
+# 69. Attempt to PATCH the subscription with a 'notification:attributes' that is an array with a non-string item
+# 70. Attempt to PATCH the subscription with a 'notification:status'
+# 71. Attempt to PATCH the subscription with a 'notification' item named 'unsupported'
+#
+# 72. Attempt to PATCH the subscription with a 'notification:format' that is not a string
+# 73. Attempt to PATCH the subscription with a 'notification:format' that is an empty string
+# 74. Attempt to PATCH the subscription with a 'notification:format' that has an unsupported value
+# 75. Attempt to PATCH the subscription with a duplicated 'notification:format'
+# 
+# 76. Attempt to PATCH the subscription with a 'notification:endpoint' that is not an object
+# 77. Attempt to PATCH the subscription with a 'notification:endpoint' that is an empty object
+# 78. Attempt to PATCH the subscription with a duplicated 'notification:endpoint'
+#
+# 79. Attempt to PATCH the subscription with a 'notification:endpoint:uri' that is not a string
+# 80. Attempt to PATCH the subscription with a 'notification:endpoint:uri' that is an empty string
+# 81. Attempt to PATCH the subscription with a 'notification:endpoint:uri' that is not a valid URI
+# 82. Attempt to PATCH the subscription with a duplicated 'notification:endpoint:uri'
+# 
+# 83. Attempt to PATCH the subscription with a 'notification:endpoint:accept' that is not a string
+# 84. Attempt to PATCH the subscription with a 'notification:endpoint:accept' that is an empty string
+# 85. Attempt to PATCH the subscription with a 'notification:endpoint:accept' that is not a supported Mime Type
+# 86. Attempt to PATCH the subscription with a duplicated 'notification:endpoint:accept'
+# 
+# 87. Attempt to PATCH the subscription with an 'expires' that is not a string
+# 88. Attempt to PATCH the subscription with a duplicated 'expires'
+# 89. Attempt to PATCH the subscription with an 'expires' that is an empty string
+# 90. Attempt to PATCH the subscription with an 'expires' that is not a valid DateTime
+#
+# 91. Attempt to PATCH the subscription with a 'throttling' that is not a number
+# 92. Attempt to PATCH the subscription with a duplicated 'throttling'
+# 93. Attempt to PATCH the subscription with a 'throttling' that is negative
+#
 
-#
 echo "01. Create a subscription with all fields"
 echo "========================================="
 payload='{
@@ -668,6 +714,606 @@ payload='{
     "coordinates": [ 1, "b" ],
     "georel": "near;maxDistance==100"
   }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "46. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' is not an array"
+echo "============================================================================================="
+payload='{
+  "geoQ": {
+    "geometry": "Polygon",
+    "coordinates": 1,
+    "georel": "within"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "47. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' is not an array of arrays"
+echo "======================================================================================================="
+payload='{
+  "geoQ": {
+    "geometry": "Polygon",
+    "coordinates": [ 1 ],
+    "georel": "within"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "48. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' is not an array of arrays of arrays"
+echo "================================================================================================================="
+payload='{
+  "geoQ": {
+    "geometry": "Polygon",
+    "coordinates": [ [ 1 ] ],
+    "georel": "within"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "49. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' has a point with only one number"
+echo "=============================================================================================================="
+payload='{
+  "geoQ": {
+    "geometry": "Polygon",
+    "coordinates": [ [ [ 0, 0 ], [ 0, 1 ], [ -1 ], [ 0, 0 ]  ] ],
+    "georel": "within"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "50. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' has a point with four numbers"
+echo "==========================================================================================================="
+payload='{
+  "geoQ": {
+    "geometry": "Polygon",
+    "coordinates": [ [ [ 0, 0 ], [ 0, 1 ], [ -1, 0, 1, 2 ], [ 0, 0 ]  ] ],
+    "georel": "within"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "51. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' has a point with a non-number item"
+echo "================================================================================================================"
+payload='{
+  "geoQ": {
+    "geometry": "Polygon",
+    "coordinates": [ [ [ 0, 0 ], [ 0, 1 ], [ -1, true ], [ 0, 0 ]  ] ],
+    "georel": "within"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "52. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' has only three points"
+echo "==================================================================================================="
+payload='{
+  "geoQ": {
+    "geometry": "Polygon",
+    "coordinates": [ [ [ 0, 0 ], [ 0, 1 ], [ -1, 0 ] ] ],
+    "georel": "within"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "53. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' aren't a closed circle"
+echo "===================================================================================================="
+payload='{
+  "geoQ": {
+    "geometry": "Polygon",
+    "coordinates": [ [ [ 0, 0 ], [ 0, 1 ], [ -1, 0 ], [ 0, 1 ] ] ],
+    "georel": "within"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "54. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' is not an array"
+echo "================================================================================================"
+payload='{
+  "geoQ": {
+    "geometry": "LineString",
+    "coordinates": false,
+    "georel": "within"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "55. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' is not an array of arrays"
+echo "=========================================================================================================="
+payload='{
+  "geoQ": {
+    "geometry": "LineString",
+    "coordinates": [ 0, 0 ],
+    "georel": "within"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "56. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' has a point with only one number"
+echo "================================================================================================================="
+payload='{
+  "geoQ": {
+    "geometry": "LineString",
+    "coordinates": [ [ 0 ], [ 0, 1 ], [ -1, 0 ], [ 0, 1 ] ],
+    "georel": "within"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "57. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' has a point with four numbers"
+echo "=============================================================================================================="
+payload='{
+  "geoQ": {
+    "geometry": "LineString",
+    "coordinates": [ [ 0, 0, 0, 0 ], [ 0, 1 ], [ -1, 0 ], [ 0, 1 ] ],
+    "georel": "within"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "58. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' has a point with a non-number item"
+echo "==================================================================================================================="
+payload='{
+  "geoQ": {
+    "geometry": "LineString",
+    "coordinates": [ [ 0, 0 ], [ 0, 1 ], [ -1, "0" ], [ 0, 1 ] ],
+    "georel": "within"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "59. Attempt to PATCH the subscription with a 'csf' that is not a string"
+echo "======================================================================="
+payload='{
+  "csf": 12
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "60. Attempt to PATCH the subscription with a duplicated 'csf'"
+echo "============================================================="
+payload='{
+  "csf": "12",
+  "csf": "12"
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "61. Attempt to PATCH the subscription with a 'isActive' that is not a boolean"
+echo "============================================================================="
+payload='{
+  "isActive": 12
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "62. Attempt to PATCH the subscription with a duplicated 'isActive'"
+echo "=================================================================="
+payload='{
+  "isActive": true,
+  "isActive": true
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "63. Attempt to PATCH the subscription with a 'notification' that is not an object"
+echo "================================================================================="
+payload='{
+  "notification": []
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "64. Attempt to PATCH the subscription with a 'notification' that is an empty object"
+echo "==================================================================================="
+payload='{
+  "notification": {}
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "65. Attempt to PATCH the subscription with a duplicated 'notification'"
+echo "======================================================================"
+payload='{
+  "notification": {},
+  "notification": {}
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "66. Attempt to PATCH the subscription with a 'notification:attributes' that is not an array"
+echo "==========================================================================================="
+payload='{
+  "notification": {
+    "attributes": "A1"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "67. Attempt to PATCH the subscription with a 'notification:attributes' that is an empty array"
+echo "============================================================================================="
+payload='{
+  "notification": {
+    "attributes": []
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "68. Attempt to PATCH the subscription with a duplicated 'notification:attributes'"
+echo "================================================================================="
+payload='{
+  "notification": {
+    "attributes": [ "A1" ],
+    "attributes": [ "A1" ]
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "69. Attempt to PATCH the subscription with a 'notification:attributes' that is an array with a non-string item"
+echo "=============================================================================================================="
+payload='{
+  "notification": {
+    "attributes": [ "A1", 14 ]
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "70. Attempt to PATCH the subscription with a 'notification:status'"
+echo "=================================================================="
+payload='{
+  "notification": {
+    "status": "active"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "71. Attempt to PATCH the subscription with a 'notification' item named 'unsupported'"
+echo "===================================================================================="
+payload='{
+  "notification": {
+    "unsupported": true
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "72. Attempt to PATCH the subscription with a 'notification:format' that is not a string"
+echo "======================================================================================="
+payload='{
+  "notification": {
+    "format": true
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "73. Attempt to PATCH the subscription with a 'notification:format' that is an empty string"
+echo "=========================================================================================="
+payload='{
+  "notification": {
+    "format": ""
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "74. Attempt to PATCH the subscription with a 'notification:format' that has an unsupported value"
+echo "================================================================================================"
+payload='{
+  "notification": {
+    "format": "keyVals"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "75. Attempt to PATCH the subscription with a duplicated 'notification:format'"
+echo "============================================================================="
+payload='{
+  "notification": {
+    "format": "keyValues",
+    "format": "keyValues"
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "76. Attempt to PATCH the subscription with a 'notification:endpoint' that is not an object"
+echo "=========================================================================================="
+payload='{
+  "notification": {
+    "endpoint": true
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "77. Attempt to PATCH the subscription with a 'notification:endpoint' that is an empty object"
+echo "============================================================================================"
+payload='{
+  "notification": {
+    "endpoint": {}
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "78. Attempt to PATCH the subscription with a duplicated 'notification:endpoint'"
+echo "==============================================================================="
+payload='{
+  "notification": {
+    "endpoint": { "uri": "http://a.b.c/"},
+    "endpoint": { "uri": "http://a.b.c/"}
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "79. Attempt to PATCH the subscription with a 'notification:endpoint:uri' that is not a string"
+echo "============================================================================================="
+payload='{
+  "notification": {
+    "endpoint": {
+      "uri": true
+    }
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "80. Attempt to PATCH the subscription with a 'notification:endpoint:uri' that is an empty string"
+echo "================================================================================================"
+payload='{
+  "notification": {
+    "endpoint": {
+      "uri": ""
+    }
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "81. Attempt to PATCH the subscription with a 'notification:endpoint:uri' that is not a valid URI"
+echo "================================================================================================"
+payload='{
+  "notification": {
+    "endpoint": {
+      "uri": "not a uri"
+    }
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "82. Attempt to PATCH the subscription with a duplicated 'notification:endpoint:uri'"
+echo "==================================================================================="
+payload='{
+  "notification": {
+    "endpoint": {
+      "uri": "http://a.b.c/",
+      "uri": "http://a.b.c/"
+    }
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "83. Attempt to PATCH the subscription with a 'notification:endpoint:accept' that is not a string"
+echo "================================================================================================"
+payload='{
+  "notification": {
+    "endpoint": {
+      "accept": true
+    }
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "84. Attempt to PATCH the subscription with a 'notification:endpoint:accept' that is an empty string"
+echo "==================================================================================================="
+payload='{
+  "notification": {
+    "endpoint": {
+      "accept": ""
+    }
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "85. Attempt to PATCH the subscription with a 'notification:endpoint:accept' that is not a supported Mime Type"
+echo "============================================================================================================="
+payload='{
+  "notification": {
+    "endpoint": {
+      "accept": "no/mime"
+    }
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "86. Attempt to PATCH the subscription with a duplicated 'notification:endpoint:accept'"
+echo "======================================================================================"
+payload='{
+  "notification": {
+    "endpoint": {
+      "accept": "application/ld+json",
+      "accept": "application/ld+json"
+    }
+  }
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "87. Attempt to PATCH the subscription with an 'expires' that is not a string"
+echo "============================================================================"
+payload='{
+  "expires": 12
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "88. Attempt to PATCH the subscription with a duplicated 'expires'"
+echo "================================================================="
+payload='{
+  "expires": "2028-12-31T10:00:00",
+  "expires": "2028-12-31T10:00:00"
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "89. Attempt to PATCH the subscription with an 'expires' that is an empty string"
+echo "==============================================================================="
+payload='{
+  "expires": ""
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "90. Attempt to PATCH the subscription with an 'expires' that is not a valid DateTime"
+echo "===================================================================================="
+payload='{
+  "expires": "abc"
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "91. Attempt to PATCH the subscription with a 'throttling' that is not a number"
+echo "=============================================================================="
+payload='{
+  "throttling": "abc"
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "92. Attempt to PATCH the subscription with a duplicated 'throttling'"
+echo "===================================================================="
+payload='{
+  "throttling": 5,
+  "throttling": 5
+}'
+orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "93. Attempt to PATCH the subscription with a 'throttling' that is negative"
+echo "=========================================================================="
+payload='{
+  "throttling": -1
 }'
 orionCurl --url /ngsi-ld/v1/subscriptions/urn:ngsi-ld:subscriptions:S01 -X PATCH --payload "$payload"
 echo
@@ -1296,6 +1942,678 @@ Date: REGEX(.*)
 {
     "detail": "invalid coordinates",
     "title": "Invalid Payload Data",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+46. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' is not an array
+=============================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 164
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "the 'coordinates' field of a GeoJSON object must be a JSON Array",
+    "title": "Not a JSON Array",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+47. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' is not an array of arrays
+=======================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 123
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "invalid coordinates",
+    "title": "Invalid Payload Data",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+48. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' is not an array of arrays of arrays
+=================================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 123
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "invalid coordinates",
+    "title": "Invalid Payload Data",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+49. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' has a point with only one number
+==============================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 123
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "invalid coordinates",
+    "title": "Invalid Payload Data",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+50. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' has a point with four numbers
+===========================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 123
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "invalid coordinates",
+    "title": "Invalid Payload Data",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+51. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' has a point with a non-number item
+================================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 123
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "invalid coordinates",
+    "title": "Invalid Payload Data",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+52. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' has only three points
+===================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 123
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "invalid coordinates",
+    "title": "Invalid Payload Data",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+53. Attempt to PATCH the subscription with a POLYGON whose 'geoQ:coordinates' aren't a closed circle
+====================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 123
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "invalid coordinates",
+    "title": "Invalid Payload Data",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+54. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' is not an array
+================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 164
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "the 'coordinates' field of a GeoJSON object must be a JSON Array",
+    "title": "Not a JSON Array",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+55. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' is not an array of arrays
+==========================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 123
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "invalid coordinates",
+    "title": "Invalid Payload Data",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+56. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' has a point with only one number
+=================================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 123
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "invalid coordinates",
+    "title": "Invalid Payload Data",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+57. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' has a point with four numbers
+==============================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 123
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "invalid coordinates",
+    "title": "Invalid Payload Data",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+58. Attempt to PATCH the subscription with a LINESTRING whose 'geoQ:coordinates' has a point with a non-number item
+===================================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 123
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "invalid coordinates",
+    "title": "Invalid Payload Data",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+59. Attempt to PATCH the subscription with a 'csf' that is not a string
+=======================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 104
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "csf",
+    "title": "Not a JSON String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+60. Attempt to PATCH the subscription with a duplicated 'csf'
+=============================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 103
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "csf",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+61. Attempt to PATCH the subscription with a 'isActive' that is not a boolean
+=============================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 110
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "isActive",
+    "title": "Not a JSON Boolean",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+62. Attempt to PATCH the subscription with a duplicated 'isActive'
+==================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 108
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "isActive",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+63. Attempt to PATCH the subscription with a 'notification' that is not an object
+=================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 113
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "notification",
+    "title": "Not a JSON Object",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+64. Attempt to PATCH the subscription with a 'notification' that is an empty object
+===================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 108
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "notification",
+    "title": "Empty Object",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+65. Attempt to PATCH the subscription with a duplicated 'notification'
+======================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 112
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "notification",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+66. Attempt to PATCH the subscription with a 'notification:attributes' that is not an array
+===========================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 110
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "attributes",
+    "title": "Not a JSON Array",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+67. Attempt to PATCH the subscription with a 'notification:attributes' that is an empty array
+=============================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 105
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "attributes",
+    "title": "Empty Array",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+68. Attempt to PATCH the subscription with a duplicated 'notification:attributes'
+=================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 110
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "attributes",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+69. Attempt to PATCH the subscription with a 'notification:attributes' that is an array with a non-string item
+==============================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 122
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "attributes array item",
+    "title": "Not a JSON String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+70. Attempt to PATCH the subscription with a 'notification:status'
+==================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 135
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "'status' is read-only",
+    "title": "Invalid field for notification",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+71. Attempt to PATCH the subscription with a 'notification' item named 'unsupported'
+====================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 125
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "unsupported",
+    "title": "Invalid field for notification",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+72. Attempt to PATCH the subscription with a 'notification:format' that is not a string
+=======================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 107
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "format",
+    "title": "Not a JSON String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+73. Attempt to PATCH the subscription with a 'notification:format' that is an empty string
+==========================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 102
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "format",
+    "title": "Empty String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+74. Attempt to PATCH the subscription with a 'notification:format' that has an unsupported value
+================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 160
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "keyVals",
+    "title": "Invalid value of 'format' (must be either 'keyValues' or 'normalized'",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+75. Attempt to PATCH the subscription with a duplicated 'notification:format'
+=============================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 106
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "format",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+76. Attempt to PATCH the subscription with a 'notification:endpoint' that is not an object
+==========================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 109
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "endpoint",
+    "title": "Not a JSON Object",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+77. Attempt to PATCH the subscription with a 'notification:endpoint' that is an empty object
+============================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 104
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "endpoint",
+    "title": "Empty Object",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+78. Attempt to PATCH the subscription with a duplicated 'notification:endpoint'
+===============================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 108
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "endpoint",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+79. Attempt to PATCH the subscription with a 'notification:endpoint:uri' that is not a string
+=============================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 114
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "endpoint::uri",
+    "title": "Not a JSON String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+80. Attempt to PATCH the subscription with a 'notification:endpoint:uri' that is an empty string
+================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 109
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "endpoint::uri",
+    "title": "Empty String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+81. Attempt to PATCH the subscription with a 'notification:endpoint:uri' that is not a valid URI
+================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 106
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "endpoint::uri",
+    "title": "Not a URI",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+82. Attempt to PATCH the subscription with a duplicated 'notification:endpoint:uri'
+===================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 113
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "endpoint::uri",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+83. Attempt to PATCH the subscription with a 'notification:endpoint:accept' that is not a string
+================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 117
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "endpoint::accept",
+    "title": "Not a JSON String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+84. Attempt to PATCH the subscription with a 'notification:endpoint:accept' that is an empty string
+===================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 112
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "endpoint::accept",
+    "title": "Empty String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+85. Attempt to PATCH the subscription with a 'notification:endpoint:accept' that is not a supported Mime Type
+=============================================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 124
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "no/mime",
+    "title": "Unsupported Mime-type in 'accept'",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+86. Attempt to PATCH the subscription with a duplicated 'notification:endpoint:accept'
+======================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 116
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "endpoint::accept",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+87. Attempt to PATCH the subscription with an 'expires' that is not a string
+============================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 108
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "expires",
+    "title": "Not a JSON String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+88. Attempt to PATCH the subscription with a duplicated 'expires'
+=================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 107
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "expires",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+89. Attempt to PATCH the subscription with an 'expires' that is an empty string
+===============================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 103
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "expires",
+    "title": "Empty String",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+90. Attempt to PATCH the subscription with an 'expires' that is not a valid DateTime
+====================================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 113
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "expires",
+    "title": "Invalid DateTime value",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+91. Attempt to PATCH the subscription with a 'throttling' that is not a number
+==============================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 111
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "throttling",
+    "title": "Not a JSON Number",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+92. Attempt to PATCH the subscription with a duplicated 'throttling'
+====================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 110
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "throttling",
+    "title": "Duplicated field",
+    "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
+}
+
+
+93. Attempt to PATCH the subscription with a 'throttling' that is negative
+==========================================================================
+HTTP/1.1 400 Bad Request
+Content-Length: 138
+Content-Type: application/json
+Date: REGEX(.*)
+
+{
+    "detail": "throttling",
+    "title": "Negative Number not allowed in this position",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
 

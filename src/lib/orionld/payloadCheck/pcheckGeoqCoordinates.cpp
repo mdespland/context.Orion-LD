@@ -197,12 +197,14 @@ static bool pcheckGeoMultiLineString(KjNode* multiLineStringNodeP)
 //
 static bool pcheckGeoPolygon(KjNode* geoPointCoordinatesNodeP)
 {
+  LM_TMP(("GEO: In pcheckGeoPolygon"));
   if (geoPointCoordinatesNodeP->type != KjArray)
   {
     LM_W(("Bad Input ('coordinates' must be a JSON Array)"));
     orionldErrorResponseCreate(OrionldBadRequestData, "Invalid GeoJSON", "'coordinates' must be a JSON Array");
     return false;
   }
+
 
   //
   // A Polygon contains "rings" and a ring is an array of points
@@ -214,11 +216,25 @@ static bool pcheckGeoPolygon(KjNode* geoPointCoordinatesNodeP)
     KjNode* lastPosP  = NULL;
     int     points    = 0;
 
+    if (ringP->type != KjArray)
+    {
+      LM_W(("Bad Input (one of the rings is not an array"));
+      orionldErrorResponseCreate(OrionldBadRequestData, "Invalid GeoJSON", "'coordinates' in a 'Polygon' must be a JSON Array of 'Rings' that are JSON Arrays");
+      return false;
+    }
+
     for (KjNode* memberP = ringP->value.firstChildP; memberP != NULL; memberP = memberP->next)
     {
       if (memberP->type != KjArray)
       {
         LM_W(("Bad Input (a member of Polygon must be a JSON Array)"));
+        orionldErrorResponseCreate(OrionldBadRequestData, "Invalid GeoJSON", "'coordinates' in a 'Polygon' must be a JSON Array of 'Rings' that are JSON Arrays of 'Point'");
+        return false;
+      }
+
+      if (pcheckGeoPoint(memberP) == false)
+      {
+        LM_W(("Bad Input (one of the points of one of therings is not a valid point"));
         orionldErrorResponseCreate(OrionldBadRequestData, "Invalid GeoJSON", "'coordinates' in a 'Polygon' must be a JSON Array of 'Rings' that are JSON Arrays of 'Point'");
         return false;
       }
@@ -229,6 +245,7 @@ static bool pcheckGeoPolygon(KjNode* geoPointCoordinatesNodeP)
 
       ++points;
     }
+    LM_TMP(("GEO: Polygon with %d points", points));
 
     //
     // A polygon must have at least 4 points
@@ -239,6 +256,7 @@ static bool pcheckGeoPolygon(KjNode* geoPointCoordinatesNodeP)
       orionldErrorResponseCreate(OrionldBadRequestData, "Invalid GeoJSON", "A Polygon must have at least 4 points");
       return false;
     }
+    LM_TMP(("GEO: OK - %d points", points));
 
     //
     // The first position and the last position must be identical

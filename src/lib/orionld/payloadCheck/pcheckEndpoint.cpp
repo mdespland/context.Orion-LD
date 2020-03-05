@@ -52,12 +52,14 @@ bool pcheckEndpoint(ConnectionInfo* ciP, KjNode* endpointP)
     {
       DUPLICATE_CHECK(uriP, "endpoint::uri", epItemP);
       STRING_CHECK(uriP, "endpoint::uri");
+      EMPTY_STRING_CHECK(uriP, "endpoint::uri");
       URI_CHECK(uriP, "endpoint::uri");
     }
     else if (strcmp(epItemP->name, "accept") == 0)
     {
       DUPLICATE_CHECK(acceptP, "endpoint::accept", epItemP);
       STRING_CHECK(acceptP, "endpoint::accept");
+      EMPTY_STRING_CHECK(acceptP, "endpoint::accept");
       if ((strcmp(acceptP->value.s, "application/json") != 0) && (strcmp(acceptP->value.s, "application/ld+json") != 0))
       {
         orionldErrorResponseCreate(OrionldBadRequestData, "Unsupported Mime-type in 'accept'", epItemP->value.s);

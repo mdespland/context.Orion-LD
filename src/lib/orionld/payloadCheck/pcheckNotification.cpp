@@ -51,12 +51,16 @@ bool pcheckNotification(ConnectionInfo* ciP, KjNode* notificationP)
   KjNode* formatP     = NULL;
   KjNode* endpointP   = NULL;
 
+  OBJECT_CHECK(notificationP, "notification");
+  EMPTY_OBJECT_CHECK(notificationP, "notification");
+
   for (KjNode* nItemP = notificationP->value.firstChildP; nItemP != NULL; nItemP = nItemP->next)
   {
     if (strcmp(nItemP->name, "attributes") == 0)
     {
       DUPLICATE_CHECK(attributesP, "attributes", nItemP);
       ARRAY_CHECK(nItemP, "attributes");
+      EMPTY_ARRAY_CHECK(nItemP, "attributes");
 
       for (KjNode* attrP = nItemP->value.firstChildP; attrP != NULL; attrP = attrP->next)
       {
@@ -68,6 +72,7 @@ bool pcheckNotification(ConnectionInfo* ciP, KjNode* notificationP)
     {
       DUPLICATE_CHECK(formatP, "format", nItemP);
       STRING_CHECK(formatP, "format");
+      EMPTY_STRING_CHECK(formatP, "format");
       if ((strcmp(formatP->value.s, "keyValues") != 0) && (strcmp(formatP->value.s, "normalized") != 0))
       {
         orionldErrorResponseCreate(OrionldBadRequestData, "Invalid value of 'format' (must be either 'keyValues' or 'normalized'", formatP->value.s);
@@ -79,6 +84,7 @@ bool pcheckNotification(ConnectionInfo* ciP, KjNode* notificationP)
     {
       DUPLICATE_CHECK(endpointP, "endpoint", nItemP);
       OBJECT_CHECK(endpointP, "endpoint");
+      EMPTY_OBJECT_CHECK(endpointP, "endpoint");
       if (pcheckEndpoint(ciP, endpointP) == false)
         return false;
     }

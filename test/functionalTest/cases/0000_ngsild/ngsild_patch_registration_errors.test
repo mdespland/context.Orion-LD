@@ -2578,12 +2578,12 @@ Date: REGEX(.*)
 91. Attempt to PATCH the registration with a 'location' that has a 'type==Polygon' with 'coordinates' that is a cuadruple array - see failure
 =============================================================================================================================================
 HTTP/1.1 400 Bad Request
-Content-Length: 136
+Content-Length: 191
 Content-Type: application/json
 Date: REGEX(.*)
 
 {
-    "detail": "A Polygon must have at least 4 points",
+    "detail": "'coordinates' in a 'Polygon' must be a JSON Array of 'Rings' that are JSON Arrays of 'Point'",
     "title": "Invalid GeoJSON",
     "type": "https://uri.etsi.org/ngsi-ld/errors/BadRequestData"
 }
