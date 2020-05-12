@@ -20,25 +20,37 @@
 * For those usages not covered by this license please contact with
 * orionld at fiware dot org
 *
-* Author: Ken Zangelin
+* Author: Ken Zangelin and Gabriel Quaresma
 */
 #include <string>                                                // std::string  - for servicePath only
 #include <vector>                                                // std::vector  - for servicePath only
+
+extern "C"
+{
+#include "kbase/kMacros.h"                                       // K_VEC_SIZE, K_FT
+#include "kjson/kjBuilder.h"                                     // kjChildRemove
+#include "kjson/kjRender.h"                                      // kjRender
+#include "kjson/kjLookup.h"                                      // kjLookup
+#include "kjson/kjClone.h"                                       // kjClone
+#include "kalloc/kaAlloc.h"                                      // kaAlloc
+#include "kalloc/kaStrdup.h"                                     // kaStrdup
+}
 
 #include "logMsg/logMsg.h"                                       // LM_*
 #include "logMsg/traceLevels.h"                                  // Lmt*
 
 #include "rest/ConnectionInfo.h"                                 // ConnectionInfo
 #include "rest/HttpStatusCode.h"                                 // SccContextElementNotFound
-#include "ngsi10/UpdateContextRequest.h"                         // UpdateContextRequest
-#include "ngsi10/UpdateContextResponse.h"                        // UpdateContextResponse
-#include "mongoBackend/mongoUpdateContext.h"                     // mongoUpdateContext
 
 #include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate
+#include "orionld/common/urlCheck.h"                             // urlCheck
+#include "orionld/common/urnCheck.h"                             // urnCheck
 #include "orionld/common/httpStatusCodeToOrionldErrorType.h"     // httpStatusCodeToOrionldErrorType
 #include "orionld/common/orionldState.h"                         // orionldState
+#include "orionld/common/dotForEq.h"                             // dotForEq
+#include "orionld/common/eqForDot.h"                             // eqForDot
+#include "orionld/db/dbConfiguration.h"                          // dbEntityAttributeLookup, dbEntityAttributesDelete
 #include "orionld/context/orionldContextItemExpand.h"            // orionldContextItemExpand
-#include "orionld/mongoBackend/mongoAttributeExists.h"           // mongoAttributeExists
 #include "orionld/serviceRoutines/orionldDeleteAttribute.h"      // Own Interface
 
 
@@ -49,66 +61,66 @@
 //
 bool orionldDeleteAttribute(ConnectionInfo* ciP)
 {
-  char*   attrNameP;
+  char*    entityId = orionldState.wildcard[0];
+  char*    details;
+  char*    attrNameP;
+
+  // Make sure the Entity ID is a valid URI
+  if ((urlCheck(entityId, &details) == false) && (urnCheck(entityId, &details) == false))
+  {
+    orionldErrorResponseCreate(OrionldBadRequestData, "Invalid Entity ID", details);
+    orionldState.httpStatusCode = SccBadRequest;
+    return false;
+  }
+
+  if (dbEntityLookup(entityId) == NULL)
+  {
+    orionldErrorResponseCreate(OrionldResourceNotFound, "The requested entity has not been found. Check its id", entityId);
+    orionldState.httpStatusCode = SccNotFound;  // 404
+    return false;
+  }
 
   if ((strncmp(orionldState.wildcard[1], "http://", 7) == 0) || (strncmp(orionldState.wildcard[1], "https://", 8) == 0))
     attrNameP = orionldState.wildcard[1];
   else
     attrNameP = orionldContextItemExpand(orionldState.contextP, orionldState.wildcard[1], NULL, true, NULL);
 
-  //
-  // Does the attribute to be deleted even exist?
-  //
-
-  //
-  // FIXME: Extra call to mongo - can this be avoided?
-  //        By looking at the error code from the delete operation in mongo ...
-  //
-  if (mongoAttributeExists(orionldState.wildcard[0], attrNameP, orionldState.tenant) == false)
+  if (dbEntityAttributeLookup(entityId, attrNameP) == NULL)
   {
     orionldState.httpStatusCode = SccContextElementNotFound;
     orionldErrorResponseCreate(OrionldBadRequestData, "Attribute Not Found", orionldState.wildcard[1]);
     return false;
   }
 
-  // Create and fill in attribute and entity
-  ContextAttribute*  caP = new ContextAttribute;
-  Entity             entity;
+  LM_T(LmtServiceRoutine, ("Deleting attribute '%s' of entity '%s'", orionldState.wildcard[1], entityId));
 
-  entity.id = orionldState.wildcard[0];
-  caP->name = attrNameP;
-  entity.attributeVector.push_back(caP);
+  int     size           = 1;
+  KjNode* attrObjectP    = kjObject(orionldState.kjsonP, NULL);
+  KjNode* attrToRemoveP  = kjObject(orionldState.kjsonP, attrNameP);
 
-  LM_T(LmtServiceRoutine, ("Deleting attribute '%s' of entity '%s'", orionldState.wildcard[1], orionldState.wildcard[0]));
+  kjChildAdd(attrObjectP, attrToRemoveP);
 
-  UpdateContextRequest     ucr;
-  UpdateContextResponse    ucResponse;
-  std::vector<std::string> servicePath;
+  // Create a single array of the attribute passed.
+  char** attrNameV  = (char**) kaAlloc(&orionldState.kalloc, size * sizeof(char*));
+  int    attrNameIx = 0;
 
-  servicePath.push_back("/");
-
-  ucr.fill(&entity, ActionTypeDelete);
-  orionldState.httpStatusCode = mongoUpdateContext(&ucr,
-                                                   &ucResponse,
-                                                   orionldState.tenant,
-                                                   servicePath,
-                                                   ciP->uriParam,
-                                                   ciP->httpHeaders.xauthToken,
-                                                   ciP->httpHeaders.correlator,
-                                                   ciP->httpHeaders.ngsiv2AttrsFormat,
-                                                   ciP->apiVersion,
-                                                   NGSIV2_NO_FLAVOUR);
-
-  if (orionldState.httpStatusCode != SccOk)
+  // Save attribute long name in attrNameV, also - replace all '.' for '='
+  for (KjNode* attrP = attrObjectP->value.firstChildP; attrP != NULL; attrP = attrP->next)
   {
-    orionldErrorResponseCreate(httpStatusCodeToOrionldErrorType(orionldState.httpStatusCode), "DELETE /ngsi-ld/v1/entities/*/attrs/*", orionldState.wildcard[0]);
-    ucr.release();
+    LM_TMP(("attrP => %s", attrP->name));
+    attrNameV[attrNameIx] = attrP->name;
+    dotForEq(attrNameV[attrNameIx]);
+    ++attrNameIx;
+  }
 
+  if (dbEntityAttributesDelete(entityId, attrNameV, size) == false)
+  {
+    orionldState.httpStatusCode = SccContextElementNotFound;
+    orionldErrorResponseCreate(OrionldBadRequestData, "Attribute Not Found", orionldState.wildcard[1]);
     return false;
   }
 
-  ucr.release();
   orionldState.httpStatusCode = SccNoContent;
-
   return true;
+
 }
