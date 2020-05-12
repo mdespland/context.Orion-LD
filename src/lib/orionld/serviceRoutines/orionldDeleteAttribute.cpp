@@ -122,5 +122,4 @@ bool orionldDeleteAttribute(ConnectionInfo* ciP)
 
   orionldState.httpStatusCode = SccNoContent;
   return true;
-
 }
