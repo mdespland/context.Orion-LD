@@ -62,12 +62,14 @@ extern "C"
 bool orionldDeleteAttribute(ConnectionInfo* ciP)
 {
   char*    entityId = orionldState.wildcard[0];
-  char*    details;
+  char*    attrName = orionldState.wildcard[1];
   char*    attrNameP;
+  char*    details;
 
   // Make sure the Entity ID is a valid URI
   if ((urlCheck(entityId, &details) == false) && (urnCheck(entityId, &details) == false))
   {
+    LM_W(("Bad Input (Invalid Entity ID '%s' - not a URI)", entityId));
     orionldErrorResponseCreate(OrionldBadRequestData, "Invalid Entity ID", details);
     orionldState.httpStatusCode = SccBadRequest;
     return false;
@@ -75,48 +77,38 @@ bool orionldDeleteAttribute(ConnectionInfo* ciP)
 
   if (dbEntityLookup(entityId) == NULL)
   {
+    LM_T(LmtService, ("Entity Not Found: %s", entityId));
     orionldErrorResponseCreate(OrionldResourceNotFound, "The requested entity has not been found. Check its id", entityId);
     orionldState.httpStatusCode = SccNotFound;  // 404
     return false;
   }
 
-  if ((strncmp(orionldState.wildcard[1], "http://", 7) == 0) || (strncmp(orionldState.wildcard[1], "https://", 8) == 0))
-    attrNameP = orionldState.wildcard[1];
+  if ((strncmp(attrName, "http://", 7) == 0) || (strncmp(attrName, "https://", 8) == 0))
+    attrNameP = attrName;
   else
-    attrNameP = orionldContextItemExpand(orionldState.contextP, orionldState.wildcard[1], NULL, true, NULL);
+  {
+    attrNameP = orionldContextItemExpand(orionldState.contextP, attrName, NULL, true, NULL);
+    // attrNameP might point to a field inside the context cache - must make our own copy as 'dotForEq' will modifyit
+    attrNameP = kaStrdup(&orionldState.kalloc, attrNameP);
+  }
 
+  // IMPORTANT: Must call dbEntityAttributeLookup before replacing dots for eqs
   if (dbEntityAttributeLookup(entityId, attrNameP) == NULL)
   {
+    LM_T(LmtService, ("Attribute Not Found: %s/%s", entityId, attrNameP));
     orionldState.httpStatusCode = SccContextElementNotFound;
-    orionldErrorResponseCreate(OrionldBadRequestData, "Attribute Not Found", orionldState.wildcard[1]);
+    orionldErrorResponseCreate(OrionldBadRequestData, "Attribute Not Found", attrNameP);
     return false;
   }
 
-  LM_T(LmtServiceRoutine, ("Deleting attribute '%s' of entity '%s'", orionldState.wildcard[1], entityId));
+  dotForEq(attrNameP);
 
-  int     size           = 1;
-  KjNode* attrObjectP    = kjObject(orionldState.kjsonP, NULL);
-  KjNode* attrToRemoveP  = kjObject(orionldState.kjsonP, attrNameP);
-
-  kjChildAdd(attrObjectP, attrToRemoveP);
-
-  // Create a single array of the attribute passed.
-  char** attrNameV  = (char**) kaAlloc(&orionldState.kalloc, size * sizeof(char*));
-  int    attrNameIx = 0;
-
-  // Save attribute long name in attrNameV, also - replace all '.' for '='
-  for (KjNode* attrP = attrObjectP->value.firstChildP; attrP != NULL; attrP = attrP->next)
+  char* attrNameV[1]  = { attrNameP };
+  if (dbEntityAttributesDelete(entityId, attrNameV, 1) == false)
   {
-    LM_TMP(("attrP => %s", attrP->name));
-    attrNameV[attrNameIx] = attrP->name;
-    dotForEq(attrNameV[attrNameIx]);
-    ++attrNameIx;
-  }
-
-  if (dbEntityAttributesDelete(entityId, attrNameV, size) == false)
-  {
+    LM_W(("dbEntityAttributesDelete failed"));
     orionldState.httpStatusCode = SccContextElementNotFound;
-    orionldErrorResponseCreate(OrionldBadRequestData, "Attribute Not Found", orionldState.wildcard[1]);
+    orionldErrorResponseCreate(OrionldBadRequestData, "Attribute Not Found", attrNameP);
     return false;
   }
 
