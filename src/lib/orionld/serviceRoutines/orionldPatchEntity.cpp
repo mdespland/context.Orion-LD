@@ -27,14 +27,15 @@ extern "C"
 #include "kalloc/kaStrdup.h"                                     // kaStrdup
 #include "kjson/KjNode.h"                                        // KjNode
 #include "kjson/kjLookup.h"                                      // kjLookup
-#include "kjson/kjBuilder.h"                                     // kjChildRemove
+#include "kjson/kjBuilder.h"                                     // kjChildRemove, kjChildAdd
+#include "kjson/kjRender.h"                                      // kjRender
+#include "kjson/kjClone.h"                                       // kjClone
 }
 
 #include "logMsg/logMsg.h"                                       // LM_*
 #include "logMsg/traceLevels.h"                                  // Lmt*
 
 #include "rest/ConnectionInfo.h"                                 // ConnectionInfo
-#include "rest/HttpStatusCode.h"                                 // SccNotFound
 #include "mongoBackend/mongoUpdateContext.h"                     // mongoUpdateContext
 
 #include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate
@@ -42,14 +43,52 @@ extern "C"
 #include "orionld/common/SCOMPARE.h"                             // SCOMPAREx
 #include "orionld/common/CHECK.h"                                // DUPLICATE_CHECK, STRING_CHECK, ...
 #include "orionld/common/dotForEq.h"                             // dotForEq
+#include "orionld/db/dbConfiguration.h"                          // dbEntityLookup, dbEntityUpdate
 #include "orionld/context/orionldContextItemExpand.h"            // orionldContextItemExpand
 #include "orionld/kjTree/kjTreeToContextAttribute.h"             // kjTreeToContextAttribute
 #include "orionld/kjTree/kjStringValueLookupInArray.h"           // kjStringValueLookupInArray
 #include "orionld/kjTree/kjTreeToUpdateContextRequest.h"         // kjTreeToUpdateContextRequest
-#include "orionld/mongoBackend/mongoAttributeExists.h"           // mongoAttributeExists
 #include "orionld/serviceRoutines/orionldPatchEntity.h"          // Own Interface
 
 
+
+// ----------------------------------------------------------------------------
+//
+// isSpecialAttribute -
+//
+bool isSpecialAttribute(const char* attrName)
+{
+  if (strcmp(attrName, "createdAt") == 0)
+    return true;
+  if (strcmp(attrName, "modifiedAt") == 0)
+    return true;
+  if (strcmp(attrName, "location") == 0)
+    return true;
+  if (strcmp(attrName, "observationSpace") == 0)
+    return true;
+  if (strcmp(attrName, "operationSpace") == 0)
+    return true;
+
+  return false;
+}
+
+bool isSpecialSubAttribute(const char* attrName)
+{
+  if (strcmp(attrName, "createdAt") == 0)
+    return true;
+  if (strcmp(attrName, "modifiedAt") == 0)
+    return true;
+  if (strcmp(attrName, "observedAt") == 0)
+    return true;
+  if (strcmp(attrName, "datasetId") == 0)
+    return true;
+  if (strcmp(attrName, "instanceId") == 0)
+    return true;
+  if (strcmp(attrName, "unitCode") == 0)  // Only if type == Property
+    return true;
+
+  return false;
+}
 
 // ----------------------------------------------------------------------------
 //
@@ -59,6 +98,8 @@ extern "C"
 //
 static void attributeNotUpdated(KjNode* notUpdatedP, const char* attrName, const char* reason)
 {
+  LM_TMP(("EPATCH: attribute '%s' does not exist in DB (attrs field) - ignoring it", attrName));
+
   KjNode* notUpdatedDetailsP = kjObject(orionldState.kjsonP, NULL);
   KjNode* attrNameP          = kjString(orionldState.kjsonP, "attributeName", attrName);
   KjNode* reasonP            = kjString(orionldState.kjsonP, "reason", reason);
@@ -79,6 +120,8 @@ static void attributeNotUpdated(KjNode* notUpdatedP, const char* attrName, const
 //
 static void attributeUpdated(KjNode* updatedP, const char* attrName)
 {
+  LM_TMP(("EPATCH: attribute '%s' has been updated", attrName));
+
   KjNode* attrNameP = kjString(orionldState.kjsonP, NULL, attrName);
 
   kjChildAdd(updatedP, attrNameP);
@@ -95,7 +138,7 @@ static void attributeUpdated(KjNode* updatedP, const char* attrName)
 //   * PATCH /entities/*/attrs
 //   * etc
 //
-bool attributeCheck(ConnectionInfo* ciP, KjNode* attrNodeP, char** titleP, char** detailP)
+bool attributeCheck(KjNode* attrNodeP, char** titleP, char** detailP)
 {
   if (attrNodeP->type != KjObject)
   {
@@ -177,6 +220,328 @@ bool attributeCheck(ConnectionInfo* ciP, KjNode* attrNodeP, char** titleP, char*
 
 // ----------------------------------------------------------------------------
 //
+// specialAttributeCheck -
+//
+// FIXME - move to separate module - should be used also for:
+//   * POST /entities/*/attrs
+//   * PATCH /entities/*/attrs
+//   * etc
+//
+bool specialAttributeCheck(KjNode* attrNodeP, char** titleP, char** detailP)
+{
+  if (strcmp(attrNodeP->name, "createdAt") == 0)
+  {
+    *titleP  = (char*) "createdAt";
+    *detailP = (char*) "Builtin attributes are ignored";
+    return false;
+  }
+  else if (strcmp(attrNodeP->name, "modifiedAt") == 0)
+  {
+    *titleP  = (char*) "modifiedAt";
+    *detailP = (char*) "Builtin attributes are ignored";
+    return false;
+  }
+  else if (strcmp(attrNodeP->name, "datasetId") == 0)
+  {
+    if (attrNodeP->type != KjString)
+    {
+      *titleP  = (char*) "Invalid JSON type";
+      *detailP = (char*) "datasetId must be a JSON string";
+      return false;
+    }
+
+    if ((urlCheck(attrNodeP->value.s, detailP) == false) && (urnCheck(attrNodeP->value.s, detailP)))
+    {
+      *titleP  = (char*) "Not a URI";
+      *detailP = (char*) "datasetId must be a URI";
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
+#if 1
+// ----------------------------------------------------------------------------
+//
+// orionldPatchEntity -
+//
+// mongoBackend doesn't work for this request.
+// I have managed to get the DB update fully working, except for createdAt, that is updated when it should not be,
+// But, any notifications are sent with a mix between the old and the new. See Orion-LD issue #559 for more info.
+//
+// So, I have decided to NOT USE mongoBackend for PATCH Entity.
+//
+// This is how it will work:
+// 1. Get the entity from the DB - let's call it the "DB-Entity tree".
+// 2. Loop over the incoming payload KjNode tree (patch tree) and remove from the patch tree all those attributes that do not exist in the "DB-Entity tree"
+// 3. Overwrite the "DB-Entity tree" with all remaining attributes from the "Patch Tree".
+// - Now we have the resulting entity in the "DB-Entity tree"
+// 4. Write the "DB-Entity tree" to mongo
+// 5. Find matching subscriptions for the "Patch Tree"
+// 6. Prepare the notifications - to be sent in requestCompleted (src/lib/rest/rest.cpp)
+//
+// "datasetId" will be implemented later.
+//
+// ----------------------------------------------------------------------------
+//
+// The input payload is a collection of attributes.
+// Those attributes that don't exist already in the entity are not added, but reported in the response payload data as "notUpdated".
+// The remaining attributes replace the old attributes.
+//
+// Extract from ETSI NGSI-LD spec:
+//   For each of the Attributes included in the Fragment, if the target Entity includes a matching one (considering
+//   term expansion rules as mandated by clause 5.5.7), then replace it by the one included by the Fragment. If the
+//   Attribute includes a datasetId, only an Attribute instance with the same datasetId is replaced.
+//   In all other cases, the Attribute shall be ignored.
+//
+bool orionldPatchEntity(ConnectionInfo* ciP)
+{
+  char*   entityId      = orionldState.wildcard[0];
+  KjNode* patchTree     = orionldState.requestTree;
+  KjNode* dbEntityTree;
+  char*   title;
+  char*   detail;
+
+  // Entity ID must be a valid URI
+  if ((urlCheck(entityId, &detail) == false) && (urnCheck(entityId, &detail) == false))
+  {
+    orionldState.httpStatusCode = 400;
+    orionldErrorResponseCreate(OrionldBadRequestData, "Entity ID must be a valid URI", entityId);
+    return false;
+  }
+
+  // The payload must be a JSON object
+  OBJECT_CHECK(orionldState.requestTree, kjValueType(orionldState.requestTree->type));
+
+  // Get the entity from mongo
+  if ((dbEntityTree = dbEntityLookup(entityId)) == NULL)
+  {
+    orionldState.httpStatusCode = 404;
+    orionldErrorResponseCreate(OrionldBadRequestData, "Entity does not exist", entityId);
+    return false;
+  }
+
+  // <DEBUG>
+  char buf[2048];
+  kjRender(orionldState.kjsonP, dbEntityTree, buf, sizeof(buf));
+  LM_TMP(("dbEntityTree: %s", buf));
+
+  kjRender(orionldState.kjsonP, patchTree, buf, sizeof(buf));
+  LM_TMP(("patchTree: %s", buf));
+  // </DEBUG>
+
+  //
+  // Set pointers to the DB attributes
+  //
+  KjNode* dbAttrs      = kjLookup(dbEntityTree, "attrs");
+  KjNode* dbAttrNames  = kjLookup(dbEntityTree, "attrNames");
+
+  if (dbAttrNames == NULL)
+  {
+    LM_E(("Database Error ('attrNames' field not found the the entity in the database)"));
+    orionldState.httpStatusCode = 500;
+    orionldErrorResponseCreate(OrionldBadRequestData, "Database Error", "'attrNames' field not found the the entity in the database");
+    return false;
+  }
+
+  if (dbAttrs == NULL)
+  {
+    LM_E(("Database Error ('attrs' field not found the the entity in the database)"));
+    orionldState.httpStatusCode = 500;
+    orionldErrorResponseCreate(OrionldBadRequestData, "Database Error", "'attrs' field not found the the entity in the database");
+    return false;
+  }
+
+  //
+  // Remove from patchTree:
+  //   * attributes that are incorrect
+  //   * attributes that are not found in the DB
+  //
+  // Removed attributes are stored in the array 'notUpdatedP' to be a part of the response
+  //
+  KjNode* updatedP     = kjArray(orionldState.kjsonP, "updated");
+  KjNode* notUpdatedP  = kjArray(orionldState.kjsonP, "notUpdated");
+  KjNode* aP           = patchTree->value.firstChildP;
+  KjNode* next;
+
+  while (aP != NULL)
+  {
+    char*   shortName   = aP->name;
+    bool    special     = isSpecialAttribute(shortName);
+
+    next = aP->next;
+
+    // Only non-special attributes are subject to attribute name expansion
+    if (special == false)
+    {
+      aP->name = orionldContextItemExpand(orionldState.contextP, shortName, true, NULL);
+      dotForEq(aP->name);
+    }
+
+    //
+    // Check that the attribute is syntactically OK
+    //
+    if (special == true)
+    {
+      if (specialAttributeCheck(aP, &title, &detail) == false)
+      {
+        attributeNotUpdated(notUpdatedP, shortName, detail);
+        kjChildRemove(patchTree, aP);
+      }
+    }
+    else
+    {
+      if (attributeCheck(aP, &title, &detail) == false)
+      {
+        attributeNotUpdated(notUpdatedP, shortName, detail);
+        kjChildRemove(patchTree, aP);
+      }
+    }
+
+    //
+    // Attributes that did not previously exist are ignored
+    //
+    if (kjLookup(dbAttrs, aP->name) == NULL)
+    {
+      attributeNotUpdated(notUpdatedP, shortName, "attribute doesn't exist in original entity");
+      kjChildRemove(patchTree, aP);
+    }
+    else
+      attributeUpdated(updatedP, shortName);
+
+    aP = next;
+  }
+
+  kjRender(orionldState.kjsonP, patchTree, buf, sizeof(buf));
+  LM_TMP(("New patchTree: %s", buf));
+
+
+  //
+  // Overwrite the "DB-Entity tree" with all remaining attributes from the "Patch Tree".
+  // Keep the "Patch Tree" intact as it is needed for finding matching subscriptions
+  // FIXME: Match subs before merging "Patch Tree" into "DB-Entity tree" to avoid cloning patchTree.
+  //
+  // KjNode* patchTreeCopy = kjClone(orionldState.kjsonP, patchTree);  // To be used to match subscriptions
+  KjNode* attrP         = patchTree->value.firstChildP;
+
+  while (attrP != NULL)
+  {
+    next = attrP->next;
+
+    KjNode* dbAttrP = kjLookup(dbAttrs, attrP->name);
+
+    if (dbAttrP == NULL)
+    {
+      LM_E(("Database Error (previously found attribute '%s' is now lost!!!)", attrP->name));
+
+      attributeNotUpdated(notUpdatedP, attrP->name, "internal db error");
+      kjChildRemove(patchTree, attrP);
+
+      attrP = next;
+      continue;
+    }
+
+    KjNode* dbCreatedAtP  = kjLookup(dbAttrP, "creDate");
+    KjNode* dbModifiedAtP =	kjLookup(dbAttrP, "modDate");
+    KjNode* dbTypeP       =	kjLookup(dbAttrP, "type");
+    KjNode* typeP         =	kjLookup(attrP, "type");
+
+    // "type" cannot change in an update
+    if (strcmp(dbTypeP->value.s, typeP->value.s) != 0)
+    {
+      LM_W(("Bad Input (mismatch in attribute type)"));
+      attributeNotUpdated(notUpdatedP, attrP->name, "mismatch in attribute type");
+      kjChildRemove(patchTree, attrP);
+
+      attrP = next;
+      continue;
+    }
+
+    // Removing the old db attr from its list and replace with the one from the payload
+    kjChildRemove(dbAttrs, dbAttrP);
+    kjChildRemove(patchTree, attrP);
+    kjChildAdd(dbAttrs, attrP);
+    // This will reorder the attributes in the entity ... unfortunate - could "easily" be fixed
+
+    // modifiedAt
+    if (dbModifiedAtP != NULL)
+    {
+      dbModifiedAtP->value.f = orionldState.requestTime;
+    }
+    else  // No modifiedAt ... !
+    {
+      KjNode* modifiedAtP = kjFloat(orionldState.kjsonP, "modDate", orionldState.requestTime);
+      kjChildAdd(dbAttrP, modifiedAtP);
+    }
+
+    // createdAt
+    if (dbCreatedAtP == NULL)  // No createdAt !!!
+    {
+      KjNode* createdAtP = kjFloat(orionldState.kjsonP, "creDate", orionldState.requestTime);
+      kjChildAdd(dbAttrP, createdAtP);
+    }
+
+    attrP = next;
+  }
+
+  //
+  // Update 'modifiedAt' for the entity
+  //
+  KjNode* modifiedAtP = kjLookup(dbEntityTree, "modDate");
+
+  if (modifiedAtP == NULL)
+  {
+    KjNode* modifiedAtP = kjFloat(orionldState.kjsonP, "modDate", orionldState.requestTime);
+    kjChildAdd(dbEntityTree, modifiedAtP);
+  }
+  else
+    modifiedAtP->value.f = orionldState.requestTime;
+
+  //
+  // Write to DB
+  //
+  LM_TMP(("EPATCH: Writing updated entity to DB"));
+  kjRender(orionldState.kjsonP, dbEntityTree, buf, sizeof(buf));
+  LM_TMP(("updated entity: %s", buf));
+
+  if (dbEntityUpdate(entityId, dbEntityTree) == false)
+  {
+    LM_E(("Database Error (Error writing entity '%s' to database)", entityId));
+    orionldState.httpStatusCode = 500;
+    orionldErrorResponseCreate(OrionldInternalError, "Database Error", "Error writing entity to database");
+    return false;
+  }
+
+  // 204 or 207?
+  if (notUpdatedP->value.firstChildP != NULL)  // non-empty list of 'not updated'
+  {
+    //
+    // 204 or 207?
+    //
+    // 204 if all went ok (== empty list of 'not updated')
+    // 207 if something went wrong (== non-empty list of 'not updated')
+    //
+    // If 207 - prepare the response payload data
+    //
+    orionldState.responseTree = kjObject(orionldState.kjsonP, NULL);
+
+    kjChildAdd(orionldState.responseTree, updatedP);
+    kjChildAdd(orionldState.responseTree, notUpdatedP);
+
+    orionldState.httpStatusCode = 207;
+  }
+  else
+  {
+    orionldState.httpStatusCode = 204;
+  }
+
+  return true;
+}
+#else
+// ----------------------------------------------------------------------------
+//
 // orionldPatchEntity -
 //
 // The input payload is a collection of attributes.
@@ -197,7 +562,7 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
   // 1. Is the Entity ID in the URL a valid URI?
   if ((urlCheck(entityId, &detail) == false) && (urnCheck(entityId, &detail) == false))
   {
-    orionldState.httpStatusCode = SccBadRequest;
+    orionldState.httpStatusCode = 400;
     orionldErrorResponseCreate(OrionldBadRequestData, "Entity ID must be a valid URI", entityId);
     return false;
   }
@@ -209,7 +574,7 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
   KjNode* dbEntityP;
   if ((dbEntityP = dbEntityLookup(entityId)) == NULL)
   {
-    orionldState.httpStatusCode = SccNotFound;
+    orionldState.httpStatusCode = 404;
     orionldErrorResponseCreate(OrionldBadRequestData, "Entity does not exist", entityId);
     return false;
   }
@@ -219,7 +584,7 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
 
   if (idNodeP == NULL)
   {
-    orionldState.httpStatusCode = SccReceiverInternalError;
+    orionldState.httpStatusCode = 500;
     orionldErrorResponseCreate(OrionldInternalError, "Corrupt Database", "'_id' field of entity from DB not found");
     return false;
   }
@@ -229,7 +594,7 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
 
   if (entityTypeNodeP == NULL)
   {
-    orionldState.httpStatusCode = SccReceiverInternalError;
+    orionldState.httpStatusCode = 500;
     orionldErrorResponseCreate(OrionldInternalError, "Corrupt Database", "'_id::type' field of entity from DB not found");
     return false;
   }
@@ -238,7 +603,7 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
   KjNode* inDbAttrNamesP = kjLookup(dbEntityP, "attrNames");
   if (inDbAttrNamesP == NULL)
   {
-    orionldState.httpStatusCode = SccReceiverInternalError;
+    orionldState.httpStatusCode = 500;
     orionldErrorResponseCreate(OrionldInternalError, "Corrupt Database", "'attrNames' field of entity from DB not found");
     return false;
   }
@@ -247,7 +612,7 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
   KjNode* inDbAttrsP = kjLookup(dbEntityP, "attrs");
   if (inDbAttrsP == NULL)
   {
-    orionldState.httpStatusCode = SccReceiverInternalError;
+    orionldState.httpStatusCode = 500;
     orionldErrorResponseCreate(OrionldInternalError, "Corrupt Database", "'attrs' field of entity from DB not found");
     return false;
   }
@@ -280,7 +645,7 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
     }
 
     // Is the attribute in the incoming payload a valid attribute?
-    if (attributeCheck(ciP, newAttrP, &title, &detail) == false)
+    if (attributeCheck(newAttrP, &title, &detail) == false)
     {
       LM_E(("attributeCheck: %s: %s", title, detail));
       attributeNotUpdated(notUpdatedP, newAttrP->name, detail);
@@ -347,7 +712,7 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
   ucRequest.release();
 
   // 9. Postprocess output from mongoBackend
-  if (orionldState.httpStatusCode == SccOk)
+  if (orionldState.httpStatusCode == 200)
   {
     //
     // 204 or 207?
@@ -364,10 +729,10 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
       kjChildAdd(orionldState.responseTree, updatedP);
       kjChildAdd(orionldState.responseTree, notUpdatedP);
 
-      orionldState.httpStatusCode = SccMultiStatus;
+      orionldState.httpStatusCode = 207;
     }
     else
-      orionldState.httpStatusCode = SccNoContent;
+      orionldState.httpStatusCode = 204;
   }
   else
   {
@@ -378,3 +743,5 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
 
   return true;
 }
+
+#endif
