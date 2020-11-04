@@ -107,6 +107,10 @@ struct CachedSubscription
 #ifdef ORIONLD
   std::string                 name;
   std::string                 ldContext;
+  char                        ip[128];
+  unsigned short              port;
+  char                        urlPath[256];
+  char                        verb[10];
 #endif
   int64_t                     count;
   RenderFormat                renderFormat;
@@ -117,6 +121,24 @@ struct CachedSubscription
   double                      lastSuccess;  // timestamp of last successful notification
   struct CachedSubscription*  next;
 };
+
+
+
+/* ****************************************************************************
+*
+* SubCache -
+*/
+typedef struct SubCache
+{
+  CachedSubscription* head;
+  CachedSubscription* tail;
+
+  // Statistics counters
+  int                 noOfRefreshes;
+  int                 noOfInserts;
+  int                 noOfRemoves;
+  int                 noOfUpdates;
+} SubCache;
 
 
 
@@ -134,6 +156,14 @@ extern volatile SubCacheState  subCacheState;
 * subCacheInit - 
 */
 extern void subCacheInit(bool multitenant = false);
+
+
+
+/* ****************************************************************************
+*
+* subCacheGet -
+*/
+extern SubCache* subCacheGet(void);
 
 
 

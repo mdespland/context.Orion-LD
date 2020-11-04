@@ -22,8 +22,12 @@
 *
 * Author: Ken Zangelin
 */
+#include <string>                                                // std::string
+#include <vector>                                                // std::vector
+
 extern "C"
 {
+#include "kbase/kMacros.h"                                       // K_FT
 #include "kalloc/kaStrdup.h"                                     // kaStrdup
 #include "kjson/KjNode.h"                                        // KjNode
 #include "kjson/kjLookup.h"                                      // kjLookup
@@ -38,6 +42,7 @@ extern "C"
 #include "rest/ConnectionInfo.h"                                 // ConnectionInfo
 #include "mongoBackend/mongoUpdateContext.h"                     // mongoUpdateContext
 
+#include "cache/subCache.h"                                      // CachedSubscription
 #include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate
 #include "orionld/common/orionldState.h"                         // orionldState
 #include "orionld/common/SCOMPARE.h"                             // SCOMPAREx
@@ -72,6 +77,12 @@ bool isSpecialAttribute(const char* attrName)
   return false;
 }
 
+
+
+// ----------------------------------------------------------------------------
+//
+// isSpecialSubAttribute -
+//
 bool isSpecialSubAttribute(const char* attrName)
 {
   if (strcmp(attrName, "createdAt") == 0)
@@ -89,6 +100,8 @@ bool isSpecialSubAttribute(const char* attrName)
 
   return false;
 }
+
+
 
 // ----------------------------------------------------------------------------
 //
@@ -129,16 +142,17 @@ static void attributeUpdated(KjNode* updatedP, const char* attrName)
 
 
 
+extern bool pcheckAttribute(KjNode* aP, bool toplevel, char** titleP, char** detailP);
 // ----------------------------------------------------------------------------
 //
-// attributeCheck -
+// pcheckNormalAttribute -
 //
-// FIXME - move to separate module - should be used also for:
+// FIXME - move to orionld/payloadCheck/ - should be used also for:
 //   * POST /entities/*/attrs
 //   * PATCH /entities/*/attrs
 //   * etc
 //
-bool attributeCheck(KjNode* attrNodeP, char** titleP, char** detailP)
+bool pcheckNormalAttribute(KjNode* attrNodeP, bool toplevel, char** titleP, char** detailP)
 {
   if (attrNodeP->type != KjObject)
   {
@@ -180,6 +194,11 @@ bool attributeCheck(KjNode* attrNodeP, char** titleP, char** detailP)
     {
       DUPLICATE_CHECK(objectP, "object", nodeP);
     }
+    else  // Sub-attribute
+    {
+      if (pcheckAttribute(nodeP, false, titleP, detailP) == false)
+        return false;
+    }
   }
 
   if (typeP == NULL)
@@ -198,6 +217,21 @@ bool attributeCheck(KjNode* attrNodeP, char** titleP, char** detailP)
       *titleP  = (char*) "Mandatory field missing";
       *detailP = (char*) "Mandatory field missing: Relationship object";
 
+      return false;
+    }
+
+    // "object" must be a string that is a valid URI
+    if (objectP->type != KjString)
+    {
+      *titleP  = (char*) "The 'object' field must be a string";
+      *detailP = (char*) "The 'object' field must be a string";
+
+      return false;
+    }
+    if ((urlCheck(objectP->value.s, detailP) == false) && (urnCheck(objectP->value.s, detailP) == false))
+    {
+      *titleP  = (char*) "Not a URI";
+      *detailP = (char*) "The object field of a Relationship must be a valid URI";
       return false;
     }
   }
@@ -220,14 +254,14 @@ bool attributeCheck(KjNode* attrNodeP, char** titleP, char** detailP)
 
 // ----------------------------------------------------------------------------
 //
-// specialAttributeCheck -
+// pcheckSpecialAttribute -
 //
 // FIXME - move to separate module - should be used also for:
 //   * POST /entities/*/attrs
 //   * PATCH /entities/*/attrs
 //   * etc
 //
-bool specialAttributeCheck(KjNode* attrNodeP, char** titleP, char** detailP)
+bool pcheckSpecialAttribute(KjNode* attrNodeP, bool toplevel, char** titleP, char** detailP)
 {
   if (strcmp(attrNodeP->name, "createdAt") == 0)
   {
@@ -258,8 +292,279 @@ bool specialAttributeCheck(KjNode* attrNodeP, char** titleP, char** detailP)
     }
   }
 
+  // FIXME: Rest of special sub-attributes:
+  // * observedAt
+  // * unitCode (only if Property
+  //
+  // And the special top-level attributes:
+  // * location
+  // * observationSpace
+  // * operationSpace
   return true;
 }
+
+
+
+// -----------------------------------------------------------------------------
+//
+// pcheckAttribute -
+//
+bool pcheckAttribute(KjNode* aP, bool toplevel, char** titleP, char** detailP)
+{
+  bool special = isSpecialAttribute(aP->name);
+
+  //
+  // Check that the attribute is syntactically OK
+  //
+  if (special == true)
+  {
+    if (pcheckSpecialAttribute(aP, toplevel, titleP, detailP) == false)
+      return false;
+  }
+  else
+  {
+    if (pcheckNormalAttribute(aP, toplevel, titleP, detailP) == false)
+    return false;
+  }
+
+  return true;
+}
+
+
+
+// -----------------------------------------------------------------------------
+//
+// entityTypeGet -
+//
+static char* entityTypeGet(KjNode* dbEntityTree)
+{
+  KjNode* idNodeP = kjLookup(dbEntityTree, "_id");
+
+  if (idNodeP == NULL)
+  {
+    LM_E(("Database Error (no _id field found in the db entity)"));
+    return NULL;
+  }
+
+  KjNode* entityTypeNodeP = kjLookup(idNodeP, "type");
+
+  if (entityTypeNodeP == NULL)
+  {
+    LM_E(("Database Error (no _id.type field found in the db entity)"));
+    return NULL;
+  }
+
+  if (entityTypeNodeP->type != KjString)
+  {
+    LM_E(("Database Error (_id.type field found in the db entity but instead of being a string it's of type '%s')", kjValueType(entityTypeNodeP->type)));
+    return NULL;
+  }
+
+  return entityTypeNodeP->value.s;
+}
+
+
+
+// ----------------------------------------------------------------------------
+//
+// ngsildSubEntityMatch -
+//
+static bool ngsildSubEntityMatch(char* entityId, char* entityType, const std::vector<EntityInfo*>& entityIdInfos)
+{
+  for (unsigned int ix = 0; ix < entityIdInfos.size(); ix++)
+  {
+    EntityInfo* eiP = entityIdInfos[ix];
+
+    if ((eiP->entityId != "") && (eiP->entityId != entityId))
+      continue;
+    if ((eiP->entityType != "") && (eiP->entityType != entityType))
+      continue;
+
+    if (eiP->isPattern == true)
+    {
+      if (regexec(&eiP->entityIdPattern, entityId, 0, NULL, 0) != 0)
+        continue;
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
+
+
+// ----------------------------------------------------------------------------
+//
+// ngsildSubAttributesMatch -
+//
+static bool ngsildSubAttributesMatch(KjNode* patchTree, const std::vector<std::string>& attributes)
+{
+  if (attributes.size() == 0)
+  {
+    LM_TMP(("NOTIF: subscription has empty attribute list - accepted"));
+    return true;
+  }
+
+  for (KjNode* aP = patchTree->value.firstChildP; aP != NULL; aP = aP->next)
+  {
+    for (unsigned int ix = 0; ix < attributes.size(); ix++)
+    {
+      char subscriptionAttr[512];
+
+      strncpy(subscriptionAttr, attributes[ix].c_str(), sizeof(subscriptionAttr));
+      dotForEq(subscriptionAttr);
+      LM_TMP(("NOTIF: Comparing patch-tree attribute '%s' with subscription attribute '%s'", aP->name, subscriptionAttr));
+      if (strcmp(aP->name, subscriptionAttr) == 0)
+        return true;
+    }
+  }
+
+  return false;
+}
+
+
+
+// ----------------------------------------------------------------------------
+//
+// orionldNotificationAdd - move to new lib orionld/notifications
+//
+void orionldNotificationAdd(CachedSubscription* cSubP, KjNode* patchTreeCopy, KjNode* dbEntityTree)
+{
+  OrionldNotification* niP = (OrionldNotification*) kaAlloc(&orionldState.kalloc, sizeof(OrionldNotification));
+
+  LM_KTREE("NOTIF: enqueing notification: patchTreeCopy: ", patchTreeCopy);
+  LM_KTREE("NOTIF: enqueing notification: dbEntityTree:  ", dbEntityTree);
+
+  niP->subP       = cSubP;
+  niP->changeTree = patchTreeCopy;
+  niP->resultTree = dbEntityTree;
+  niP->next       = NULL;
+
+  if (orionldState.notificationHead == NULL)
+    orionldState.notificationHead = niP;
+  else
+    orionldState.notificationTail->next = niP;
+
+  orionldState.notificationTail = niP;
+}
+
+
+
+// ----------------------------------------------------------------------------
+//
+// orionldNotificationsPrepare -
+//
+void orionldNotificationsPrepare(KjNode* dbEntityTree, KjNode* patchTreeCopy)
+{
+  char* entityType = entityTypeGet(dbEntityTree);
+
+  if (entityType == NULL)
+  {
+    LM_TMP(("NOTIF: unable to notify - no entity type found in entity from database"));
+    return;  // Update OK, notifications FAIL but as errors to log file by entityTypeGet() ... OK sent to client
+  }
+
+  LM_TMP(("NOTIF: Entity ID:   %s", orionldState.wildcard[0]));
+  LM_TMP(("NOTIF: Entity Type: %s", entityType));
+
+  for (KjNode* aP = patchTreeCopy->value.firstChildP; aP != NULL; aP = aP->next)
+  {
+    LM_TMP(("NOTIF: Attribute: '%s'", aP->name));
+  }
+
+  //
+  // Loop over subscription cache to find matching subs
+  //
+  for (CachedSubscription* cSubP = subCacheGet()->head; cSubP != NULL; cSubP = cSubP->next)
+  {
+    char* status = (char*) cSubP->status.c_str();
+
+    // <DEBUG>
+    LM_TMP(("NOTIF: Subscription %s:",       cSubP->subscriptionId));
+    LM_TMP(("NOTIF:   tenant:           %s", cSubP->tenant));
+    LM_TMP(("NOTIF:   status:           %s", status));
+    LM_TMP(("NOTIF:   entityIdInfos:    %d", cSubP->entityIdInfos.size()));
+
+    // Skip if paused
+    if ((*status != 0) && (strcmp(status, "active") != 0))
+    {
+      LM_TMP(("NOTIF: skipping subscription '%s': status == %s", cSubP->subscriptionId, cSubP->status.c_str()));
+      continue;
+    }
+
+    // Skip if expired
+    if (cSubP->expirationTime < orionldState.requestTime)
+    {
+      LM_TMP(("NOTIF: skipping subscription '%s': expired (expirationTime:%f < requestTime:%f)", cSubP->subscriptionId, cSubP->expirationTime, orionldState.requestTime));
+      continue;
+    }
+
+    //
+    // Skip if already notified and the throttling time hasn't been reached
+    // If this is the first notification for the subscription, throttling isn't considered
+    //
+    if ((cSubP->throttling != 0) && (cSubP->lastNotificationTime != 0))
+    {
+      if ((orionldState.requestTime - cSubP->lastNotificationTime) < cSubP->throttling)
+      {
+        LM_TMP(("NOTIF: skipping subscription '%s': throttling (requestTime:%f - lastNotif:%f == %f   <   throttling:%f)",
+                cSubP->subscriptionId,
+                orionldState.requestTime,
+                cSubP->lastNotificationTime,
+                orionldState.requestTime - cSubP->lastNotificationTime,
+                cSubP->throttling));
+        continue;
+      }
+    }
+    LM_TMP(("NOTIF: not skipping subscription '%s': throttling (lastNotif:%f + throttling:%f (sum: %f) > requestTime:%f)",
+            cSubP->subscriptionId,
+            cSubP->lastNotificationTime,
+            cSubP->throttling,
+            cSubP->lastNotificationTime + cSubP->throttling,
+            orionldState.requestTime));
+
+    for (unsigned int ix = 0; ix < cSubP->entityIdInfos.size(); ix++)
+    {
+      LM_TMP(("NOTIF:     entityIdInfo %02d", ix));
+
+      EntityInfo* eiP = cSubP->entityIdInfos[ix];
+      LM_TMP(("NOTIF:       entity id:         %s", eiP->entityId.c_str()));
+      LM_TMP(("NOTIF:       entity id pattern: %s", K_FT(eiP->isPattern)));
+      LM_TMP(("NOTIF:       entity type:       %s", eiP->entityType.c_str()));
+    }
+
+    LM_TMP(("NOTIF:   notifyConditions: %d", cSubP->notifyConditionV.size()));
+    LM_TMP(("NOTIF:   attributes:       %d", cSubP->attributes.size()));
+
+    for (unsigned int ix = 0; ix < cSubP->attributes.size(); ix++)
+      LM_TMP(("NOTIF:     attribute %02d:   %s", ix, cSubP->attributes[ix].c_str()));
+    // </DEBUG>
+
+    if (ngsildSubEntityMatch(orionldState.wildcard[0], entityType, cSubP->entityIdInfos) == false)
+    {
+      LM_TMP(("NOTIF: skipping subscription '%s': no entity match", cSubP->subscriptionId));
+      continue;
+    }
+    LM_TMP(("NOTIF: Entity ID and/or type is a match"));
+
+    if (ngsildSubAttributesMatch(patchTreeCopy, cSubP->attributes) == false)
+    {
+      LM_TMP(("NOTIF: skipping subscription '%s': no attribute match", cSubP->subscriptionId));
+      continue;
+    }
+
+    // notifyConditionV
+    // NGSI-LD Scope
+
+    //
+    // All OK - enqueing the notification
+    //
+    orionldNotificationAdd(cSubP, patchTreeCopy, dbEntityTree);
+    LM_KTREE("NOTIF: enqueued: ", dbEntityTree);
+  }
+}
+
 
 
 #if 1
@@ -355,10 +660,7 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
   }
 
   //
-  // Remove from patchTree:
-  //   * attributes that are incorrect
-  //   * attributes that are not found in the DB
-  //
+  // Remove from patchTree all attributes that are incorrect
   // Removed attributes are stored in the array 'notUpdatedP' to be a part of the response
   //
   KjNode* updatedP     = kjArray(orionldState.kjsonP, "updated");
@@ -368,48 +670,18 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
 
   while (aP != NULL)
   {
-    char*   shortName   = aP->name;
-    bool    special     = isSpecialAttribute(shortName);
-
     next = aP->next;
 
-    // Only non-special attributes are subject to attribute name expansion
-    if (special == false)
-    {
-      aP->name = orionldContextItemExpand(orionldState.contextP, shortName, true, NULL);
-      dotForEq(aP->name);
-    }
+    char shortName[512];
+    strncpy(shortName, aP->name, sizeof(shortName));
 
-    //
-    // Check that the attribute is syntactically OK
-    //
-    if (special == true)
+    if (pcheckAttribute(aP, true, &title, &detail) == false)
     {
-      if (specialAttributeCheck(aP, &title, &detail) == false)
-      {
-        attributeNotUpdated(notUpdatedP, shortName, detail);
-        kjChildRemove(patchTree, aP);
-      }
-    }
-    else
-    {
-      if (attributeCheck(aP, &title, &detail) == false)
-      {
-        attributeNotUpdated(notUpdatedP, shortName, detail);
-        kjChildRemove(patchTree, aP);
-      }
-    }
-
-    //
-    // Attributes that did not previously exist are ignored
-    //
-    if (kjLookup(dbAttrs, aP->name) == NULL)
-    {
-      attributeNotUpdated(notUpdatedP, shortName, "attribute doesn't exist in original entity");
+      attributeNotUpdated(notUpdatedP, shortName, detail);
       kjChildRemove(patchTree, aP);
+      aP = next;
+      continue;
     }
-    else
-      attributeUpdated(updatedP, shortName);
 
     aP = next;
   }
@@ -423,47 +695,106 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
   // Keep the "Patch Tree" intact as it is needed for finding matching subscriptions
   // FIXME: Match subs before merging "Patch Tree" into "DB-Entity tree" to avoid cloning patchTree.
   //
-  // KjNode* patchTreeCopy = kjClone(orionldState.kjsonP, patchTree);  // To be used to match subscriptions
+  KjNode* patchTreeCopy = kjObject(orionldState.kjsonP, "patchTree");  // To be used to match subscriptions
   KjNode* attrP         = patchTree->value.firstChildP;
 
   while (attrP != NULL)
   {
     next = attrP->next;
 
-    KjNode* dbAttrP = kjLookup(dbAttrs, attrP->name);
+    char  shortName[256];
+    bool  special = isSpecialAttribute(attrP->name);
 
+    strncpy(shortName, attrP->name, sizeof(shortName));
+
+    // Only non-special attributes are subject to attribute name expansion
+    if (special == false)
+    {
+      attrP->name = orionldContextItemExpand(orionldState.contextP, shortName, true, NULL);
+      dotForEq(attrP->name);
+    }
+
+    //
+    // Attributes that did not previously exist are ignored
+    //
+    LM_TMP(("Looking up attr '%s'", attrP->name));
+    KjNode* dbAttrP = kjLookup(dbAttrs, attrP->name);
     if (dbAttrP == NULL)
     {
-      LM_E(("Database Error (previously found attribute '%s' is now lost!!!)", attrP->name));
-
-      attributeNotUpdated(notUpdatedP, attrP->name, "internal db error");
+      attributeNotUpdated(notUpdatedP, shortName, "attribute doesn't exist in original entity");
       kjChildRemove(patchTree, attrP);
-
       attrP = next;
       continue;
     }
 
     KjNode* dbCreatedAtP  = kjLookup(dbAttrP, "creDate");
-    KjNode* dbModifiedAtP =	kjLookup(dbAttrP, "modDate");
-    KjNode* dbTypeP       =	kjLookup(dbAttrP, "type");
-    KjNode* typeP         =	kjLookup(attrP, "type");
+    KjNode* dbModifiedAtP = kjLookup(dbAttrP, "modDate");
+    KjNode* dbTypeP       = kjLookup(dbAttrP, "type");
+    KjNode* typeP         = kjLookup(attrP,   "type");
 
     // "type" cannot change in an update
     if (strcmp(dbTypeP->value.s, typeP->value.s) != 0)
     {
-      LM_W(("Bad Input (mismatch in attribute type)"));
-      attributeNotUpdated(notUpdatedP, attrP->name, "mismatch in attribute type");
+      LM_W(("Bad Input (mismatch in attribute type - in DB: '%s', in PAYLOAD: '%s')", dbTypeP->value.s, typeP->value.s));
+      attributeNotUpdated(notUpdatedP, shortName, "mismatch in attribute type");
       kjChildRemove(patchTree, attrP);
 
       attrP = next;
       continue;
     }
 
-    // Removing the old db attr from its list and replace with the one from the payload
+    //
+    // Changing "object" for "value" if "type" == "Relationship"
+    //
+    if (strcmp(typeP->value.s, "Relationship") == 0)
+    {
+      KjNode* objectP = kjLookup(attrP, "object");
+
+      if (objectP == NULL)
+      {
+        LM_W(("Bad Input (Relationship without object)"));
+        attributeNotUpdated(notUpdatedP, shortName, "Relationship without object");
+        kjChildRemove(patchTree, attrP);
+
+        attrP = next;
+        continue;
+      }
+
+      objectP->name = (char*) "value";
+    }
+    else  // if not Relationship, there must be a value
+    {
+      KjNode* valueP = kjLookup(attrP, "value");
+
+      if (valueP == NULL)
+      {
+        LM_W(("Bad Input (Property without value)"));
+        attributeNotUpdated(notUpdatedP, shortName, "Property without value");
+        kjChildRemove(patchTree, attrP);
+
+        attrP = next;
+        continue;
+      }
+    }
+
+    attributeUpdated(updatedP, shortName);
+
+    //
+    // Attribute accepted - add to patchTreeCopy to be used for subscription matching
+    //
+    KjNode* attrCopy = kjClone(orionldState.kjsonP, attrP);
+    kjChildAdd(patchTreeCopy, attrCopy);
+
+    //
+    // Remove the old db attr from its list and replace with the one from the payload
+    //
+    // This will reorder the attributes in the entity ... unfortunate - could "easily" be fixed
+    // Fixed by intead of remove and append, replace the old attribute in the same place of the linked list
+    //
     kjChildRemove(dbAttrs, dbAttrP);
     kjChildRemove(patchTree, attrP);
     kjChildAdd(dbAttrs, attrP);
-    // This will reorder the attributes in the entity ... unfortunate - could "easily" be fixed
+
 
     // modifiedAt
     if (dbModifiedAtP != NULL)
@@ -486,32 +817,40 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
     attrP = next;
   }
 
-  //
-  // Update 'modifiedAt' for the entity
-  //
-  KjNode* modifiedAtP = kjLookup(dbEntityTree, "modDate");
-
-  if (modifiedAtP == NULL)
+  if (updatedP->value.firstChildP == NULL)
   {
-    KjNode* modifiedAtP = kjFloat(orionldState.kjsonP, "modDate", orionldState.requestTime);
-    kjChildAdd(dbEntityTree, modifiedAtP);
+    LM_TMP(("Nothing has been updated - a 207 with all the info is returned"));
   }
   else
-    modifiedAtP->value.f = orionldState.requestTime;
-
-  //
-  // Write to DB
-  //
-  LM_TMP(("EPATCH: Writing updated entity to DB"));
-  kjRender(orionldState.kjsonP, dbEntityTree, buf, sizeof(buf));
-  LM_TMP(("updated entity: %s", buf));
-
-  if (dbEntityUpdate(entityId, dbEntityTree) == false)
   {
-    LM_E(("Database Error (Error writing entity '%s' to database)", entityId));
-    orionldState.httpStatusCode = 500;
-    orionldErrorResponseCreate(OrionldInternalError, "Database Error", "Error writing entity to database");
-    return false;
+    LM_TMP(("Something has been updated - writing to DB"));
+    //
+    // Update 'modifiedAt' for the entity
+    //
+    KjNode* modifiedAtP = kjLookup(dbEntityTree, "modDate");
+
+    if (modifiedAtP == NULL)
+    {
+      KjNode* modifiedAtP = kjFloat(orionldState.kjsonP, "modDate", orionldState.requestTime);
+      kjChildAdd(dbEntityTree, modifiedAtP);
+    }
+    else
+      modifiedAtP->value.f = orionldState.requestTime;
+
+    //
+    // Write to DB
+    //
+    LM_TMP(("EPATCH: Writing updated entity to DB"));
+    kjRender(orionldState.kjsonP, dbEntityTree, buf, sizeof(buf));
+    LM_TMP(("updated entity: %s", buf));
+
+    if (dbEntityUpdate(entityId, dbEntityTree) == false)
+    {
+      LM_E(("Database Error (Error writing entity '%s' to database)", entityId));
+      orionldState.httpStatusCode = 500;
+      orionldErrorResponseCreate(OrionldInternalError, "Database Error", "Error writing entity to database");
+      return false;
+    }
   }
 
   // 204 or 207?
@@ -537,6 +876,13 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
     orionldState.httpStatusCode = 204;
   }
 
+  //
+  // Prepare Notifications, unless not desired
+  //
+  if (notifications)
+    orionldNotificationsPrepare(dbEntityTree, patchTreeCopy);
+
+  LM_TMP(("PATCH: orionldState.httpStatusCode: %d", orionldState.httpStatusCode));
   return true;
 }
 #else
@@ -645,9 +991,9 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
     }
 
     // Is the attribute in the incoming payload a valid attribute?
-    if (attributeCheck(newAttrP, &title, &detail) == false)
+    if (pcheckAttribute(newAttrP, &title, &detail) == false)
     {
-      LM_E(("attributeCheck: %s: %s", title, detail));
+      LM_E(("pcheckAttribute: %s: %s", title, detail));
       attributeNotUpdated(notUpdatedP, newAttrP->name, detail);
       newAttrP = next;
       continue;

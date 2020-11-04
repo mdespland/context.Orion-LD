@@ -39,6 +39,7 @@ extern "C"
 // ORIONLD_CORE_CONTEXT_URL -
 //
 #define ORIONLD_CORE_CONTEXT_URL  (char*) "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+#define ORIONLD_CORE_CONTEXT_URL_LEN      60
 
 
 

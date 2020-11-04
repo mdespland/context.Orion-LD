@@ -192,7 +192,9 @@ bool            insecureNotif;
 bool            ngsiv1Autocast;
 int             contextDownloadAttempts;
 int             contextDownloadTimeout;
-bool            temporal;
+bool            temporal;                     // Temporal Data is only saved if temporal is set
+bool            notifications;                // Notifications can be turned off
+bool            forwarding;                   // Forwarding can be turned off
 
 
 
@@ -255,6 +257,7 @@ bool            temporal;
 #define INSECURE_NOTIF         "allow HTTPS notifications to peers which certificate cannot be authenticated with known CA certificates"
 #define NGSIV1_AUTOCAST        "automatic cast for number, booleans and dates in NGSIv1 update/create attribute operations"
 #define TEMPORAL_DESC          "enable temporal evolution of entities"
+#define NOTIFICATIONS_DESC     "disable notifications"
 
 
 
@@ -291,7 +294,7 @@ PaArgument paArgs[] =
   { "-multiservice",          &multitenancy,            "MULTI_SERVICE",             PaBool,    PaOpt,  false,           false,  true,             MULTISERVICE_DESC      },
   { "-httpTimeout",           &httpTimeout,             "HTTP_TIMEOUT",              PaLong,    PaOpt,  -1,              -1,     MAX_L,            HTTP_TMO_DESC          },
   { "-reqTimeout",            &reqTimeout,              "REQ_TIMEOUT",               PaLong,    PaOpt,   0,              0,      PaNL,             REQ_TMO_DESC           },
-  { "-reqMutexPolicy",        reqMutexPolicy,           "MUTEX_POLICY",              PaString,  PaOpt,  _i "all",        PaNL,   PaNL,             MUTEX_POLICY_DESC      },
+  { "-reqMutexPolicy",        reqMutexPolicy,           "MUTEX_POLICY",              PaString,  PaOpt,  _i "none",       PaNL,   PaNL,             MUTEX_POLICY_DESC      },
   { "-corsOrigin",            allowedOrigin,            "CORS_ALLOWED_ORIGIN",       PaString,  PaOpt,  _i "",           PaNL,   PaNL,             ALLOWED_ORIGIN_DESC    },
   { "-corsMaxAge",            &maxAge,                  "CORS_MAX_AGE",              PaInt,     PaOpt,  86400,           -1,     86400,            CORS_MAX_AGE_DESC      },
   { "-cprForwardLimit",       &cprForwardLimit,         "CPR_FORWARD_LIMIT",         PaUInt,    PaOpt,  1000,            0,      UINT_MAX,         CPR_FORWARD_LIMIT_DESC },
@@ -317,6 +320,7 @@ PaArgument paArgs[] =
   { "-ctxTimeout",            &contextDownloadTimeout,  "CONTEXT_DOWNLOAD_TIMEOUT",  PaInt,     PaOpt,  5000,            0,      20000,            CTX_TMO_DESC           },
   { "-ctxAttempts",           &contextDownloadAttempts, "CONTEXT_DOWNLOAD_ATTEMPTS", PaInt,     PaOpt,  3,               0,      100,              CTX_ATT_DESC           },
   { "-temporal",              &temporal,                "TEMPORAL",                  PaBool,    PaOpt,  false,           false,  true,             TEMPORAL_DESC          },
+  { "-notifications",         &notifications,           "NOTIFICATIONS",             PaBool,    PaOpt,  true,            false,  true,             NOTIFICATIONS_DESC     },
 
   PA_END_OF_ARGS
 };

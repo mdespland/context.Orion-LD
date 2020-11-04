@@ -35,4 +35,3 @@
 extern void orionldNotify(void);
 
 #endif  // SRC_LIB_ORIONLD_SERVICEROUTINES_ORIONLDNOTIFY_H_
-

@@ -38,11 +38,13 @@ extern "C"
 
 #include "common/globals.h"                                      // ApiVersion
 #include "common/MimeType.h"                                     // MimeType
+#include "cache/subCache.h"                                      // CachedSubscription
 #include "rest/HttpStatusCode.h"                                 // HttpStatusCode
 #include "rest/Verb.h"                                           // Verb
 #include "orionld/common/QNode.h"                                // QNode
 #include "orionld/types/OrionldGeoIndex.h"                       // OrionldGeoIndex
 #include "orionld/types/OrionldGeoJsonType.h"                    // OrionldGeoJsonType
+#include "orionld/serviceRoutines/orionldNotifyAll.h"            // orionldNotifyAll, OrionldNotification
 #include "orionld/types/OrionldPrefixCache.h"                    // OrionldPrefixCache
 #include "orionld/common/OrionldResponseBuffer.h"                // OrionldResponseBuffer
 #include "orionld/context/OrionldContext.h"                      // OrionldContext
@@ -133,7 +135,7 @@ typedef struct OrionldUriParams
 
 // -----------------------------------------------------------------------------
 //
-// OrionldNotificationInfo -
+// OrionldNotificationInfo - FIXME: use OrionldNotification instead
 //
 typedef struct OrionldNotificationInfo
 {
@@ -147,6 +149,11 @@ typedef struct OrionldNotificationInfo
 } OrionldNotificationInfo;
 
 
+
+// -----------------------------------------------------------------------------
+//
+// OrionldPhase -
+//
 typedef enum OrionldPhase
 {
   OrionldPhaseStartup = 1,
@@ -251,6 +258,9 @@ typedef struct OrionldConnectionState
   OrionldPrefixCache      prefixCache;
   OrionldResponseBuffer   httpResponse;
 
+  // New implementation of the notifications
+  OrionldNotification*    notificationHead;        // head of the list of notifications
+  OrionldNotification*    notificationTail;        // tail of the list of notifications
 #ifdef DB_DRIVER_MONGOC
   //
   // MongoDB stuff
@@ -309,7 +319,7 @@ extern char*             tenantV[100];
 extern unsigned int      tenants;
 extern OrionldGeoIndex*  geoIndexList;
 extern OrionldPhase      orionldPhase;
-
+extern bool              notifications;            // From orionld.cpp
 
 
 // -----------------------------------------------------------------------------

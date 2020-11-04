@@ -885,6 +885,7 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
 
   serviceRoutineResult = orionldState.serviceP->serviceRoutine(ciP);
   LM_T(LmtServiceRoutine, ("service routine '%s %s' done", orionldState.verbString, orionldState.serviceP->url));
+  LM_TMP(("PATCH: service routine '%s %s' done", orionldState.verbString, orionldState.serviceP->url));
 
   //
   // If the service routine failed (returned FALSE), but no HTTP status ERROR code is set,
@@ -1003,27 +1004,11 @@ int orionldMhdConnectionTreat(ConnectionInfo* ciP)
   //
   ciP->httpStatusCode = (HttpStatusCode) orionldState.httpStatusCode;
 
+  LM_TMP(("NOTIF: Calling restReply, HTTP STatus Code is %d", orionldState.httpStatusCode));
   if (orionldState.responsePayload != NULL)
     restReply(ciP, orionldState.responsePayload);    // orionldState.responsePayload freed and NULLed by restReply()
   else
     restReply(ciP, "");
-
-  //
-  // FIXME: Delay until requestCompleted. The call to orionldStateRelease as well
-  //
-  // Call Temporal Routine (if there is one) to save the temporal data.
-  // Only if the Service Routine was successful, of course
-  //
-  if ((orionldState.httpStatusCode >= 200) && (orionldState.httpStatusCode <= 300))
-  {
-    if ((orionldState.serviceP != NULL) && (orionldState.serviceP->temporalRoutine != NULL))
-      orionldState.serviceP->temporalRoutine(ciP);
-  }
-
-  //
-  // Cleanup
-  //
-  orionldStateRelease();
 
   return MHD_YES;
 }

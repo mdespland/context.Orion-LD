@@ -208,24 +208,6 @@ void EntityInfo::release(void)
 
 /* ****************************************************************************
 *
-* SubCache -
-*/
-typedef struct SubCache
-{
-  CachedSubscription* head;
-  CachedSubscription* tail;
-
-  // Statistics counters
-  int                 noOfRefreshes;
-  int                 noOfInserts;
-  int                 noOfRemoves;
-  int                 noOfUpdates;
-} SubCache;
-
-
-
-/* ****************************************************************************
-*
 * subCache -
 */
 static SubCache  subCache            = { NULL, NULL, 0, 0, 0, 0 };
@@ -264,6 +246,17 @@ void subCacheDisable(void)
   subCacheActive = false;
 }
 #endif
+
+
+
+/* ****************************************************************************
+*
+* subCacheGet -
+*/
+SubCache* subCacheGet(void)
+{
+  return &subCache;
+}
 
 
 

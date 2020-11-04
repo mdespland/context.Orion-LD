@@ -53,6 +53,7 @@ SET (SOURCES
     orionldGetEntityTypes.cpp
     orionldGetTenants.cpp
     orionldGetDbIndexes.cpp
+    orionldNotifyAll.cpp
 )
 
 # Include directories

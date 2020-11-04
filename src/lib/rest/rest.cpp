@@ -59,11 +59,13 @@ extern "C"
 
 #ifdef ORIONLD
 #include "orionld/common/orionldState.h"                         // orionldState
+#include "orionld/rest/OrionLdRestService.h"                     // OrionLdRestService
 #include "orionld/rest/orionldMhdConnectionInit.h"
 #include "orionld/rest/orionldMhdConnectionPayloadRead.h"
 #include "orionld/rest/orionldMhdConnectionTreat.h"
 #include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate
-#include "orionld/serviceRoutines/orionldNotify.h"               // orionldNotify
+#include "orionld/serviceRoutines/orionldNotify.h"               // orionldNotify - FIXME: use orionldNotifyAll instead
+#include "orionld/serviceRoutines/orionldNotifyAll.h"            // orionldNotifyAll
 #endif
 
 #include "rest/Verb.h"
@@ -697,7 +699,9 @@ static void requestCompleted
   std::string      spath    = (ciP->servicePathV.size() > 0)? ciP->servicePathV[0] : "";
   struct timespec  reqEndTime;
 
-  if (orionldState.notify == true)
+  if (orionldState.notificationHead != NULL)
+    orionldNotifyAll();
+  else if (orionldState.notify == true)  // FIXME: to be replsced by orionldState.notificationHead and orionldNotifyAll ASAP
     orionldNotify();
 
   if ((ciP->payload != NULL) && (ciP->payload != static_buffer))
@@ -785,6 +789,21 @@ static void requestCompleted
   delayedReleaseExecute();
 
   delete(ciP);
+
+  //
+  // Call Temporal Routine (if there is one) to save the temporal data.
+  // Only if the Service Routine was successful, of course
+  //
+  if ((orionldState.httpStatusCode >= 200) && (orionldState.httpStatusCode <= 300))
+  {
+    if ((orionldState.serviceP != NULL) && (orionldState.serviceP->temporalRoutine != NULL))
+      orionldState.serviceP->temporalRoutine(ciP);
+  }
+
+  //
+  // Cleanup
+  //
+  orionldStateRelease();
 
 #ifdef ORIONLD
   kaBufferReset(&orionldState.kalloc, false);  // 'false': it's reused, but in a different thread ...

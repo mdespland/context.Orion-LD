@@ -43,6 +43,11 @@
 #include "common/globals.h"     /* transactionIdSet,correlatorIdSet          */
 #include "common/limits.h"      // FIXME: this should be removed if this library wants to be generic again
 
+extern "C"
+{
+#include "kjson/kjRender.h"                                      // kjRender
+}
+
 
 
 /******************************************************************************
@@ -209,7 +214,7 @@ typedef struct LogHeader
 
 /* ****************************************************************************
 *
-* LogData - 
+* LogData -
 */
 typedef struct LogData
 {
@@ -227,7 +232,7 @@ typedef struct LogData
 
 /* ****************************************************************************
 *
-* LogMsg - 
+* LogMsg -
 */
 typedef struct LogMsg
 {
@@ -239,7 +244,7 @@ typedef struct LogMsg
 
 /* ****************************************************************************
 *
-* LogLevelMask - 
+* LogLevelMask -
 */
 typedef enum LogLevelMask
 {
@@ -277,14 +282,15 @@ extern std::string lmLevelMaskStringGet(void);
 *
 */
 #ifdef LM_OFF
-  #define LM_NO_V
-  #define LM_NO_M
-  #define LM_NO_H
-  #define LM_NO_W
-  #define LM_NO_E
-  #define LM_NO_P
-  #define LM_NO_X
-  #define LM_NO_XP
+  #define LM_KTREE(prefix, tree)
+  #define LM_V(s)
+  #define LM_M(s)
+  #define LM_H(s)
+  #define LM_W(s)
+  #define LM_E(s)
+  #define LM_P(s)
+  #define LM_X(code, s)
+  #define LM_XP(code, s)
   #ifdef LM_ON
     #undef LM_ON
   #endif
@@ -569,6 +575,21 @@ do                                                                       \
 } while (0)
 #endif
 
+
+#ifdef LM_NO_KTREE
+#define LM_KTREE(prefix, tree)
+#else
+/* ****************************************************************************
+*
+* LM_KTREE -
+*/
+#define LM_KTREE(prefix, tree)                                          \
+{                                                                       \
+  char buf[2048];                                                       \
+  kjRender(orionldState.kjsonP, tree, buf, sizeof(buf));                \
+  LM_TMP(("%s: '%s'", prefix, buf));                                    \
+}
+#endif
 
 #ifdef LM_NO_W
 #define LM_W(s)
@@ -1165,7 +1186,7 @@ do                                                                    \
 
 /* ****************************************************************************
 *
-* LMX_E - 
+* LMX_E -
 */
 #define LMX_E(xCode, s)                                                  \
 do                                                                       \
@@ -1185,7 +1206,7 @@ do                                                                       \
 
 /* ****************************************************************************
 *
-* LMX_RE - 
+* LMX_RE -
 */
 #define LMX_RE(xCode, rCode, s)                                          \
 do                                                                       \
@@ -1358,7 +1379,7 @@ extern __thread char   fromIp[IP_LENGTH_MAX + 1];
 
 /* ****************************************************************************
 *
-* lmxFp - 
+* lmxFp -
 */
 extern LmxFp lmxFp;
 
@@ -1366,7 +1387,7 @@ extern LmxFp lmxFp;
 
 /* ****************************************************************************
 *
-* lmInit - 
+* lmInit -
 */
 extern LmStatus lmInit(void);
 
@@ -1374,7 +1395,7 @@ extern LmStatus lmInit(void);
 
 /* ****************************************************************************
 *
-* lmInitX - 
+* lmInitX -
 */
 extern LmStatus lmInitX(char* progName, char* tLevel, int* i1P, int* i2P);
 
@@ -1382,7 +1403,7 @@ extern LmStatus lmInitX(char* progName, char* tLevel, int* i1P, int* i2P);
 
 /* ****************************************************************************
 *
-* lmStrerror - 
+* lmStrerror -
 */
 extern const char* lmStrerror(LmStatus s);
 
@@ -1390,7 +1411,7 @@ extern const char* lmStrerror(LmStatus s);
 
 /* ****************************************************************************
 *
-* lmProgName - 
+* lmProgName -
 */
 extern char* lmProgName(char* pn, int levels, bool pid, const char* extra = NULL);
 
@@ -1398,7 +1419,7 @@ extern char* lmProgName(char* pn, int levels, bool pid, const char* extra = NULL
 
 /* ****************************************************************************
 *
-* lmTraceSet - 
+* lmTraceSet -
 */
 extern LmStatus lmTraceSet(const char* levelFormat);
 
@@ -1406,7 +1427,7 @@ extern LmStatus lmTraceSet(const char* levelFormat);
 
 /* ****************************************************************************
 *
-* lmTraceAdd - 
+* lmTraceAdd -
 */
 extern LmStatus lmTraceAdd(const char* levelFormat);
 
@@ -1414,7 +1435,7 @@ extern LmStatus lmTraceAdd(const char* levelFormat);
 
 /* ****************************************************************************
 *
-* lmTraceSub - 
+* lmTraceSub -
 */
 extern LmStatus lmTraceSub(const char* levelFormat);
 
@@ -1422,7 +1443,7 @@ extern LmStatus lmTraceSub(const char* levelFormat);
 
 /* ****************************************************************************
 *
-* lmTraceGet - 
+* lmTraceGet -
 */
 extern char* lmTraceGet(char* levelString, int levelStringSize);
 extern char* lmTraceGet(char* levelString, int levelStringSize, char* traceV);
@@ -1431,7 +1452,7 @@ extern char* lmTraceGet(char* levelString, int levelStringSize, char* traceV);
 
 /* ****************************************************************************
 *
-* lmFormat - 
+* lmFormat -
 */
 extern LmStatus lmFormat(int index, char* f);
 
@@ -1439,7 +1460,7 @@ extern LmStatus lmFormat(int index, char* f);
 
 /* ****************************************************************************
 *
-* lmTimeFormat - 
+* lmTimeFormat -
 */
 extern LmStatus lmTimeFormat(int index, char* f);
 
@@ -1447,7 +1468,7 @@ extern LmStatus lmTimeFormat(int index, char* f);
 
 /* ****************************************************************************
 *
-* lmGetInfo - 
+* lmGetInfo -
 */
 LmStatus lmGetInfo(int index, char* info);
 
@@ -1455,7 +1476,7 @@ LmStatus lmGetInfo(int index, char* info);
 
 /* ****************************************************************************
 *
-* lmFdGet - 
+* lmFdGet -
 */
 extern LmStatus lmFdGet(int index, int* iP);
 
@@ -1463,7 +1484,7 @@ extern LmStatus lmFdGet(int index, int* iP);
 
 /* ****************************************************************************
 *
-* lmTraceAtEnd - 
+* lmTraceAtEnd -
 */
 extern LmStatus lmTraceAtEnd(int index, char* start, char* end);
 
@@ -1471,7 +1492,7 @@ extern LmStatus lmTraceAtEnd(int index, char* start, char* end);
 
 /* ****************************************************************************
 *
-* lmAux - 
+* lmAux -
 */
 extern LmStatus lmAux(char* a);
 
@@ -1479,7 +1500,7 @@ extern LmStatus lmAux(char* a);
 
 /* ****************************************************************************
 *
-* lmTextGet - 
+* lmTextGet -
 */
 extern char* lmTextGet(const char* format, ...);
 
@@ -1495,7 +1516,7 @@ extern LmStatus lmOk(char type, int tLev);
 
 /* ****************************************************************************
 *
-* lmFdRegister - 
+* lmFdRegister -
 */
 extern LmStatus lmFdRegister
 (
@@ -1518,7 +1539,7 @@ extern void lmFdUnregister(int fd);
 
 /* ****************************************************************************
 *
-* lmPathRegister - 
+* lmPathRegister -
 */
 extern LmStatus lmPathRegister
 (
@@ -1533,7 +1554,7 @@ extern LmStatus lmPathRegister
 
 /* ****************************************************************************
 *
-* lmOut - 
+* lmOut -
 */
 extern LmStatus lmOut
 (
@@ -1551,7 +1572,7 @@ extern LmStatus lmOut
 
 /* ****************************************************************************
 *
-* lmOutHookSet - 
+* lmOutHookSet -
 */
 extern void lmOutHookSet(LmOutHook hook, void* vP);
 extern bool lmOutHookInhibit();
@@ -1561,7 +1582,7 @@ extern void lmOutHookRestore(bool onoff);
 
 /* ****************************************************************************
 *
-* lmExitFunction - 
+* lmExitFunction -
 */
 LmStatus lmExitFunction(LmExitFp fp, void* input);
 
@@ -1569,7 +1590,7 @@ LmStatus lmExitFunction(LmExitFp fp, void* input);
 
 /* ****************************************************************************
 *
-* lmErrorFunction - 
+* lmErrorFunction -
 */
 extern LmStatus lmErrorFunction(LmErrorFp fp, void* input);
 
@@ -1577,7 +1598,7 @@ extern LmStatus lmErrorFunction(LmErrorFp fp, void* input);
 
 /* ****************************************************************************
 *
-* lmWarningFunction - 
+* lmWarningFunction -
 */
 extern LmStatus lmWarningFunction(LmWarningFp fp, void* input);
 
@@ -1585,7 +1606,7 @@ extern LmStatus lmWarningFunction(LmWarningFp fp, void* input);
 
 /******************************************************************************
 *
-* lmBufferPresent - 
+* lmBufferPresent -
 *
 * lmBufferPresent presents a buffer in a nice hexa decimal format.
 */
@@ -1921,7 +1942,7 @@ inline void lmTransactionEnd()
 
 /* ****************************************************************************
 *
-* lmSemGet - 
+* lmSemGet -
 */
 extern const char* lmSemGet(void);
 
