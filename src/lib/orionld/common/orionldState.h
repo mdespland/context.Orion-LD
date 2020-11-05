@@ -38,13 +38,12 @@ extern "C"
 
 #include "common/globals.h"                                      // ApiVersion
 #include "common/MimeType.h"                                     // MimeType
-#include "cache/subCache.h"                                      // CachedSubscription
 #include "rest/HttpStatusCode.h"                                 // HttpStatusCode
 #include "rest/Verb.h"                                           // Verb
 #include "orionld/common/QNode.h"                                // QNode
 #include "orionld/types/OrionldGeoIndex.h"                       // OrionldGeoIndex
 #include "orionld/types/OrionldGeoJsonType.h"                    // OrionldGeoJsonType
-#include "orionld/serviceRoutines/orionldNotifyAll.h"            // orionldNotifyAll, OrionldNotification
+#include "orionld/types/OrionldNotification.h"                   // OrionldNotification
 #include "orionld/types/OrionldPrefixCache.h"                    // OrionldPrefixCache
 #include "orionld/common/OrionldResponseBuffer.h"                // OrionldResponseBuffer
 #include "orionld/context/OrionldContext.h"                      // OrionldContext
@@ -252,9 +251,9 @@ typedef struct OrionldConnectionState
   //
   void*                   delayedFreePointer;
 
-  int                     notificationRecords;
-  OrionldNotificationInfo notificationInfo[100];
-  bool                    notify;
+  int                     notificationRecords;     // FIXME: To be removed once no longer used
+  OrionldNotificationInfo notificationInfo[100];   // FIXME: To be removed once no longer used
+  bool                    notify;                  // FIXME: To be removed once no longer used
   OrionldPrefixCache      prefixCache;
   OrionldResponseBuffer   httpResponse;
 

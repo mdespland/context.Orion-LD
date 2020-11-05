@@ -1,5 +1,5 @@
-#ifndef SRC_LIB_ORIONLD_SERVICEROUTINES_ORIONLDNOTIFYALL_H_
-#define SRC_LIB_ORIONLD_SERVICEROUTINES_ORIONLDNOTIFYALL_H_
+#ifndef SRC_LIB_ORIONLD_TYPES_ORIONLDNOTIFICATION_H_
+#define SRC_LIB_ORIONLD_TYPES_ORIONLDNOTIFICATION_H_
 
 /*
 *
@@ -25,17 +25,25 @@
 *
 * Author: Ken Zangelin
 */
+extern "C"
+{
+#include "kjson/KjNode.h"                                        // KjNode
+}
+
+#include "cache/subCache.h"                                      // CachedSubscription
 
 
 
 // -----------------------------------------------------------------------------
 //
-// OrionldNotificationInfo2 - move to src/lib/orionld/notifications/OrionldNotificationInfo
+// OrionldNotification -
 //
 // Members:
 //   subP:        the matching subscription (q processing not included)
 //   changeTree:  used to match subscriptions to the update and to filter out using 'q'
 //   resultTree:  used to extract what is to be notified
+//   fd:          the file descriptor used for sending the notification
+//   allOk:       flag about success
 //   next:        it's a linked list, 'next' points to the next item in the list
 //
 typedef struct OrionldNotification
@@ -48,12 +56,4 @@ typedef struct OrionldNotification
   struct OrionldNotification*  next;             // Next OrionldNotification in the list
 } OrionldNotification;
 
-
-
-// -----------------------------------------------------------------------------
-//
-// orionldNotifyAll -
-//
-extern void orionldNotifyAll(void);
-
-#endif  // SRC_LIB_ORIONLD_SERVICEROUTINES_ORIONLDNOTIFYALL_H_
+#endif  // SRC_LIB_ORIONLD_TYPES_ORIONLDNOTIFICATION_H_

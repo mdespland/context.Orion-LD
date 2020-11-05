@@ -49,7 +49,7 @@ extern "C"
 #include "orionld/common/eqForDot.h"                             // eqForDot
 #include "orionld/context/orionldCoreContext.h"                  // ORIONLD_CORE_CONTEXT_URL
 #include "orionld/context/orionldContextItemAliasLookup.h"       // orionldContextItemAliasLookup
-#include "orionld/serviceRoutines/orionldNotifyAll.h"            // Own interface
+#include "orionld/notifications/orionldNotifyAll.h"              // Own interface
 
 
 
@@ -344,9 +344,6 @@ static bool responseTreat(OrionldNotification* niP, char* buf, int bufLen)
     return false;
   }
 
-  //
-  //
-  //
   firstLine      = buf;
   endOfFirstLine = strchr(firstLine, '\n');
 
@@ -440,7 +437,7 @@ void notificationResponsesRead()
 //
 // notificationSubscriptionActions -
 //
-void notificationSubscriptionActions(void)
+static void notificationSubscriptionActions(void)
 {
   LM_TMP(("NOTIF: throttling: In notificationSubscriptionActions"));
   //

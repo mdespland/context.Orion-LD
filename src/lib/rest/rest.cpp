@@ -65,7 +65,7 @@ extern "C"
 #include "orionld/rest/orionldMhdConnectionTreat.h"
 #include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate
 #include "orionld/serviceRoutines/orionldNotify.h"               // orionldNotify - FIXME: use orionldNotifyAll instead
-#include "orionld/serviceRoutines/orionldNotifyAll.h"            // orionldNotifyAll
+#include "orionld/notifications/orionldNotifyAll.h"              // orionldNotifyAll
 #endif
 
 #include "rest/Verb.h"

@@ -1,4 +1,4 @@
-# Copyright 2018 FIWARE Foundation e.V.
+# Copyright 2019 FIWARE Foundation e.V.
 #
 # This file is part of Orion-LD Context Broker.
 #
@@ -21,38 +21,9 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 SET (SOURCES
-    orionldPostEntities.cpp
-    orionldPostEntity.cpp
-    orionldPostSubscriptions.cpp
-    orionldPostRegistrations.cpp
-    orionldPostBatchDelete.cpp
-    orionldGetEntities.cpp
-    orionldGetEntity.cpp
-    orionldGetSubscriptions.cpp
-    orionldGetSubscription.cpp
-    orionldGetRegistrations.cpp
-    orionldGetRegistration.cpp
-    orionldDeleteEntity.cpp
-    orionldDeleteAttribute.cpp
-    orionldDeleteRegistration.cpp
-    orionldDeleteSubscription.cpp
-    orionldPatchEntity.cpp
-    orionldPatchAttribute.cpp
-    orionldPatchSubscription.cpp
-    orionldPatchRegistration.cpp
-    orionldBadVerb.cpp
-    orionldGetContext.cpp
-    orionldGetContexts.cpp
-    orionldGetVersion.cpp
-    orionldNotImplemented.cpp
-    orionldNotify.cpp
-    orionldPostBatchCreate.cpp
-    orionldPostBatchUpsert.cpp
-    orionldPostBatchUpdate.cpp
-    orionldPostQuery.cpp
-    orionldGetEntityTypes.cpp
-    orionldGetTenants.cpp
-    orionldGetDbIndexes.cpp
+    notificationAdd.cpp
+    notificationsPrepare.cpp
+    orionldNotifyAll.cpp
 )
 
 # Include directories
@@ -62,4 +33,4 @@ include_directories("${PROJECT_SOURCE_DIR}/src/lib")
 
 # Library declaration
 # -----------------------------------------------------------------
-ADD_LIBRARY(orionld_serviceRoutines STATIC ${SOURCES})
+ADD_LIBRARY(orionld_notifications STATIC ${SOURCES})

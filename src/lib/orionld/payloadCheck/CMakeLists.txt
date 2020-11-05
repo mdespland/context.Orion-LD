@@ -40,6 +40,9 @@ SET (SOURCES
      pcheckQuery.cpp
      pcheckAttrs.cpp
      pcheckQ.cpp
+     pcheckAttribute.cpp
+     pcheckNormalAttribute.cpp
+     pcheckSpecialAttribute.cpp
 )
 
 # Include directories
