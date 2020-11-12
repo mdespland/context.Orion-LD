@@ -130,7 +130,7 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
   // </DEBUG>
 
   //
-  // Set pointers to the DB attributes
+  // Set pointers to the DB attribute array (attrNames) and object (attrs)
   //
   KjNode* dbAttrs      = kjLookup(dbEntityTree, "attrs");
   KjNode* dbAttrNames  = kjLookup(dbEntityTree, "attrNames");
@@ -280,8 +280,8 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
     //
     // Remove the old db attr from its list and replace with the one from the payload
     //
-    // This will reorder the attributes in the entity ... unfortunate - could "easily" be fixed
-    // Fixed by intead of remove and append, replace the old attribute in the same place of the linked list
+    // This will reorder the attributes in the entity ... unfortunately - could "easily" be fixed
+    // by instead of removing and appending, replace the old attribute in the same place of the linked list
     //
     kjChildRemove(dbAttrs, dbAttrP);
     kjChildRemove(patchTree, attrP);
@@ -369,7 +369,7 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
   }
 
   //
-  // Prepare Notifications, unless not desired
+  // Prepare Notifications, unless no notifications are desired (to help with performance)
   //
   if (notifications)
     notificationsPrepare(dbEntityTree, patchTreeCopy);

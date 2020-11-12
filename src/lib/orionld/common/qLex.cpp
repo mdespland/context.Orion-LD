@@ -231,6 +231,18 @@ QNode* qLex(char* s, char** titleP, char** detailsP)
   {
     QNodeType type;
 
+    if (*sP == '%')  // URL Decode ?
+    {
+      if ((sP[1] == '2') && (sP[2] == '2'))  // %22 => "
+      {
+        // Transform %22 into SPACE-SPACE-QUOTE and point to the quote
+        sP[0] = ' ';
+        sP[1] = ' ';
+        sP[2] = '"';
+        sP += 2;  // Point to the '"' that was just inserted
+      }
+    }
+
     if (*sP == ' ')
     {
       ++sP;
@@ -366,15 +378,31 @@ QNode* qLex(char* s, char** titleP, char** detailsP)
       current = qTermPush(current, stringStart, titleP, detailsP);
       break;
     }
+    else if (*sP == '\\')
+    {
+      // Just step over the backslash
+      ++sP;
+    }
     else if (*sP == '"')
     {
-      char* start = &sP[1];  // step over "
+      char* start   = &sP[1];  // step over "
+      bool  percent = false;
 
       *sP = 0;
       ++sP;
 
       while ((*sP != 0) && (*sP != '"'))
+      {
+        // Checking also for %22
+        if ((*sP == '%') && (sP[1] == '2') && (sP[2] == '2'))
+        {
+          sP[1] = ' ';
+          sP[2] = ' ';
+          percent = true;
+          break;
+        }
         ++sP;
+      }
 
       if (*sP == 0)
       {
@@ -385,7 +413,12 @@ QNode* qLex(char* s, char** titleP, char** detailsP)
       }
 
       *sP = 0;
-      ++sP;
+
+      if (percent)
+        sP += 3;
+      else
+        ++sP;
+
       int64_t   dateTime;
       uint64_t  sLen = (uint64_t) (sP - start - 2);
 
@@ -462,6 +495,10 @@ QNode* qLex(char* s, char** titleP, char** detailsP)
       {}
       else if (*sP == ':')
       {}
+      else if (*sP == '\\')
+      {
+        // Step over backslash
+      }
       else
       {
         LM_W(("Bad Input (invalid character 0x%x)", *sP & 0xFF));

@@ -54,9 +54,15 @@ static bool qNodeVariableChars(char* s, char** titleP, char** detailsP)
     {}
     else if (*s == ':')
     {}
+    else if (*s == '\\')
+    {}
     else
     {
-      LM_W(("Bad Input (invalid character '%s')", *s));
+      if (s != NULL)
+        LM_W(("Bad Input (invalid character '%s')", *s));
+      else
+        LM_W(("Bad Input (invalid character)"));
+
       *titleP = (char*) "ngsi-ld query language: invalid character in variable name";
       *detailsP = s;
       s[1] = 0;

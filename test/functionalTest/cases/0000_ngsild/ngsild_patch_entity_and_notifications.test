@@ -72,6 +72,7 @@ payload='{
     }
   ],
   "watchedAttributes": [ "P1" ],
+  "q": "P2>2",
   "notification": {
     "attributes": [ "P1" ],
     "format": "normalized",
@@ -91,7 +92,7 @@ echo "================"
 payload='{
   "P1": {
     "type": "Property",
-    "value": "Step 03"
+    "value": 3
   }
 }'
 orionCurl --url /ngsi-ld/v1/entities/urn:ngsi-ld:entities:E1/attrs -X PATCH --payload "$payload"
@@ -166,7 +167,7 @@ Date: REGEX(.*)
 04. Dump accumulator, see one notification
 ==========================================
 POST http://127.0.0.1:9997/notify
-Content-Length: 276
+Content-Length: 268
 User-Agent: orionld
 Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
 Content-Type: application/json
@@ -176,7 +177,7 @@ Content-Type: application/json
         {
             "P1": {
                 "type": "Property", 
-                "value": "Step 03"
+                "value": 3
             }, 
             "id": "urn:ngsi-ld:entities:E1", 
             "type": "T"
@@ -205,7 +206,7 @@ Date: REGEX(.*)
 07. GET E1, see new values both for P1 and R1
 =============================================
 HTTP/1.1 200 OK
-Content-Length: 153
+Content-Length: 145
 Content-Type: application/json
 Link: <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
 Date: REGEX(.*)
@@ -213,7 +214,7 @@ Date: REGEX(.*)
 {
     "P1": {
         "type": "Property",
-        "value": "Step 03"
+        "value": 3
     },
     "R1": {
         "object": "urn:ngsi-ld:hattributes:R1",

@@ -241,7 +241,17 @@ void notificationsPrepare(KjNode* dbEntityTree, KjNode* patchTreeCopy)
     }
 
     // notifyConditionV
+    for (unsigned int ix = 0; ix < cSubP->notifyConditionV.size(); ix++)
+    {
+      char* notifyCondition = (char*) cSubP->notifyConditionV[ix].c_str();
+      LM_TMP(("NOTIF: notifyCondition %d: '%s'", ix, notifyCondition));
+    }
+
+    // expression
+    LM_TMP(("NOTIF: q: '%s'", cSubP->expression.q.c_str()));
+
     // NGSI-LD Scope
+    LM_TMP(("NOTIF: NGSI-LD Scope still need to be implemented"));
 
     //
     // All OK - enqueing the notification

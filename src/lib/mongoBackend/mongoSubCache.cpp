@@ -40,7 +40,13 @@
 #include "cache/subCache.h"
 
 #ifdef ORIONLD
+extern "C"
+{
+#include "kalloc/kaStrdup.h"                                   // kaStrdup
+}
 #include "orionld/common/orionldState.h"                       // orionldState
+#include "orionld/common/qLex.h"                               // qLex
+#include "orionld/common/qParse.h"                             // qParse
 #endif
 
 #include "mongoBackend/MongoGlobal.h"
@@ -162,13 +168,39 @@ int mongoSubCacheItemInsert(const char* tenant, const BSONObj& sub)
   cSubP->throttling            = sub.hasField(CSUB_THROTTLING)?       getNumberFieldAsDoubleF(sub, CSUB_THROTTLING)       : -1;
   cSubP->expirationTime        = sub.hasField(CSUB_EXPIRATION)?       getNumberFieldAsDoubleF(sub, CSUB_EXPIRATION)       : 0;
   cSubP->lastNotificationTime  = sub.hasField(CSUB_LASTNOTIFICATION)? getNumberFieldAsDoubleF(sub, CSUB_LASTNOTIFICATION) : -1;
-  cSubP->status                = sub.hasField(CSUB_STATUS)?           getStringFieldF(sub, CSUB_STATUS).c_str()            : "active";
-  cSubP->blacklist             = sub.hasField(CSUB_BLACKLIST)?        getBoolFieldF(sub, CSUB_BLACKLIST)                   : false;
+  cSubP->status                = sub.hasField(CSUB_STATUS)?           getStringFieldF(sub, CSUB_STATUS).c_str()           : "active";
+  cSubP->blacklist             = sub.hasField(CSUB_BLACKLIST)?        getBoolFieldF(sub, CSUB_BLACKLIST)                  : false;
   cSubP->lastFailure           = sub.hasField(CSUB_LASTFAILURE)?      getNumberFieldAsDoubleF(sub, CSUB_LASTFAILURE)      : -1;
   cSubP->lastSuccess           = sub.hasField(CSUB_LASTSUCCESS)?      getNumberFieldAsDoubleF(sub, CSUB_LASTSUCCESS)      : -1;
   cSubP->count                 = 0;
   cSubP->next                  = NULL;
 
+#ifdef NGSILD_SUB_Q
+  if (cSubP->q != NULL)
+  {
+    char*  title;
+    char*  detail;
+    QNode* lexList;
+    char*  q = strdup(cSubP->q);
+
+    if ((lexList = qLex(q, &title, &detail)) == NULL)
+    {
+      LM_E(("Runtime Error (error lexing NGSI-LD q: %s: %s)", title, detail));
+      subCacheItemDestroy(cSubP);
+      delete cSubP;
+      return -1;
+    }
+    else if ((cSubP->qP = qParse(lexList, &title, &detail)) == NULL)
+    {
+      LM_E(("Runtime Error (error parsing NGSI-LD q: %s: %s)", title, detail));
+      subCacheItemDestroy(cSubP);
+      delete cSubP;
+      return -1;
+    }
+
+    // cSubP->qP = qClone(subP->qP);
+  }
+#endif
 
   //
   // 04.2 httpInfo
@@ -190,6 +222,7 @@ int mongoSubCacheItemInsert(const char* tenant, const BSONObj& sub)
       std::string errorString;
 
       cSubP->expression.q = getStringFieldF(expression, CSUB_EXPR_Q);
+
       if (cSubP->expression.q != "")
       {
         if (!cSubP->expression.stringFilter.parse(cSubP->expression.q.c_str(), &errorString))

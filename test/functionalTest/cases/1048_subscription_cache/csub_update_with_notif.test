@@ -36,7 +36,7 @@ accumulatorStart --pretty-print
 #
 # Under valgrind we need to sleep a little longer (3 seconds)
 #
-WAIT_TIME=2.5s
+WAIT_TIME=3s
 if [ "$FUNC_TEST_RUNNING_UNDER_VALGRIND" == "true" ]
 then
   WAIT_TIME=3s

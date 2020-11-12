@@ -777,9 +777,9 @@ void subCacheItemInsert
   cSubP->count                 = (notificationDone == true)? 1 : 0;
   cSubP->status                = status;
 #ifdef ORIONLD
-  cSubP->name                  = name;
-  cSubP->ldContext             = ldContext;
-  cSubP->expression.geoproperty = geoproperty;
+  cSubP->name                    = name;
+  cSubP->ldContext               = ldContext;
+  cSubP->expression.geoproperty  = geoproperty;
 #endif
   cSubP->expression.q           = q;
   cSubP->expression.geometry    = geometry;

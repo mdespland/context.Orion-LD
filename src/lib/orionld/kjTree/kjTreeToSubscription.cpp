@@ -39,6 +39,8 @@ extern "C"
 #include "orionld/common/orionldErrorResponse.h"               // orionldErrorResponseCreate
 #include "orionld/common/urlCheck.h"                           // urlCheck
 #include "orionld/common/urnCheck.h"                           // urnCheck
+#include "orionld/common/qLex.h"                               // qLex
+#include "orionld/common/qParse.h"                             // qParse
 #include "orionld/kjTree/kjTreeToEntIdVector.h"                // kjTreeToEntIdVector
 #include "orionld/kjTree/kjTreeToStringList.h"                 // kjTreeToStringList
 #include "orionld/kjTree/kjTreeToSubscriptionExpression.h"     // kjTreeToSubscriptionExpression
@@ -212,9 +214,10 @@ bool kjTreeToSubscription(ngsiv2::Subscription* subP, char** subIdPP, KjNode** e
     }
     else if (SCOMPARE2(kNodeP->name, 'q', 0))
     {
-      DUPLICATE_CHECK(qP, "Subscription::q", kNodeP->value.s);
       STRING_CHECK(kNodeP, "Subscription::q");
-
+      DUPLICATE_CHECK(qP, "Subscription::q", kNodeP->value.s);
+      LM_TMP(("NOTIF: got a 'q': %s", kNodeP->value.s));
+#if 1
       Scope*       scopeP = new Scope(SCOPE_TYPE_SIMPLE_QUERY, kNodeP->value.s);
       std::string  errorString;
 
@@ -244,6 +247,41 @@ bool kjTreeToSubscription(ngsiv2::Subscription* subP, char** subIdPP, KjNode** e
 
       subP->subject.condition.expression.q = stringFilterExpanded;
       subP->restriction.scopeVector.push_back(scopeP);
+      LM_TMP(("NOTIF: subject.condition.expression.q == %s", subP->subject.condition.expression.q.c_str()));
+#else
+      //
+      // NGSI-LD q
+      //
+      char*  title;
+      char*  detail;
+      QNode* lexList;
+
+      LM_TMP(("NOTIF: Creating a QNode-tree from 'q': %s", kNodeP->value.s));
+
+      // <TMP fix=Must expand also>
+      subP->subject.condition.expression.q = strdup(kNodeP->value.s);
+      // </TMP>
+
+      if ((lexList = qLex(kNodeP->value.s, &title, &detail)) == NULL)
+      {
+        LM_W(("Bad Input (qLex: %s: %s)", title, detail));
+        orionldErrorResponseCreate(OrionldBadRequestData, title, detail);
+        return false;
+      }
+
+      if ((subP->qP = qParse(lexList, &title, &detail)) == NULL)
+      {
+        LM_W(("Bad Input (qParse: %s: %s)", title, detail));
+        orionldErrorResponseCreate(OrionldBadRequestData, title, detail);
+        return false;
+      }
+
+      // As qParse returns a tree allocated using kaAlloc(&orionldState.kalloc, ...), subP->qP only lives inside the current thread
+      // We will have to clone the expression using malloc
+      //
+      // subP->q  = subP->qP->render();
+      // subP->qP = qClone(subP->qP);
+#endif
     }
     else if (SCOMPARE5(kNodeP->name, 'g', 'e', 'o', 'Q', 0))
     {
