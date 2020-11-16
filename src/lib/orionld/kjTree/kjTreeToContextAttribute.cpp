@@ -43,7 +43,7 @@ extern "C"
 #include "orionld/context/orionldCoreContext.h"                  // orionldCoreContextP
 #include "orionld/context/orionldContextItemExpand.h"            // orionldContextItemExpand
 #include "orionld/context/orionldContextItemAliasLookup.h"       // orionldContextItemAliasLookup
-#include "orionld/payloadCheck/pcheckGeoProperty.h"              // pcheckGeoProperty
+#include "orionld/payloadCheck/pcheckGeoPropertyValue.h"         // pcheckGeoPropertyValue
 #include "orionld/kjTree/kjTreeToMetadata.h"                     // kjTreeToMetadata
 #include "orionld/kjTree/kjTreeToContextAttribute.h"             // Own interface
 
@@ -827,11 +827,11 @@ bool kjTreeToContextAttribute(OrionldContext* contextP, KjNode* kNodeP, ContextA
     //
     if (isGeoProperty == true)
     {
-      if (pcheckGeoProperty(valueP, &orionldState.geoType, &orionldState.geoCoordsP) == false)
+      if (pcheckGeoPropertyValue(valueP, &orionldState.geoType, &orionldState.geoCoordsP) == false)
       {
-        LM_E(("pcheckGeoProperty error for %s", caName));
-        // pcheckGeoProperty fills in error response
-        *detailP = (char*) "pcheckGeoProperty failed";
+        LM_E(("pcheckGeoPropertyValue error for %s", caName));
+        // pcheckGeoPropertyValue fills in error response
+        *detailP = (char*) "pcheckGeoPropertyValue failed";
         orionldState.httpStatusCode = SccBadRequest;
         return false;
       }

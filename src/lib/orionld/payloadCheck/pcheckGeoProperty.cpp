@@ -22,21 +22,18 @@
 *
 * Author: Ken Zangelin
 */
+#include <unistd.h>                                               // NULL
+#include <string.h>                                               // strcmp
+
 extern "C"
 {
-#include "kjson/KjNode.h"                                        // KjNode
+#include "kjson/KjNode.h"                                         // KjNode
 }
 
-#include "logMsg/logMsg.h"                                       // LM_*
-#include "logMsg/traceLevels.h"                                  // Lmt*
-
-#include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate
-#include "orionld/types/OrionldGeoJsonType.h"                    // OrionldGeoJsonType
-#include "orionld/common/SCOMPARE.h"                             // SCOMPAREx
-#include "orionld/common/CHECK.h"                                // CHECKx()
-#include "orionld/payloadCheck/pcheckGeoType.h"                  // pcheckGeoType
-#include "orionld/payloadCheck/pcheckGeoqCoordinates.h"          // pcheckGeoqCoordinates
-#include "orionld/payloadCheck/pcheckGeoProperty.h"              // Own interface
+#include "orionld/common/CHECK.h"                                 // DUPLICATE_CHECK
+#include "orionld/payloadCheck/pcheckAttribute.h"                 // pcheckAttribute
+#include "orionld/payloadCheck/pcheckGeoPropertyValue.h"          // pcheckGeoPropertyValue
+#include "orionld/payloadCheck/pcheckGeoProperty.h"               // Own interface
 
 
 
@@ -44,91 +41,37 @@ extern "C"
 //
 // pcheckGeoProperty -
 //
-bool pcheckGeoProperty(KjNode* geoPropertyP, char** geoTypePP, KjNode** geoCoordsPP)
+bool pcheckGeoProperty(KjNode* geoPropertyP)
 {
-  KjNode*             typeNodeP         = NULL;
-  KjNode*             coordinatesNodeP  = NULL;
-  OrionldGeoJsonType  geoType           = GeoJsonNoType;
-  char*               geoTypeString     = (char*) "NoGeometry";
-
-  if (geoPropertyP->type != KjObject)
-  {
-    LM_W(("Bad Input (the value of a geo-location attribute must be a JSON Object: '%s')", geoPropertyP->name));
-    orionldErrorResponseCreate(OrionldBadRequestData, "the value of a geo-location attribute must be a JSON Object", kjValueType(geoPropertyP->type));
-    return false;
-  }
+  KjNode* valueP = NULL;
+  KjNode* typeP  = NULL;
 
   for (KjNode* nodeP = geoPropertyP->value.firstChildP; nodeP != NULL; nodeP = nodeP->next)
   {
-    if (SCOMPARE5(nodeP->name, 't', 'y', 'p', 'e', 0))
+    if (strcmp(nodeP->name, "type") == 0)
     {
-      char* detail;
-
-      DUPLICATE_CHECK(typeNodeP, "geo-location::type", nodeP);
-      STRING_CHECK(nodeP, "the 'type' field of a GeoJSON object must be a JSON String");
-      EMPTY_STRING_CHECK(nodeP, "the 'type' field of a GeoJSON object cannot be an empty string");
-
-      if (pcheckGeoType(typeNodeP->value.s, &geoType, &detail) == false)
-      {
-        LM_W(("Bad Input (invalid type for geoJson: '%s')", typeNodeP->value.s));
-        orionldErrorResponseCreate(OrionldBadRequestData, detail, typeNodeP->value.s);
+      // It's all checked - except for duplicity
+      DUPLICATE_CHECK(typeP, "type", nodeP);
+    }
+    else if (strcmp(nodeP->name, "value") == 0)
+    {
+      DUPLICATE_CHECK(valueP, "value", nodeP);
+      if (pcheckGeoPropertyValue(valueP, NULL, NULL) == false)
         return false;
-      }
-      geoTypeString = typeNodeP->value.s;
     }
-    else if (SCOMPARE12(nodeP->name, 'c', 'o', 'o', 'r', 'd', 'i', 'n', 'a', 't', 'e', 's', 0))
+    else  // Sub-attribute
     {
-      DUPLICATE_CHECK(coordinatesNodeP, "geo-location::coordinates", nodeP);
-      // Point, LineString, Polygon ... in the first level they're all Arrays
-      ARRAY_CHECK(coordinatesNodeP, "the 'coordinates' field of a GeoJSON object must be a JSON Array");
-    }
-    else
-    {
-      LM_W(("Bad Input (unexpected item in geo-location: '%s')", geoPropertyP->name));
-      orionldErrorResponseCreate(OrionldBadRequestData, "unexpected item in geo-location", geoPropertyP->name);
-      return false;
+      if (pcheckAttribute(nodeP, false) == false)
+        return false;
     }
   }
 
-  if ((typeNodeP == NULL) && (coordinatesNodeP == NULL))
+  // GeoProperties MUST have a "value"
+  if (valueP == NULL)
   {
-    LM_W(("Bad Input (empty value in geo-location '%s')", geoPropertyP->name));
-    orionldErrorResponseCreate(OrionldBadRequestData,
-                               "The value of an attribute of type GeoProperty must be valid GeoJson",
-                               "Mandatory 'coordinates' and 'type' fields missing for a GeoJSON Property");
+    orionldErrorResponseCreate(OrionldBadRequestData, "Mandatory field missing", "Property value");
     return false;
   }
-
-  if (typeNodeP == NULL)
-  {
-    LM_W(("Bad Input ('type' missing in geo-location '%s')", geoPropertyP->name));
-    orionldErrorResponseCreate(OrionldBadRequestData,
-                               "Mandatory 'type' field missing for GeoJSON Property",
-                               geoPropertyP->name);
-
-    return false;
-  }
-
-  if (coordinatesNodeP == NULL)
-  {
-    LM_W(("Bad Input ('coordinates' missing in geo-location '%s')", geoPropertyP->name));
-    orionldErrorResponseCreate(OrionldBadRequestData,
-                               "The value of an attribute of type GeoProperty must be valid GeoJson",
-                               "Mandatory 'coordinates' field missing for a GeoJSON Property");
-    return false;
-  }
-
-  // Check that the coordinates (coordinatesNodeP) JSON Array coincides with the type 'geoType'
-  if (pcheckGeoqCoordinates(coordinatesNodeP, geoType) == false)
-    return false;
-
-  //
-  // Keep coordsP and typeP for later use (in mongoBackend)
-  //
-  if (geoTypePP != NULL)
-    *geoTypePP   = geoTypeString;
-  if (geoCoordsPP != NULL)
-    *geoCoordsPP = coordinatesNodeP;
 
   return true;
 }

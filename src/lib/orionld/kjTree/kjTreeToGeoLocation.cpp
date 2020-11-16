@@ -32,7 +32,7 @@ extern "C"
 #include "orionld/common/orionldState.h"                         // orionldState
 #include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate
 #include "orionld/types/OrionldGeoLocation.h"                    // OrionldGeoLocation
-#include "orionld/payloadCheck/pcheckGeoProperty.h"              // pcheckGeoProperty
+#include "orionld/payloadCheck/pcheckGeoPropertyValue.h"         // pcheckGeoPropertyValue
 #include "orionld/kjTree/kjTreeToGeoLocation.h"                  // Own Interface
 
 
@@ -46,10 +46,10 @@ bool kjTreeToGeoLocation(KjNode* geoLocationNodeP, OrionldGeoLocation* locationP
   char*    geoType;
   KjNode*  geoCoordsP;
 
-  if (pcheckGeoProperty(geoLocationNodeP, &geoType, &geoCoordsP) == false)
+  if (pcheckGeoPropertyValue(geoLocationNodeP, &geoType, &geoCoordsP) == false)
   {
-    LM_E(("pcheckGeoProperty failed"));
-    // pcheckGeoProperty sets the Error Response
+    LM_E(("pcheckGeoPropertyValue failed"));
+    // pcheckGeoPropertyValue sets the Error Response
     orionldState.httpStatusCode = SccBadRequest;
     return false;
   }

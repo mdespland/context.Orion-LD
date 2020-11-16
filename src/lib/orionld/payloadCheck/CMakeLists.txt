@@ -40,6 +40,7 @@ SET (SOURCES
      pcheckProperty.cpp
      pcheckRelationship.cpp
      pcheckGeoProperty.cpp
+     pcheckGeoPropertyValue.cpp
      pcheckGeoType.cpp
      pcheckGeoqCoordinates.cpp
      pcheckGeoqGeorel.cpp

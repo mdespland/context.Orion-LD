@@ -118,9 +118,9 @@ bool pcheckSpecialAttribute(KjNode* attrNodeP, bool toplevel, AttributeType aTyp
 
   if (toplevel == true)
   {
-    if      (aType == ATTRIBUTE_LOCATION)           return pcheckGeoProperty(attrNodeP, NULL, NULL);
-    else if (aType == ATTRIBUTE_OBSERVATION_SPACE)  return pcheckGeoProperty(attrNodeP, NULL, NULL);
-    else if (aType == ATTRIBUTE_OPERATION_SPACE)    return pcheckGeoProperty(attrNodeP, NULL, NULL);
+    if      (aType == ATTRIBUTE_LOCATION)           return pcheckGeoProperty(attrNodeP);
+    else if (aType == ATTRIBUTE_OBSERVATION_SPACE)  return pcheckGeoProperty(attrNodeP);
+    else if (aType == ATTRIBUTE_OPERATION_SPACE)    return pcheckGeoProperty(attrNodeP);
     else
     {
       LM_W(("Can't get here (invalid attribute type for a toplevel special attribute)"));

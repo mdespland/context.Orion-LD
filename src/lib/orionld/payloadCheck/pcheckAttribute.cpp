@@ -111,7 +111,7 @@ bool pcheckAttribute(KjNode* aP, bool toplevel)
       break;
 
     case ATTRIBUTE_GEO_PROPERTY:
-      if (pcheckGeoProperty(aP, NULL, NULL) == false)  // Fills in Error Response in case of error
+      if (pcheckGeoProperty(aP) == false)
         return false;
       break;
 
