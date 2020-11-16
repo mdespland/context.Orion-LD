@@ -1,5 +1,5 @@
-#ifndef SRC_LIB_ORIONLD_COMMON_ISSPECIALSUBATTRIBUTE_H_
-#define SRC_LIB_ORIONLD_COMMON_ISSPECIALSUBATTRIBUTE_H_
+#ifndef SRC_LIB_ORIONLD_KJTREE_KJTREETOCONTEXTELEMENTRESPONSE_H_
+#define SRC_LIB_ORIONLD_KJTREE_KJTREETOCONTEXTELEMENTRESPONSE_H_
 
 /*
 *
@@ -30,14 +30,16 @@ extern "C"
 #include "kjson/KjNode.h"                                        // KjNode
 }
 
-#include "orionld/types/AttributeType.h"                         // AttributeType
+#include "ngsi/ContextElementResponse.h"                         // ContextElementResponse
+
+#include "orionld/context/OrionldContext.h"                      // OrionldContext
 
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
-// isSpecialSubAttribute -
+// kjTreeToContextElementResponse -
 //
-extern bool isSpecialSubAttribute(const char* attrName, AttributeType* aTypeP, KjNode* attributeTypeNodeP);
+extern bool kjTreeToContextElementResponse(OrionldContext* contextP, KjNode* kNodeP, ContextElementResponse* cerP);
 
-#endif  // SRC_LIB_ORIONLD_COMMON_ISSPECIALSUBATTRIBUTE_H_
+#endif  // SRC_LIB_ORIONLD_KJTREE_KJTREETOCONTEXTELEMENTRESPONSE_H_

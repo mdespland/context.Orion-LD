@@ -54,8 +54,7 @@ echo "02. Update the attribute R1 using PATCH /ngsi-ld/v1/entities/urn:ngsi-ld:T
 echo "============================================================================================================================================="
 payload='{
   "R1": {
-    "type": "Relationship",
-    "value": "http://a.b.c/hola2"
+    "type": "Relationship"
   }
 }'
 orionCurl --url /ngsi-ld/v1/entities/urn:ngsi-ld:T:001/attrs -X PATCH --payload "$payload"

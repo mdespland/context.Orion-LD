@@ -24,11 +24,6 @@ SET (SOURCES
      pcheckEntityInfo.cpp
      pcheckEntityInfoArray.cpp
      pcheckEntity.cpp
-     pcheckGeoType.cpp
-     pcheckGeoqCoordinates.cpp
-     pcheckGeoqGeorel.cpp
-     pcheckGeoProperty.cpp
-     pcheckGeoQ.cpp
      pcheckEndpoint.cpp
      pcheckNotification.cpp
      pcheckSubscription.cpp
@@ -41,8 +36,14 @@ SET (SOURCES
      pcheckAttrs.cpp
      pcheckQ.cpp
      pcheckAttribute.cpp
-     pcheckNormalAttribute.cpp
      pcheckSpecialAttribute.cpp
+     pcheckProperty.cpp
+     pcheckRelationship.cpp
+     pcheckGeoProperty.cpp
+     pcheckGeoType.cpp
+     pcheckGeoqCoordinates.cpp
+     pcheckGeoqGeorel.cpp
+     pcheckGeoQ.cpp
 )
 
 # Include directories

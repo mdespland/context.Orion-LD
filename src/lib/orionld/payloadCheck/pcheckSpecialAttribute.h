@@ -30,12 +30,14 @@ extern "C"
 #include "kjson/KjNode.h"                                        // KjNode
 }
 
+#include "orionld/types/AttributeType.h"                         // AttributeType
+
 
 
 // -----------------------------------------------------------------------------
 //
 // pcheckSpecialAttribute -
 //
-extern bool pcheckSpecialAttribute(KjNode* aP, bool toplevel, char** titleP, char** detailP);
+extern bool pcheckSpecialAttribute(KjNode* aP, bool toplevel, AttributeType aType);
 
 #endif  // SRC_LIB_ORIONLD_PAYLOADCHECK_PCHECKSPECIALATTRIBUTE_H_

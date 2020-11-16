@@ -1,5 +1,5 @@
-#ifndef SRC_LIB_ORIONLD_COMMON_ISSPECIALSUBATTRIBUTE_H_
-#define SRC_LIB_ORIONLD_COMMON_ISSPECIALSUBATTRIBUTE_H_
+#ifndef SRC_LIB_ORIONLD_PAYLOADCHECK_PCHECKPROPERTY_H_
+#define SRC_LIB_ORIONLD_PAYLOADCHECK_PCHECKPROPERTY_H_
 
 /*
 *
@@ -30,14 +30,12 @@ extern "C"
 #include "kjson/KjNode.h"                                        // KjNode
 }
 
-#include "orionld/types/AttributeType.h"                         // AttributeType
 
 
-
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
-// isSpecialSubAttribute -
+// pcheckProperty -
 //
-extern bool isSpecialSubAttribute(const char* attrName, AttributeType* aTypeP, KjNode* attributeTypeNodeP);
+extern bool pcheckProperty(KjNode* aP);
 
-#endif  // SRC_LIB_ORIONLD_COMMON_ISSPECIALSUBATTRIBUTE_H_
+#endif  // SRC_LIB_ORIONLD_PAYLOADCHECK_PCHECKPROPERTY_H_

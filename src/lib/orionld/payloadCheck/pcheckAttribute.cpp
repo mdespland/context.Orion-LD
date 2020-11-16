@@ -26,7 +26,9 @@
 
 extern "C"
 {
+#include "kbase/kMacros.h"                                       // K_FT
 #include "kjson/KjNode.h"                                        // KjNode
+#include "kjson/kjLookup.h"                                      // kjLookup
 }
 
 #include "logMsg/logMsg.h"                                       // LM_*
@@ -34,8 +36,11 @@ extern "C"
 
 #include "orionld/common/isSpecialAttribute.h"                   // isSpecialAttribute
 #include "orionld/common/isSpecialSubAttribute.h"                // isSpecialSubAttribute
-#include "orionld/payloadCheck/pcheckNormalAttribute.h"          // pcheckNormalAttribute
+#include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate
 #include "orionld/payloadCheck/pcheckSpecialAttribute.h"         // pcheckSpecialAttribute
+#include "orionld/payloadCheck/pcheckProperty.h"                 // pcheckProperty
+#include "orionld/payloadCheck/pcheckGeoProperty.h"              // pcheckGeoProperty
+#include "orionld/payloadCheck/pcheckRelationship.h"             // pcheckRelationship
 #include "orionld/payloadCheck/pcheckAttribute.h"                // Own interface
 
 
@@ -44,22 +49,81 @@ extern "C"
 //
 // pcheckAttribute -
 //
-bool pcheckAttribute(KjNode* aP, bool toplevel, char** titleP, char** detailP)
+bool pcheckAttribute(KjNode* aP, bool toplevel)
 {
-  bool special = (toplevel == true)? isSpecialAttribute(aP->name) : isSpecialSubAttribute(aP->name);
+  LM_TMP(("CHECK: attribute             '%s'", aP->name));
+  LM_TMP(("CHECK: attribute value type  '%s'", kjValueType(aP->type)));
+  LM_TMP(("CHECK: top level             '%s'", K_FT(toplevel)));
+
+  AttributeType  aType      = ATTRIBUTE_ANY;
+  KjNode*        typeNodeP  = (aP->type == KjObject)? kjLookup(aP, "type") : NULL;
+  bool           special    = (toplevel == true)? isSpecialAttribute(aP->name, &aType, typeNodeP) : isSpecialSubAttribute(aP->name, &aType, typeNodeP);
+
+  LM_TMP(("CHECK: type node %p", typeNodeP));
+  LM_TMP(("CHECK: attribute '%s' is %s a special attribute (aType: %s)", aP->name, special? "" : "not", attributeTypeName(aType)));
+
+  if (special == false)  // keyValues ...
+  {
+    if (aP->type != KjObject)
+    {
+      orionldErrorResponseCreate(OrionldBadRequestData, "Invalid JSON field type", "attribute must be a JSON Object");
+      return false;
+    }
+  }
+
+  if (aType == ATTRIBUTE_ANY)
+  {
+    LM_E(("Bad Input (strange attribute '%s' - no type found)", aP->name));
+    return false;
+  }
 
   //
   // Check that the attribute is syntactically OK
   //
   if (special == true)
   {
-    if (pcheckSpecialAttribute(aP, toplevel, titleP, detailP) == false)
+    if (pcheckSpecialAttribute(aP, toplevel, aType) == false)
       return false;
   }
   else
   {
-    if (pcheckNormalAttribute(aP, toplevel, titleP, detailP) == false)
+    if (aP->type != KjObject)
+    {
+      orionldErrorResponseCreate(OrionldBadRequestData, "Invalid JSON field type", "attribute must be a JSON Object");
       return false;
+    }
+    else if (typeNodeP == NULL)
+    {
+      orionldErrorResponseCreate(OrionldBadRequestData, "Missing mandatory field", "attribute type");
+      return false;
+    }
+    else if (typeNodeP->type != KjString)
+    {
+      orionldErrorResponseCreate(OrionldBadRequestData, "Invalid JSON field type", "attribute type must be a JSON String");
+      return false;
+    }
+
+    switch (aType)
+    {
+    case ATTRIBUTE_PROPERTY:
+      if (pcheckProperty(aP) == false)
+        return false;
+      break;
+
+    case ATTRIBUTE_GEO_PROPERTY:
+      if (pcheckGeoProperty(aP, NULL, NULL) == false)  // Fills in Error Response in case of error
+        return false;
+      break;
+
+    case ATTRIBUTE_RELATIONSHIP:
+      if (pcheckRelationship(aP) == false)
+        return false;
+      break;
+
+    default:
+      orionldErrorResponseCreate(OrionldBadRequestData, "Unreachable point?", "Invalid attribute type");
+      return false;
+    }
   }
 
   return true;

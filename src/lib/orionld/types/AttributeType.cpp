@@ -1,6 +1,3 @@
-#ifndef SRC_LIB_ORIONLD_COMMON_ISSPECIALSUBATTRIBUTE_H_
-#define SRC_LIB_ORIONLD_COMMON_ISSPECIALSUBATTRIBUTE_H_
-
 /*
 *
 * Copyright 2019 FIWARE Foundation e.V.
@@ -25,19 +22,32 @@
 *
 * Author: Ken Zangelin
 */
-extern "C"
-{
-#include "kjson/KjNode.h"                                        // KjNode
-}
-
 #include "orionld/types/AttributeType.h"                         // AttributeType
 
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
-// isSpecialSubAttribute -
+// attributeTypeName -
 //
-extern bool isSpecialSubAttribute(const char* attrName, AttributeType* aTypeP, KjNode* attributeTypeNodeP);
+const char* attributeTypeName(AttributeType aType)
+{
+  switch (aType)
+  {
+  case ATTRIBUTE_ANY:                return "ANY";
+  case ATTRIBUTE_CREATED_AT:         return "CREATED_AT";
+  case ATTRIBUTE_MODIFIED_AT:        return "MODIFIED_AT";
+  case ATTRIBUTE_LOCATION:           return "LOCATION";
+  case ATTRIBUTE_OBSERVATION_SPACE:  return "OBSERVATION_SPACE";
+  case ATTRIBUTE_OPERATION_SPACE:    return "OPERATION_SPACE";
+  case ATTRIBUTE_OBSERVED_AT:        return "OBSERVED_AT";
+  case ATTRIBUTE_DATASETID:          return "DATASETID";
+  case ATTRIBUTE_INSTANCEID:         return "INSTANCEID";
+  case ATTRIBUTE_UNITCODE:           return "UNITCODE";
+  case ATTRIBUTE_PROPERTY:           return "PROPERTY";
+  case ATTRIBUTE_GEO_PROPERTY:       return "GEO_PROPERTY";
+  case ATTRIBUTE_RELATIONSHIP:       return "RELATIONSHIP";
+  }
 
-#endif  // SRC_LIB_ORIONLD_COMMON_ISSPECIALSUBATTRIBUTE_H_
+  return "unknown attribute type";
+}

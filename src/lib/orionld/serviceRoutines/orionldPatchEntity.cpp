@@ -98,7 +98,6 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
   char*    entityId      = orionldState.wildcard[0];
   KjNode*  patchTree     = orionldState.requestTree;
   KjNode*  dbEntityTree;
-  char*    title;
   char*    detail;
 
   // Entity ID must be a valid URI
@@ -164,12 +163,33 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
   {
     next = aP->next;
 
+    if (strcmp(aP->name, "id") == 0)
+    {
+      orionldState.httpStatusCode = 400;
+      orionldErrorResponseCreate(OrionldBadRequestData, "Invalid Attribute Name", "'id' cannot be used as the name of an attribute");
+      return false;
+    }
+
+    if (strcmp(aP->name, "type") == 0)
+    {
+      orionldState.httpStatusCode = 400;
+      orionldErrorResponseCreate(OrionldBadRequestData, "Invalid Attribute Name", "'type' cannot be used as the name of an attribute");
+      return false;
+    }
+
+    if ((strcmp(aP->name, "modifiedAt") == 0) || (strcmp(aP->name, "createdAt") == 0))
+    {
+      aP = next;
+      continue;
+    }
+
     char shortName[512];
     strncpy(shortName, aP->name, sizeof(shortName));
 
-    if (pcheckAttribute(aP, true, &title, &detail) == false)
+    LM_TMP(("CHECK: Calling pcheckAttribute for attribute '%s'", aP->name));
+    if (pcheckAttribute(aP, true) == false)
     {
-      attributeNotUpdated(notUpdatedP, shortName, detail);
+      attributeNotUpdated(notUpdatedP, shortName, orionldState.detail);
       kjChildRemove(patchTree, aP);
       aP = next;
       continue;
@@ -194,8 +214,10 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
   {
     next = attrP->next;
 
-    char  shortName[256];
-    bool  special = isSpecialAttribute(attrP->name);
+    char           shortName[256];
+    AttributeType  aType;
+    KjNode*        typeNodeP = (attrP->type == KjObject)? kjLookup(attrP, "type") : NULL;
+    bool           special   = isSpecialAttribute(attrP->name, &aType, typeNodeP);
 
     strncpy(shortName, attrP->name, sizeof(shortName));
 
@@ -222,17 +244,20 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
     KjNode* dbCreatedAtP  = kjLookup(dbAttrP, "creDate");
     KjNode* dbModifiedAtP = kjLookup(dbAttrP, "modDate");
     KjNode* dbTypeP       = kjLookup(dbAttrP, "type");
-    KjNode* typeP         = kjLookup(attrP,   "type");
+    KjNode* typeP         = kjLookup(attrP, "type");
 
-    // "type" cannot change in an update
-    if (strcmp(dbTypeP->value.s, typeP->value.s) != 0)
+    if (typeP != NULL)
     {
-      LM_W(("Bad Input (mismatch in attribute type - in DB: '%s', in PAYLOAD: '%s')", dbTypeP->value.s, typeP->value.s));
-      attributeNotUpdated(notUpdatedP, shortName, "mismatch in attribute type");
-      kjChildRemove(patchTree, attrP);
+      // "type" cannot change in an update
+      if (strcmp(dbTypeP->value.s, typeP->value.s) != 0)
+      {
+        LM_W(("Bad Input (mismatch in attribute type - in DB: '%s', in PAYLOAD: '%s')", dbTypeP->value.s, typeP->value.s));
+        attributeNotUpdated(notUpdatedP, shortName, "mismatch in attribute type");
+        kjChildRemove(patchTree, attrP);
 
-      attrP = next;
-      continue;
+        attrP = next;
+        continue;
+      }
     }
 
     //

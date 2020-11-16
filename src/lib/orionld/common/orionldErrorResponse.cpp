@@ -84,7 +84,10 @@ void orionldErrorResponseCreate
   const char*               detail
 )
 {
-  LM_T(LmtErrorResponse, ("Creating error response: %s (%s)", title, detail));
+  LM_W(("ERROR: %s (%s)", title, detail));
+
+  orionldState.title  = (char*) title;
+  orionldState.detail = (char*) detail;
 
   KjNode* typeP     = kjString(orionldState.kjsonP, "type",    orionldErrorTypeToString(errorType));
   KjNode* titleP    = kjString(orionldState.kjsonP, "title",   title);

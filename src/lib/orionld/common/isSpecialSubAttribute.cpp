@@ -24,6 +24,12 @@
 */
 #include <string.h>                                              // strcmp
 
+extern "C"
+{
+#include "kjson/KjNode.h"                                        // KjNode
+}
+
+#include "orionld/types/AttributeType.h"                         // AttributeType
 #include "orionld/common/isSpecialSubAttribute.h"                // Own interface
 
 
@@ -32,20 +38,50 @@
 //
 // isSpecialSubAttribute -
 //
-bool isSpecialSubAttribute(const char* attrName)
+bool isSpecialSubAttribute(const char* attrName, AttributeType* aTypeP, KjNode* attributeTypeNodeP)
 {
+  *aTypeP = ATTRIBUTE_ANY;  // This indicates an error
+
+  if (attributeTypeNodeP != NULL)
+  {
+    if (strcmp(attributeTypeNodeP->value.s, "Property") == 0)
+      *aTypeP = ATTRIBUTE_PROPERTY;
+    else if (strcmp(attributeTypeNodeP->value.s, "GeoProperty") == 0)
+      *aTypeP = ATTRIBUTE_GEO_PROPERTY;
+    else if (strcmp(attributeTypeNodeP->value.s, "Relationship") == 0)
+      *aTypeP = ATTRIBUTE_RELATIONSHIP;
+  }
+
   if (strcmp(attrName, "createdAt") == 0)
+  {
+    *aTypeP = ATTRIBUTE_CREATED_AT;
     return true;
-  if (strcmp(attrName, "modifiedAt") == 0)
+  }
+  else if (strcmp(attrName, "modifiedAt") == 0)
+  {
+    *aTypeP = ATTRIBUTE_CREATED_AT;
     return true;
-  if (strcmp(attrName, "observedAt") == 0)
+  }
+  else if (strcmp(attrName, "observedAt") == 0)
+  {
+    *aTypeP = ATTRIBUTE_OBSERVED_AT;
     return true;
-  if (strcmp(attrName, "datasetId") == 0)
+  }
+  else if (strcmp(attrName, "datasetId") == 0)
+  {
+    *aTypeP = ATTRIBUTE_DATASETID;
     return true;
-  if (strcmp(attrName, "instanceId") == 0)
+  }
+  else if (strcmp(attrName, "instanceId") == 0)
+  {
+    *aTypeP = ATTRIBUTE_INSTANCEID;
     return true;
-  if (strcmp(attrName, "unitCode") == 0)  // Only if type == Property
+  }
+  else if ((*aTypeP == ATTRIBUTE_PROPERTY) && (strcmp(attrName, "unitCode") == 0))
+  {
+    *aTypeP = ATTRIBUTE_UNITCODE;
     return true;
+  }
 
   return false;
 }

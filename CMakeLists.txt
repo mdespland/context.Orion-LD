@@ -177,6 +177,7 @@ SET (ORION_LIBS
     orionld_rest
     orionld_serviceRoutines
     orionld_temporal
+    orionld_notifications
     orionld_kjTree
     orionld_context
     orionld_common
@@ -201,7 +202,6 @@ SET (ORION_LIBS
     ngsi
     cache
     mongoBackend
-    orionld_notifications
     orionld_context      # Should not be necessary ... kjTreeFromNotification gets undefined reference to 'orionldAliasLookup' without this ...
     orionld_mongoBackend # mongoBackend uses functions in orionld_mongoBackend
     orionld_payloadCheck

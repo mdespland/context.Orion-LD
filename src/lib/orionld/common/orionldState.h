@@ -210,6 +210,8 @@ typedef struct OrionldConnectionState
   char                    errorAttributeArray[512];
   int                     errorAttributeArrayUsed;
   int                     errorAttributeArraySize;
+  char*                   title;
+  char*                   detail;
   OrionLdRestService*     serviceP;
   char*                   wildcard[2];
   char*                   urlPath;

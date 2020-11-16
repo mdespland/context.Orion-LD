@@ -1,5 +1,5 @@
-#ifndef SRC_LIB_ORIONLD_PAYLOADCHECK_PCHECKNORMALATTRIBUTE_H_
-#define SRC_LIB_ORIONLD_PAYLOADCHECK_PCHECKNORMALATTRIBUTE_H_
+#ifndef SRC_LIB_ORIONLD_PAYLOADCHECK_PCHECKRELATIONSHIP_H_
+#define SRC_LIB_ORIONLD_PAYLOADCHECK_PCHECKRELATIONSHIP_H_
 
 /*
 *
@@ -34,8 +34,8 @@ extern "C"
 
 // -----------------------------------------------------------------------------
 //
-// pcheckNormalAttribute -
+// pcheckRelationship -
 //
-extern bool pcheckNormalAttribute(KjNode* aP, bool toplevel, char** titleP, char** detailP);
+extern bool pcheckRelationship(KjNode* aP);
 
-#endif  // SRC_LIB_ORIONLD_PAYLOADCHECK_PCHECKNORMALATTRIBUTE_H_
+#endif  // SRC_LIB_ORIONLD_PAYLOADCHECK_PCHECKRELATIONSHIP_H_

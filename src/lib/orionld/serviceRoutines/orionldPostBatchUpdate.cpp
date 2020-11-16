@@ -232,6 +232,7 @@ bool orionldPostBatchUpdate(ConnectionInfo* ciP)
         char* expandedType = orionldContextItemExpand(contextP, inTypeP->value.s, true, NULL);
         if (strcmp(expandedType, dbTypeP->value.s) != 0)
         {
+          LM_W(("Bad Input (orig entity type: '%s'. New entity type: '%s'", dbTypeP->value.s, expandedType));
           entityErrorPush(errorsArrayP, entityId, OrionldBadRequestData, "non-matching entity type", inTypeP->value.s, 400);
           kjChildRemove(incomingTree, entityP);
           continue;

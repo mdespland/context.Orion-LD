@@ -1,5 +1,5 @@
-#ifndef SRC_LIB_ORIONLD_COMMON_ISSPECIALSUBATTRIBUTE_H_
-#define SRC_LIB_ORIONLD_COMMON_ISSPECIALSUBATTRIBUTE_H_
+#ifndef SRC_LIB_ORIONLD_TYPES_ATTRIBUTETYPE_H_
+#define SRC_LIB_ORIONLD_TYPES_ATTRIBUTETYPE_H_
 
 /*
 *
@@ -25,19 +25,36 @@
 *
 * Author: Ken Zangelin
 */
-extern "C"
-{
-#include "kjson/KjNode.h"                                        // KjNode
-}
-
-#include "orionld/types/AttributeType.h"                         // AttributeType
 
 
 
 // ----------------------------------------------------------------------------
 //
-// isSpecialSubAttribute -
+// AttributeType -
 //
-extern bool isSpecialSubAttribute(const char* attrName, AttributeType* aTypeP, KjNode* attributeTypeNodeP);
+typedef enum AttributeType
+{
+  ATTRIBUTE_ANY,
+  ATTRIBUTE_CREATED_AT,
+  ATTRIBUTE_MODIFIED_AT,
+  ATTRIBUTE_LOCATION,
+  ATTRIBUTE_OBSERVATION_SPACE,
+  ATTRIBUTE_OPERATION_SPACE,
+  ATTRIBUTE_OBSERVED_AT,
+  ATTRIBUTE_DATASETID,
+  ATTRIBUTE_INSTANCEID,
+  ATTRIBUTE_UNITCODE,
+  ATTRIBUTE_PROPERTY,
+  ATTRIBUTE_GEO_PROPERTY,
+  ATTRIBUTE_RELATIONSHIP
+} AttributeType;
 
-#endif  // SRC_LIB_ORIONLD_COMMON_ISSPECIALSUBATTRIBUTE_H_
+
+
+// -----------------------------------------------------------------------------
+//
+// attributeTypeName -
+//
+extern const char* attributeTypeName(AttributeType aType);
+
+#endif  // SRC_LIB_ORIONLD_TYPES_ATTRIBUTETYPE_H_

@@ -29,9 +29,81 @@ extern "C"
 #include "kjson/KjNode.h"                                        // KjNode
 }
 
+#include "logMsg/logMsg.h"                                       // LM_*
+#include "logMsg/traceLevels.h"                                  // Lmt*
+
+#include "common/globals.h"                                      // parse8601Time
+
 #include "orionld/common/urlCheck.h"                             // urlCheck
 #include "orionld/common/urnCheck.h"                             // urnCheck
+#include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate
+#include "orionld/types/AttributeType.h"                         // AttributeType
+#include "orionld/payloadCheck/pcheckGeoProperty.h"              // pcheckGeoProperty
 #include "orionld/payloadCheck/pcheckSpecialAttribute.h"         // Own interface
+
+
+
+// ----------------------------------------------------------------------------
+//
+// pcheckUrlValue - FIXME: Move to pcheckUrlValue.cpp
+//
+bool pcheckUrlValue(KjNode* attrNodeP)
+{
+  if (attrNodeP->type != KjString)
+  {
+    orionldErrorResponseCreate(OrionldBadRequestData, "Invalid JSON type - must be a JSON string", attrNodeP->name);
+    return false;
+  }
+
+  char* detail;
+  if ((urlCheck(attrNodeP->value.s, &detail) == false) && (urnCheck(attrNodeP->value.s, &detail)))
+  {
+    orionldErrorResponseCreate(OrionldBadRequestData, "Not a URI", attrNodeP->name);
+    return false;
+  }
+
+  return true;
+}
+
+
+
+// ----------------------------------------------------------------------------
+//
+// pcheckTimestamp - FIXME: Move to pcheckTimestamp.cpp
+//
+bool pcheckTimestamp(KjNode* attrNodeP)
+{
+  if (attrNodeP->type != KjString)
+  {
+    orionldErrorResponseCreate(OrionldBadRequestData, "Invalid JSON type - must be a JSON string", attrNodeP->name);
+    return false;
+  }
+
+  if (parse8601Time(attrNodeP->value.s) == -1)
+  {
+    orionldErrorResponseCreate(OrionldBadRequestData, "Invalid DateTime value", attrNodeP->name);
+    return false;
+  }
+
+  return true;
+}
+
+
+
+// -----------------------------------------------------------------------------
+//
+// pcheckString - FIXME: Move to pcheckString.cpp
+//
+bool pcheckString(KjNode* attrNodeP)
+{
+  if (attrNodeP->type != KjString)
+  {
+    orionldErrorResponseCreate(OrionldBadRequestData, "Invalid JSON type - must be a JSON string", attrNodeP->name);
+    return false;
+  }
+
+  return true;
+}
 
 
 
@@ -39,47 +111,34 @@ extern "C"
 //
 // pcheckSpecialAttribute -
 //
-bool pcheckSpecialAttribute(KjNode* attrNodeP, bool toplevel, char** titleP, char** detailP)
+bool pcheckSpecialAttribute(KjNode* attrNodeP, bool toplevel, AttributeType aType)
 {
-  if (strcmp(attrNodeP->name, "createdAt") == 0)
-  {
-    *titleP  = (char*) "createdAt";
-    *detailP = (char*) "Builtin attributes are ignored";
-    return false;
-  }
-  else if (strcmp(attrNodeP->name, "modifiedAt") == 0)
-  {
-    *titleP  = (char*) "modifiedAt";
-    *detailP = (char*) "Builtin attributes are ignored";
-    return false;
-  }
-  else if (strcmp(attrNodeP->name, "datasetId") == 0)
-  {
-    if (attrNodeP->type != KjString)
-    {
-      *titleP  = (char*) "Invalid JSON type";
-      *detailP = (char*) "datasetId must be a JSON string";
-      return false;
-    }
+  if ((aType == ATTRIBUTE_CREATED_AT) || (aType == ATTRIBUTE_MODIFIED_AT))  // Ignored
+    return true;
 
-    if ((urlCheck(attrNodeP->value.s, detailP) == false) && (urnCheck(attrNodeP->value.s, detailP)))
+  if (toplevel == true)
+  {
+    if      (aType == ATTRIBUTE_LOCATION)           return pcheckGeoProperty(attrNodeP, NULL, NULL);
+    else if (aType == ATTRIBUTE_OBSERVATION_SPACE)  return pcheckGeoProperty(attrNodeP, NULL, NULL);
+    else if (aType == ATTRIBUTE_OPERATION_SPACE)    return pcheckGeoProperty(attrNodeP, NULL, NULL);
+    else
     {
-      *titleP  = (char*) "Not a URI";
-      *detailP = (char*) "datasetId must be a URI";
+      LM_W(("Can't get here (invalid attribute type for a toplevel special attribute)"));
       return false;
     }
   }
-
-  //
-  // FIXME: Rest of special sub-attributes:
-  // * observedAt
-  // * unitCode (only if Property
-  //
-  // And the special top-level attributes:
-  // * location
-  // * observationSpace
-  // * operationSpace
-  //
+  else
+  {
+    if      (aType == ATTRIBUTE_DATASETID)        return pcheckUrlValue(attrNodeP);
+    else if (aType == ATTRIBUTE_OBSERVED_AT)      return pcheckTimestamp(attrNodeP);
+    else if (aType == ATTRIBUTE_UNITCODE)         return pcheckString(attrNodeP);
+    else
+    {
+      LM_W(("Can't get here (invalid attribute type for a special attribute)"));
+      orionldErrorResponseCreate(OrionldInternalError, "Can't get here?", "invalid attribute type for a special attribute");
+      return false;
+    }
+  }
 
   return true;
 }

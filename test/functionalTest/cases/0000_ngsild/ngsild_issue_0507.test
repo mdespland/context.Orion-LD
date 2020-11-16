@@ -90,7 +90,7 @@ echo "========================================="
 payload='[
   {
     "id": "urn:ngsi-ld:TemperatureSensor:003",
-    "type": "https://uri.fiware.org/ns/data-models#TemperatureSensor",
+    "type": "https://ngsi-ld-tutorials.readthedocs.io/en/latest/datamodels.html#TemperatureSensor",
     "category": {
       "type": "Property",
       "value": [

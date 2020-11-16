@@ -36,6 +36,6 @@ extern "C"
 //
 // pcheckAttribute -
 //
-extern bool pcheckAttribute(KjNode* aP, bool toplevel, char** titleP, char** detailP);
+extern bool pcheckAttribute(KjNode* aP, bool toplevel);
 
 #endif  // SRC_LIB_ORIONLD_PAYLOADCHECK_PCHECKATTRIBUTE_H_

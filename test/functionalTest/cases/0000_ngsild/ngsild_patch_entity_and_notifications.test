@@ -33,12 +33,15 @@ accumulatorStart --pretty-print 127.0.0.1 ${LISTENER_PORT}
 
 #
 # 01. Create an entity E1 with two attributes P1 and R1
-# 02. Create a subscription S1 for E1:P1, on attribute P1
-# 03. Update E1:P1
-# 04. Dump accumulator, see one notification
+# 02. Create a subscription S1 for E1:P1, on attribute P1, and q == P1>2
+# 03. Update E1:P1 to 3 => provoke notification
+# 04. Dump and Reset the Accumulator, see one notification
 # 05. Update E1:R1
-# 06. Dump accumulator, see no notifications
+# 06. Dump and Reset the Accumulator, see no notifications
 # 07. GET E1, see new values both for P1 and R1
+# 08. Update E1:P1 to 2 => provoke no notification
+# 09. Dump accumulator, see no notification
+#
 
 echo "01. Create an entity E1 with two attributes P1 and R1"
 echo "====================================================="
@@ -72,7 +75,7 @@ payload='{
     }
   ],
   "watchedAttributes": [ "P1" ],
-  "q": "P2>2",
+  "q": "P1>2",
   "notification": {
     "attributes": [ "P1" ],
     "format": "normalized",
@@ -87,8 +90,8 @@ echo
 echo
 
 
-echo "03. Update E1:P1"
-echo "================"
+echo "03. Update E1:P1 to 3 => provoke notification"
+echo "============================================="
 payload='{
   "P1": {
     "type": "Property",
@@ -100,8 +103,8 @@ echo
 echo
 
 
-echo "04. Dump accumulator, see one notification"
-echo "=========================================="
+echo "04. Dump and Reset the Accumulator, see one notification"
+echo "========================================================"
 sleep .1
 accumulatorDump
 accumulatorReset
@@ -122,10 +125,11 @@ echo
 echo
 
 
-echo "06. Dump accumulator, see no notifications"
-echo "=========================================="
+echo "06. Dump and Reset the Accumulator, see no notifications"
+echo "========================================================"
 sleep .1
 accumulatorDump
+accumulatorReset
 echo
 echo
 
@@ -133,6 +137,27 @@ echo
 echo "07. GET E1, see new values both for P1 and R1"
 echo "============================================="
 orionCurl --url /ngsi-ld/v1/entities/urn:ngsi-ld:entities:E1
+echo
+echo
+
+
+echo "08. Update E1:P1 to 2 => provoke no notification"
+echo "================================================"
+payload='{
+  "P1": {
+    "type": "Property",
+    "value": 2
+  }
+}'
+orionCurl --url /ngsi-ld/v1/entities/urn:ngsi-ld:entities:E1/attrs -X PATCH --payload "$payload"
+echo
+echo
+
+
+echo "09. Dump accumulator, see no notification"
+echo "========================================="
+sleep .1
+accumulatorDump
 echo
 echo
 
@@ -156,16 +181,16 @@ Date: REGEX(.*)
 
 
 
-03. Update E1:P1
-================
+03. Update E1:P1 to 3 => provoke notification
+=============================================
 HTTP/1.1 204 No Content
 Content-Length: 0
 Date: REGEX(.*)
 
 
 
-04. Dump accumulator, see one notification
-==========================================
+04. Dump and Reset the Accumulator, see one notification
+========================================================
 POST http://127.0.0.1:9997/notify
 Content-Length: 268
 User-Agent: orionld
@@ -199,8 +224,8 @@ Date: REGEX(.*)
 
 
 
-06. Dump accumulator, see no notifications
-==========================================
+06. Dump and Reset the Accumulator, see no notifications
+========================================================
 
 
 07. GET E1, see new values both for P1 and R1
@@ -223,6 +248,18 @@ Date: REGEX(.*)
     "id": "urn:ngsi-ld:entities:E1",
     "type": "T"
 }
+
+
+08. Update E1:P1 to 2 => provoke no notification
+================================================
+HTTP/1.1 204 No Content
+Content-Length: 0
+Date: REGEX(.*)
+
+
+
+09. Dump accumulator, see no notification
+=========================================
 
 
 --TEARDOWN--

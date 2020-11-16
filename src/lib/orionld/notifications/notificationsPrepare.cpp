@@ -35,10 +35,12 @@ extern "C"
 #include "logMsg/logMsg.h"                                       // LM_*
 #include "logMsg/traceLevels.h"                                  // Lmt*
 
+#include "ngsi/ContextElementResponse.h"                         // ContextElementResponse
 #include "cache/subCache.h"                                      // CachedSubscription, EntityInfo, subCacheGet, ...
 
 #include "orionld/common/dotForEq.h"                             // dotForEq
 #include "orionld/common/orionldState.h"                         // orionldState
+#include "orionld/kjTree/kjTreeToContextElementResponse.h"       // kjTreeToContextElementResponse
 #include "orionld/notifications/notificationAdd.h"               // notificationAdd
 #include "orionld/notifications/notificationsPrepare.h"          // Own interface
 
@@ -247,11 +249,34 @@ void notificationsPrepare(KjNode* dbEntityTree, KjNode* patchTreeCopy)
       LM_TMP(("NOTIF: notifyCondition %d: '%s'", ix, notifyCondition));
     }
 
-    // expression
+    // expression.q
+    //
+    // To use the old NGSIv2 StringFilter (q), we need a ContextElementResponse:
+    //   bool StringFilter::match(ContextElementResponse* cerP)
+    //
+    // So, we need to create one from 'patchTreeCopy'
+    //
+#ifndef NGSI_LD_Q_IN_SUBSCRIPTIONS
     LM_TMP(("NOTIF: q: '%s'", cSubP->expression.q.c_str()));
 
+    ContextElementResponse cer;
+    if (kjTreeToContextElementResponse(orionldState.contextP, patchTreeCopy, &cer) == false)
+    {
+      LM_E(("Internal Error (unable to convert the KjNode tree into a ContextElementResponse)"));
+      continue;
+    }
+
+    if ((cSubP->expression.q != "") && (cSubP->expression.stringFilter.match(&cer) == false))
+    {
+      LM_TMP(("NOTIF: skipping subscription '%s': NGSIv2 StringFilter '%s'", cSubP->subscriptionId, cSubP->expression.q.c_str()));
+      continue;
+    }
+#else
+#error NGSI-LD q for Subscriptions is not implemented
+#endif
+
     // NGSI-LD Scope
-    LM_TMP(("NOTIF: NGSI-LD Scope still need to be implemented"));
+    LM_TMP(("NOTIF: NGSI-LD Scope still needs to be implemented"));
 
     //
     // All OK - enqueing the notification

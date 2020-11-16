@@ -24,6 +24,12 @@
 */
 #include <string.h>                                              // strcmp
 
+extern "C"
+{
+#include "kjson/KjNode.h"                                        // KjNode
+}
+
+#include "orionld/types/AttributeType.h"                         // AttributeType
 #include "orionld/common/isSpecialAttribute.h"                   // Own interface
 
 
@@ -32,18 +38,47 @@
 //
 // isSpecialAttribute -
 //
-bool isSpecialAttribute(const char* attrName)
+bool isSpecialAttribute(const char* attrName, AttributeType* aTypeP, KjNode* attributeTypeNodeP)
 {
+  *aTypeP = ATTRIBUTE_ANY;  // This indicates an error
+
+  if (attributeTypeNodeP != NULL)
+  {
+    if (strcmp(attributeTypeNodeP->value.s, "Property") == 0)
+      *aTypeP = ATTRIBUTE_PROPERTY;
+    else if (strcmp(attributeTypeNodeP->value.s, "GeoProperty") == 0)
+      *aTypeP = ATTRIBUTE_GEO_PROPERTY;
+    else if (strcmp(attributeTypeNodeP->value.s, "Relationship") == 0)
+      *aTypeP = ATTRIBUTE_RELATIONSHIP;
+  }
+
   if (strcmp(attrName, "createdAt") == 0)
+  {
+    *aTypeP = ATTRIBUTE_CREATED_AT;
     return true;
-  if (strcmp(attrName, "modifiedAt") == 0)
+  }
+  else if (strcmp(attrName, "modifiedAt") == 0)
+  {
+    *aTypeP = ATTRIBUTE_MODIFIED_AT;
     return true;
+  }
   if (strcmp(attrName, "location") == 0)
+  {
+    *aTypeP = ATTRIBUTE_LOCATION;
     return true;
+  }
+
   if (strcmp(attrName, "observationSpace") == 0)
+  {
+    *aTypeP = ATTRIBUTE_OBSERVATION_SPACE;
     return true;
+  }
+
   if (strcmp(attrName, "operationSpace") == 0)
+  {
+    *aTypeP = ATTRIBUTE_OPERATION_SPACE;
     return true;
+  }
 
   return false;
 }

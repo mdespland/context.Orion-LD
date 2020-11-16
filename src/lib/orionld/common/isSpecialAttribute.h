@@ -25,6 +25,12 @@
 *
 * Author: Ken Zangelin
 */
+extern "C"
+{
+#include "kjson/KjNode.h"                                        // KjNode
+}
+
+#include "orionld/types/AttributeType.h"                         // AttributeType
 
 
 
@@ -32,6 +38,6 @@
 //
 // isSpecialAttribute -
 //
-extern bool isSpecialAttribute(const char* attrName);
+extern bool isSpecialAttribute(const char* attrName, AttributeType* aTypeP, KjNode* attributeTypeNodeP);
 
 #endif  // SRC_LIB_ORIONLD_COMMON_ISSPECIALATTRIBUTE_H_
