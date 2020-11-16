@@ -45,6 +45,9 @@ SET (SOURCES
      pcheckGeoqCoordinates.cpp
      pcheckGeoqGeorel.cpp
      pcheckGeoQ.cpp
+     pcheckTimestamp.cpp
+     pcheckUrlValue.cpp
+     pcheckString.cpp
 )
 
 # Include directories

@@ -39,71 +39,10 @@ extern "C"
 #include "orionld/common/orionldErrorResponse.h"                 // orionldErrorResponseCreate
 #include "orionld/types/AttributeType.h"                         // AttributeType
 #include "orionld/payloadCheck/pcheckGeoProperty.h"              // pcheckGeoProperty
+#include "orionld/payloadCheck/pcheckTimestamp.h"                // pcheckTimestamp
+#include "orionld/payloadCheck/pcheckUrlValue.h"                 // pcheckUrlValue
+#include "orionld/payloadCheck/pcheckString.h"                   // pcheckString
 #include "orionld/payloadCheck/pcheckSpecialAttribute.h"         // Own interface
-
-
-
-// ----------------------------------------------------------------------------
-//
-// pcheckUrlValue - FIXME: Move to pcheckUrlValue.cpp
-//
-bool pcheckUrlValue(KjNode* attrNodeP)
-{
-  if (attrNodeP->type != KjString)
-  {
-    orionldErrorResponseCreate(OrionldBadRequestData, "Invalid JSON type - must be a JSON string", attrNodeP->name);
-    return false;
-  }
-
-  char* detail;
-  if ((urlCheck(attrNodeP->value.s, &detail) == false) && (urnCheck(attrNodeP->value.s, &detail)))
-  {
-    orionldErrorResponseCreate(OrionldBadRequestData, "Not a URI", attrNodeP->name);
-    return false;
-  }
-
-  return true;
-}
-
-
-
-// ----------------------------------------------------------------------------
-//
-// pcheckTimestamp - FIXME: Move to pcheckTimestamp.cpp
-//
-bool pcheckTimestamp(KjNode* attrNodeP)
-{
-  if (attrNodeP->type != KjString)
-  {
-    orionldErrorResponseCreate(OrionldBadRequestData, "Invalid JSON type - must be a JSON string", attrNodeP->name);
-    return false;
-  }
-
-  if (parse8601Time(attrNodeP->value.s) == -1)
-  {
-    orionldErrorResponseCreate(OrionldBadRequestData, "Invalid DateTime value", attrNodeP->name);
-    return false;
-  }
-
-  return true;
-}
-
-
-
-// -----------------------------------------------------------------------------
-//
-// pcheckString - FIXME: Move to pcheckString.cpp
-//
-bool pcheckString(KjNode* attrNodeP)
-{
-  if (attrNodeP->type != KjString)
-  {
-    orionldErrorResponseCreate(OrionldBadRequestData, "Invalid JSON type - must be a JSON string", attrNodeP->name);
-    return false;
-  }
-
-  return true;
-}
 
 
 
