@@ -28,7 +28,7 @@ stages:
   - unit-test
   - functional-test
   - name: deploy
-    if: branch =develop
+    if: branch=develop OR type = pull_request
   - clean-up
 
 jobs:
