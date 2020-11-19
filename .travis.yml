@@ -28,7 +28,7 @@ stages:
   - unit-test
   - functional-test
   - name: deploy
-    if: branch=develop OR type=pull_request
+    if: branch=develop OR (type=pull_request AND branch=develop)
   - clean-up
 
 jobs:
