@@ -99,7 +99,7 @@ bool orionldPostBatchDelete(ConnectionInfo* ciP)
   KjNode* dbEntities = dbEntityListLookupWithIdTypeCreDate(orionldState.requestTree);
   if (dbEntities == NULL)
   {
-    LM_E(("mongoCppLegacyEntityListLookupWithIdTypeCreDate returned NULL"));
+    LM_E(("dbEntityListLookupWithIdTypeCreDate returned NULL"));
     orionldState.httpStatusCode = SccBadRequest;
     orionldErrorResponseCreate(OrionldBadRequestData, "Entities not found", "Entities were not found in database.");
     return false;

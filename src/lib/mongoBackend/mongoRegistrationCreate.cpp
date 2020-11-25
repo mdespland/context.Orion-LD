@@ -36,7 +36,12 @@
 #include "rest/OrionError.h"
 #include "rest/HttpStatusCode.h"
 #include "apiTypesV2/Registration.h"
+
+#ifdef ORIONLD
 #include "orionld/common/orionldState.h"
+#include "orionld/db/dbConfiguration.h"                            // dbDataFromKjTree
+#endif
+
 #include "mongoBackend/dbConstants.h"
 #include "mongoBackend/safeMongo.h"
 #include "mongoBackend/MongoGlobal.h"
@@ -196,10 +201,6 @@ static void setContextRegistrationVector(ngsiv2::Registration* regP, mongo::BSON
 
 
 #ifdef ORIONLD
-#include "orionld/mongoCppLegacy/mongoCppLegacyKjTreeToBsonObj.h"
-
-
-
 // -----------------------------------------------------------------------------
 //
 // setTimestamp -
@@ -238,7 +239,7 @@ static void setGeoLocation(const char* name, const OrionldGeoLocation* locationP
 
   locationObj.append("type", locationP->geoType);
 
-  mongoCppLegacyKjTreeToBsonObj(locationP->coordsNodeP, &coordsArray);
+  dbDataFromKjTree(locationP->coordsNodeP, &coordsArray);
   locationObj.append("coordinates", coordsArray);
 
   bobP->append(name, locationObj.obj());
@@ -254,7 +255,7 @@ static void setProperties(const char* name, KjNode* properties, mongo::BSONObjBu
 {
   mongo::BSONObj propertiesObj;
 
-  mongoCppLegacyKjTreeToBsonObj(properties, &propertiesObj);
+  dbDataFromKjTree(properties, &propertiesObj);
   bobP->append(name, propertiesObj);
 }
 
