@@ -48,6 +48,7 @@ SET (SOURCES
      pcheckTimestamp.cpp
      pcheckUrlValue.cpp
      pcheckString.cpp
+     pcheckUri.cpp
 )
 
 # Include directories

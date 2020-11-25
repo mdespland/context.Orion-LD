@@ -57,6 +57,7 @@ extern "C"
 #include "orionld/common/attributeNotUpdated.h"                  // attributeNotUpdated
 #include "orionld/db/dbEntityLookup.h"                           // dbEntityLookup
 #include "orionld/db/dbEntityUpdate.h"                           // dbEntityUpdate
+#include "orionld/payloadCheck/pcheckUri.h"                      // pcheckUri
 #include "orionld/context/orionldContextItemExpand.h"            // orionldContextItemExpand
 #include "orionld/context/orionldContextItemAliasLookup.h"       // orionldContextItemAliasLookup
 #include "orionld/kjTree/kjTreeToContextAttribute.h"             // kjTreeToContextAttribute
@@ -193,10 +194,10 @@ bool orionldPostEntity(ConnectionInfo* ciP)
   char* detail;
 
   // 1. Is the Entity ID in the URL a valid URI?
-  if ((urlCheck(entityId, &detail) == false) && (urnCheck(entityId, &detail) == false))
+  if (pcheckUri(entityId, &detail) == false)
   {
     orionldState.httpStatusCode = SccBadRequest;
-    orionldErrorResponseCreate(OrionldBadRequestData, "Entity ID must be a valid URI", entityId);
+    orionldErrorResponseCreate(OrionldBadRequestData, "Entity ID must be a valid URI", entityId);  // FIXME: Include 'detail' and name (entityId)
     return false;
   }
 

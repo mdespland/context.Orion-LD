@@ -50,6 +50,8 @@ extern "C"
 #include "orionld/common/attributeNotUpdated.h"                  // attributeNotUpdated
 #include "orionld/common/isSpecialAttribute.h"                   // isSpecialAttribute
 #include "orionld/db/dbConfiguration.h"                          // dbEntityLookup, dbEntityUpdate
+#include "orionld/common/eqForDot.h"                             // eqForDot
+#include "orionld/payloadCheck/pcheckUri.h"                      // pcheckUri
 #include "orionld/context/orionldContextItemExpand.h"            // orionldContextItemExpand
 #include "orionld/kjTree/kjTreeToContextAttribute.h"             // kjTreeToContextAttribute
 #include "orionld/kjTree/kjStringValueLookupInArray.h"           // kjStringValueLookupInArray
@@ -100,33 +102,37 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
   KjNode*  dbEntityTree;
   char*    detail;
 
-  // Entity ID must be a valid URI
-  if ((urlCheck(entityId, &detail) == false) && (urnCheck(entityId, &detail) == false))
+  // 1. Is the Entity ID in the URL a valid URI?
+  if (pcheckUri(entityId, &detail) == false)
   {
-    orionldState.httpStatusCode = 400;
-    orionldErrorResponseCreate(OrionldBadRequestData, "Entity ID must be a valid URI", entityId);
+    orionldState.httpStatusCode = SccBadRequest;
+    orionldErrorResponseCreate(OrionldBadRequestData, "Entity ID must be a valid URI", entityId);  // FIXME: Include 'detail' and name (entityId)
+
     return false;
   }
 
   // The payload must be a JSON object
   OBJECT_CHECK(orionldState.requestTree, kjValueType(orionldState.requestTree->type));
 
-  // Get the entity from mongo
-  if ((dbEntityTree = dbEntityLookup(entityId)) == NULL)
+  // 3. Get the entity from mongo
+  KjNode* dbEntityP;
+  if ((dbEntityP = dbEntityLookup(entityId)) == NULL)
   {
     orionldState.httpStatusCode = 404;
     orionldErrorResponseCreate(OrionldBadRequestData, "Entity does not exist", entityId);
     return false;
   }
 
-  // <DEBUG>
-  char buf[2048];
-  kjRender(orionldState.kjsonP, dbEntityTree, buf, sizeof(buf));
-  LM_TMP(("dbEntityTree: %s", buf));
+  // 3. Get the Entity Type, needed later in the call to the constructor of ContextElement
+  KjNode* idNodeP = kjLookup(dbEntityP, "_id");
 
-  kjRender(orionldState.kjsonP, patchTree, buf, sizeof(buf));
-  LM_TMP(("patchTree: %s", buf));
-  // </DEBUG>
+  if (idNodeP == NULL)
+  {
+    orionldState.httpStatusCode = SccReceiverInternalError;
+    orionldErrorResponseCreate(OrionldInternalError, "Corrupt Database", "'_id' field of entity from DB not found");
+    return false;
+  }
+
 
   //
   // Set pointers to the DB attribute array (attrNames) and object (attrs)
@@ -158,6 +164,7 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
   KjNode* notUpdatedP  = kjArray(orionldState.kjsonP, "notUpdated");
   KjNode* aP           = patchTree->value.firstChildP;
   KjNode* next;
+  int     newAttrs     = 0;
 
   while (aP != NULL)
   {
@@ -169,6 +176,8 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
       orionldErrorResponseCreate(OrionldBadRequestData, "Invalid Attribute Name", "'id' cannot be used as the name of an attribute");
       return false;
     }
+
+    LM_TMP(("PATCH: attribute name: '%s'", aP->name));
 
     if (strcmp(aP->name, "type") == 0)
     {
@@ -195,6 +204,27 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
       continue;
     }
 
+    char* eqName = kaStrdup(&orionldState.kalloc, aP->name);
+    dotForEq(eqName);
+    LM_TMP(("PATCH: looking up the attribute '%s' in the db attrs array (where '.' is replaced with '=')", eqName));
+    KjNode* dbAttrP = kjLookup(inDbAttrsP, eqName);
+    if (dbAttrP == NULL)  // Doesn't already exist - must be discarded
+    {
+      LM_TMP(("PATCH: attribute '%s' doesn't exist - it's discarded", eqName));
+      attributeNotUpdated(notUpdatedP, aP->name, "attribute doesn't exist");
+      aP = next;
+      continue;
+    }
+    LM_TMP(("PATCH: attribute '%s' exists and will be modified (real attr name: '%s')", eqName, aP->name));
+
+    // Steal createdAt from dbAttrP?
+
+    // Remove the attribute to be updated (from dbEntityP::inDbAttrsP) and insert the attribute from the payload data
+    kjChildRemove(inDbAttrsP, dbAttrP);
+    kjChildAdd(inDbAttrsP, aP);
+    attributeUpdated(updatedP, aP->name);
+
+    ++newAttrs;
     aP = next;
   }
 
@@ -334,6 +364,32 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
     attrP = next;
   }
 
+  if (newAttrs > 0)
+  {
+    // 6. Convert the resulting tree (dbEntityP) to a ContextElement
+    UpdateContextRequest ucRequest;
+    ContextElement*      ceP = new ContextElement(entityId, entityType, "false");
+
+    ucRequest.contextElementVector.push_back(ceP);
+
+    for (KjNode* attrP = inDbAttrsP->value.firstChildP; attrP != NULL; attrP = attrP->next)
+    {
+      ContextAttribute* caP = new ContextAttribute();
+
+      eqForDot(attrP->name);
+      LM_TMP(("PATCH: converting attribute '%s' to a ContextAttribute", attrP->name));
+
+      if (kjTreeToContextAttribute(orionldState.contextP, attrP, caP, NULL, &detail) == false)
+      {
+        LM_E(("kjTreeToContextAttribute: %s", detail));
+        attributeNotUpdated(notUpdatedP, attrP->name, "Error");
+        delete caP;
+      }
+      else
+        ceP->contextAttributeVector.push_back(caP);
+    }
+    ucRequest.updateActionType = ActionTypeReplace;
+
   if (updatedP->value.firstChildP == NULL)
   {
     LM_TMP(("Nothing has been updated - a 207 with all the info is returned"));
@@ -368,6 +424,22 @@ bool orionldPatchEntity(ConnectionInfo* ciP)
       orionldErrorResponseCreate(OrionldInternalError, "Database Error", "Error writing entity to database");
       return false;
     }
+
+    // 8. Call mongoBackend to do the REPLACE of the entity
+    UpdateContextResponse  ucResponse;
+
+    orionldState.httpStatusCode = mongoUpdateContext(&ucRequest,
+                                                     &ucResponse,
+                                                     orionldState.tenant,
+                                                     ciP->servicePathV,
+                                                     ciP->uriParam,
+                                                     ciP->httpHeaders.xauthToken,
+                                                     ciP->httpHeaders.correlator,
+                                                     ciP->httpHeaders.ngsiv2AttrsFormat,
+                                                     ciP->apiVersion,
+                                                     NGSIV2_NO_FLAVOUR);
+
+    ucRequest.release();
   }
 
   // 204 or 207?
