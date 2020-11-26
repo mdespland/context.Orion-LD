@@ -282,7 +282,6 @@ extern std::string lmLevelMaskStringGet(void);
 *
 */
 #ifdef LM_OFF
-  #define LM_KTREE(prefix, tree)
   #define LM_V(s)
   #define LM_M(s)
   #define LM_H(s)
@@ -576,20 +575,6 @@ do                                                                       \
 #endif
 
 
-#ifdef LM_NO_KTREE
-#define LM_KTREE(prefix, tree)
-#else
-/* ****************************************************************************
-*
-* LM_KTREE -
-*/
-#define LM_KTREE(prefix, tree)                                          \
-{                                                                       \
-  char buf[2048];                                                       \
-  kjRender(orionldState.kjsonP, tree, buf, sizeof(buf));                \
-  LM_TMP(("%s: '%s'", prefix, buf));                                    \
-}
-#endif
 
 #ifdef LM_NO_W
 #define LM_W(s)

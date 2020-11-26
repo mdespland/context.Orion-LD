@@ -121,8 +121,6 @@ static bool attrIn(const std::vector<std::string>& attrV, const char* attrName)
 //
 KjNode* dbEntityToNgsildEntityWithAttrsFilter(KjNode* entityNodeP, const std::vector<std::string>& notificationAttrs)
 {
-  LM_KTREE("NOTIF: db entity node: ", entityNodeP);
-
   KjNode* _idP = kjLookup(entityNodeP, "_id");
   KjNode* outP = kjObject(orionldState.kjsonP, NULL);
 
@@ -485,12 +483,6 @@ void orionldNotifyAll(void)
 {
   for (OrionldNotification* niP = orionldState.notificationHead; niP != NULL; niP = niP->next)
   {
-    LM_TMP(("NOTIF: ------------------------------------"));
-    LM_KTREE("NOTIF: ", niP->resultTree);
-    LM_TMP(("NOTIF: ------------------------------------"));
-    LM_KTREE("NOTIF: ", niP->changeTree);
-    LM_TMP(("NOTIF: ------------------------------------"));
-
     KjNode* notificationTree = kjObject(orionldState.kjsonP, NULL);
     char    notificationId[64];
 

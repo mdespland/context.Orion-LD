@@ -282,6 +282,5 @@ void notificationsPrepare(KjNode* dbEntityTree, KjNode* patchTreeCopy)
     // All OK - enqueing the notification
     //
     notificationAdd(cSubP, patchTreeCopy, dbEntityTree);
-    LM_KTREE("NOTIF: enqueued: ", dbEntityTree);
   }
 }

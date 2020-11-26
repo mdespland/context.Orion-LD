@@ -46,9 +46,6 @@ void notificationAdd(CachedSubscription* cSubP, KjNode* patchTreeCopy, KjNode* d
 {
   OrionldNotification* niP = (OrionldNotification*) kaAlloc(&orionldState.kalloc, sizeof(OrionldNotification));
 
-  LM_KTREE("NOTIF: enqueing notification: patchTreeCopy: ", patchTreeCopy);
-  LM_KTREE("NOTIF: enqueing notification: dbEntityTree:  ", dbEntityTree);
-
   niP->subP       = cSubP;
   niP->changeTree = patchTreeCopy;
   niP->resultTree = dbEntityTree;
