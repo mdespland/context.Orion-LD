@@ -201,6 +201,11 @@ static void setContextRegistrationVector(ngsiv2::Registration* regP, mongo::BSON
 
 
 #ifdef ORIONLD
+#include "orionld/db/dbConfiguration.h"       // dbDataFromKjTree
+
+
+
+>>>>>>> develop
 // -----------------------------------------------------------------------------
 //
 // setTimestamp -

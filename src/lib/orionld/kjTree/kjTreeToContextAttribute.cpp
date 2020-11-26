@@ -43,7 +43,7 @@ extern "C"
 #include "orionld/context/orionldContextItemAliasLookup.h"       // orionldContextItemAliasLookup
 #include "orionld/payloadCheck/pcheckGeoPropertyValue.h"         // pcheckGeoPropertyValue
 #include "orionld/payloadCheck/pcheckUri.h"                      // pcheckUri
-#include "orionld/payloadCheck/pcheckGeoProperty.h"              // pcheckGeoProperty
+#include "orionld/payloadCheck/pcheckGeoPropertyValue.h"         // pcheckGeoPropertyValue
 #include "orionld/kjTree/kjTreeToMetadata.h"                     // kjTreeToMetadata
 #include "orionld/kjTree/kjTreeToContextAttribute.h"             // Own interface
 

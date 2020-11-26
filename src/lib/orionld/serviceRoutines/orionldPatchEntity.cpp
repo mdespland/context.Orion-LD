@@ -51,6 +51,8 @@ extern "C"
 #include "orionld/common/isSpecialAttribute.h"                   // isSpecialAttribute
 #include "orionld/db/dbConfiguration.h"                          // dbEntityLookup, dbEntityUpdate
 #include "orionld/common/eqForDot.h"                             // eqForDot
+#include "orionld/common/attributeUpdated.h"                     // attributeUpdated
+#include "orionld/common/attributeNotUpdated.h"                  // attributeNotUpdated
 #include "orionld/payloadCheck/pcheckUri.h"                      // pcheckUri
 #include "orionld/context/orionldContextItemExpand.h"            // orionldContextItemExpand
 #include "orionld/kjTree/kjTreeToContextAttribute.h"             // kjTreeToContextAttribute
@@ -84,6 +86,97 @@ extern "C"
 // "datasetId" will be implemented later.
 //
 // ----------------------------------------------------------------------------
+//
+// attributeCheck -
+//
+// FIXME - move to separate module - should be used also for:
+//   * POST /entities/*/attrs
+//   * PATCH /entities/*/attrs
+//   * etc
+//
+bool attributeCheck(ConnectionInfo* ciP, KjNode* attrNodeP, char** titleP, char** detailP)
+{
+  if (attrNodeP->type != KjObject)
+  {
+    *titleP  = (char*) "Invalid JSON Type";
+    *detailP = (char*) "Attribute must be an object";
+
+    return false;
+  }
+
+  KjNode* typeP    = NULL;
+  KjNode* valueP   = NULL;
+  KjNode* objectP  = NULL;
+  int     attrType = 0;   // 1: Property, 2: Relationship, 3: GeoProperty, 4: TemporalProperty
+
+  for (KjNode* nodeP = attrNodeP->value.firstChildP; nodeP != NULL; nodeP = nodeP->next)
+  {
+    if (strcmp(nodeP->name, "type") == 0)
+    {
+      DUPLICATE_CHECK(typeP, "type", nodeP);
+      STRING_CHECK(typeP, "type");
+
+      if      (strcmp(typeP->value.s, "Property")         == 0)  attrType = 1;
+      else if (strcmp(typeP->value.s, "Relationship")     == 0)  attrType = 2;
+      else if (strcmp(typeP->value.s, "GeoProperty")      == 0)  attrType = 3;
+      else if (strcmp(typeP->value.s, "TemporalProperty") == 0)  attrType = 4;
+      else
+      {
+        *titleP  = (char*) "Invalid Value of Attribute Type";
+        *detailP = typeP->value.s;
+
+        return false;
+      }
+    }
+    else if (strcmp(nodeP->name, "value") == 0)
+    {
+      DUPLICATE_CHECK(valueP, "value", nodeP);
+    }
+    else if (strcmp(nodeP->name, "object") == 0)
+    {
+      DUPLICATE_CHECK(objectP, "object", nodeP);
+    }
+  }
+
+  if (typeP == NULL)
+  {
+    *titleP  = (char*) "Mandatory field missing";
+    *detailP = (char*) "attribute type";
+
+    return false;
+  }
+
+  if (attrType == 2)  // 2 == Relationship
+  {
+    // Relationships MUST have an "object"
+    if (objectP == NULL)
+    {
+      *titleP  = (char*) "Mandatory field missing";
+      *detailP = (char*) "Mandatory field missing: Relationship object";
+
+      return false;
+    }
+  }
+  else
+  {
+    // Properties MUST have a "value"
+    if (valueP == NULL)
+    {
+      *titleP  = (char*) "Mandatory field missing";
+      *detailP = (char*) "Mandatory field missing: Property value";
+
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
+
+// ----------------------------------------------------------------------------
+//
+// orionldPatchEntity -
 //
 // The input payload is a collection of attributes.
 // Those attributes that don't exist already in the entity are not added, but reported in the response payload data as "notUpdated".
