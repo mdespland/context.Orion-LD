@@ -14,7 +14,7 @@ RUN  if [ "$DEBUG" = "true" ] ; then make debug install ; else make release inst
 
 RUN strip /usr/bin/orionld
 
-FROM debian:10.9-slim
+FROM debian:9.13-slim
 
 RUN mkdir -p /var/{log,run}/orionld
 
