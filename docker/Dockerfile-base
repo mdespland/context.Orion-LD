@@ -1,4 +1,4 @@
-FROM debian:10.9-slim
+FROM debian:stretch-slim
 
 ENV ROOT_FOLDER='/opt'
 ENV PAHO_VERSION='v1.3.1'
