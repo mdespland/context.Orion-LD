@@ -1,4 +1,4 @@
-FROM debian:stretch-slim
+FROM ubuntu:20.04
 
 ENV ROOT_FOLDER='/opt'
 ENV PAHO_VERSION='v1.3.1'
