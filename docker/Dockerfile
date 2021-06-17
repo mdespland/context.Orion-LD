@@ -14,7 +14,7 @@ RUN  if [ "$DEBUG" = "true" ] ; then make debug install ; else make release inst
 
 RUN strip /usr/bin/orionld
 
-FROM alpine:3.14.0
+FROM debian:10.9-slim
 
 RUN mkdir -p /var/{log,run}/orionld
 
