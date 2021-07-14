@@ -30,6 +30,7 @@ BUILD_DEPS=(
  'libsasl2-dev' \
  'libssl-dev' \
  'uuid-dev' \
+ 'zlib1g-dev' \
 )
 
 BUILD_TOOLS=(
