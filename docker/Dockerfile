@@ -23,6 +23,7 @@ COPY --from=build-stage /opt/orion/ldcontexts/ /opt/orion/ldcontexts/
 COPY --from=build-stage /lib/aarch64-linux-gnu/ /lib/aarch64-linux-gnu/
 COPY --from=build-stage /usr/lib/aarch64-linux-gnu/ /usr/lib/aarch64-linux-gnu/
 COPY --from=build-stage /usr/bin/ /usr/bin/
+COPY --from=build-stage /usr/share/ca-certificates /usr/share/ca-certificates
 
 ENTRYPOINT ["orionld", "-fg", "-multiservice", "-ngsiv1Autocast"]
 
