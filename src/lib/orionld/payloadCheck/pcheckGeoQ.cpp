@@ -90,7 +90,7 @@ bool ngsildCoordinatesToAPIv1Datamodel(KjNode* coordinatesP, const char* fieldNa
   else
   {
     buf = kaAlloc(&orionldState.kalloc, 1024);
-    kjFastRender(orionldState.kjsonP, coordinatesP, buf, 1024);
+    kjFastRender(coordinatesP, buf);
   }
 
   coordinatesP->name    = (char*) "coords";

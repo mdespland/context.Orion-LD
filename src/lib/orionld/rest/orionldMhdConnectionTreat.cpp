@@ -1018,7 +1018,7 @@ MHD_Result orionldMhdConnectionTreat(ConnectionInfo* ciP)
     }
 
     if (orionldState.uriParams.prettyPrint == false)
-      kjFastRender(orionldState.kjsonP, orionldState.responseTree, responsePayload, sizeof(responsePayload));
+      kjFastRender(orionldState.responseTree, responsePayload);
     else
       kjRender(orionldState.kjsonP, orionldState.responseTree, responsePayload, sizeof(responsePayload));
 

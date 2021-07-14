@@ -260,7 +260,7 @@ void orionldNotify(void)
     kjChildAdd(notificationTree, dataNodeP);
     kjChildAdd(dataNodeP, niP->attrsForNotification);
 
-    kjFastRender(orionldState.kjsonP, notificationTree, payload, payloadLen);
+    kjFastRender(notificationTree, payload);
 
     int sizeLeftForLen = 16;  // sizeof(contentLenHeader) - 16
     contentLength = strlen(payload);

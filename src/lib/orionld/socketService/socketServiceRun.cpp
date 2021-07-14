@@ -113,7 +113,7 @@ static void ssGetEntity(char* entityId)
                                           NULL);  // datasetId
 
   char response[2048];
-  kjFastRender(orionldState.kjsonP, responseTree, response, sizeof(response));
+  kjFastRender(responseTree, response);
   responseLen = strlen(response);
   ssWrite(fd, response, responseLen);
 }

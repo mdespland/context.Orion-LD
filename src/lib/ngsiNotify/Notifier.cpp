@@ -557,7 +557,7 @@ std::vector<SenderThreadParams*>* Notifier::buildSenderParams
       int   bufSize = 512 * 1024;
       char* buf     = (char*) malloc(bufSize);  // FIXME: Use kjFastRenderSize for better allocation
 
-      kjFastRender(orionldState.kjsonP, kjTree, buf, bufSize);
+      kjFastRender(kjTree, buf);
       payloadString = buf;
       toFree        = buf;
     }

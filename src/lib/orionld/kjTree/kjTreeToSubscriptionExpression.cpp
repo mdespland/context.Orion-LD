@@ -118,7 +118,7 @@ bool kjTreeToSubscriptionExpression(KjNode* kNodeP, SubscriptionExpression* subE
     // NGSI-LD needs it to be able to be an array.
     // Easiest way to fix this is to render the JSON Array and translate it to a string, and then removing the '[]'
     //
-    kjFastRender(orionldState.kjsonP, coordinatesNodeP, coords, sizeof(coords));
+    kjFastRender(coordinatesNodeP, coords);
     coords[strlen(coords) - 1] = 0;       // Removing last ']'
     subExpressionP->coords = &coords[1];  // Removing first '['
   }

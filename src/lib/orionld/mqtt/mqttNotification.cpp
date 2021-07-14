@@ -129,7 +129,7 @@ int mqttNotification
     kjChildAdd(metadataNodeP, kvP);
   }
 
-  kjFastRender(orionldState.kjsonP, metadataNodeP, metadataBuf, 4096);
+  kjFastRender(metadataNodeP, metadataBuf);
 
   totalLen = strlen(body) + strlen(metadataBuf) + 50;
   totalBuf = kaAlloc(&orionldState.kalloc, totalLen);

@@ -207,7 +207,7 @@ void pgAttributeAppend
       int          renderedValueSize   = 4 * 1024;
       char*        renderedValue       = kaAlloc(&orionldState.kalloc, renderedValueSize);
 
-      kjFastRender(orionldState.kjsonP, valueNodeP, renderedValue, renderedValueSize);
+      kjFastRender(valueNodeP, renderedValue);
 
       snprintf(buf, bufSize, "%s('%s', '%s', '%s', '%s', %s, %s, %s, '%s', 'Compound', null, null, null, null, '%s', null, null, null, null, null, null, '%s')",
                comma, instanceId, attributeName, opMode, entityId, observedAt, hasSubProperties, unitCode, datasetId, renderedValue, orionldState.requestTimeString);
