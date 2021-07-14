@@ -1,0 +1,11 @@
+FROM marcdespland/orion-ld-base:1.0
+
+ARG PATH_TO_SRC='opt/orion/'
+ARG DEBUG=false
+
+RUN cp -a /usr/local/lib/. /usr/lib/aarch64-linux-gnu/
+RUN rm -r /usr/local/lib/
+
+COPY . ${PATH_TO_SRC}
+
+WORKDIR ${PATH_TO_SRC}
