@@ -22,7 +22,7 @@
 
 
 set -e
-
+apt install -y libffi-dev
 TEST_TOOLS=(
  'bc' \
  'nano' \

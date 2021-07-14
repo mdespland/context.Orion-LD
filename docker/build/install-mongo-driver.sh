@@ -20,13 +20,16 @@
 # For those usages not covered by this license please contact with
 # iot_support at tid dot es
 
-
+apt-get -y install patch
 set -e
 
 echo
 echo -e "\e[1;32m Builder: installing mongo cxx driver \e[0m"
 git clone https://github.com/FIWARE-Ops/mongo-cxx-driver ${ROOT_FOLDER}/mongo-cxx-driver
 cd ${ROOT_FOLDER}/mongo-cxx-driver
+patch src/mongo/client/command_writer.cpp < /tmp/build/install-mongo-driver-patch-01
+patch src/mongo/client/wire_protocol_writer.cpp < /tmp/build/install-mongo-driver-patch-02
+
 scons --disable-warnings-as-errors --use-sasl-client --ssl
 scons install --disable-warnings-as-errors --prefix=/usr/local --use-sasl-client --ssl
 cd ${ROOT_FOLDER} && rm -Rf mongo-cxx-driver
@@ -36,10 +39,4 @@ echo -e "\e[1;32m Debian Builder: check systemd \e[0m"
 apt-get -y install --reinstall systemd  # force reinstall systemd
 service dbus start
 
-echo
-echo -e "\e[1;32m Builder: installing mongo \e[0m"
-apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4
-
-echo 'deb [ arch=amd64 ] https://repo.mongodb.org/apt/debian stretch/mongodb-org/4.0 main' > /etc/apt/sources.list.d/mongodb.list
-apt-get -y update
-apt-get -y install mongodb-org mongodb-org-shell
+#apt-get -y install -f /tmp/build/mongodb-org_4.4_arm64.deb /tmp/build/mongodb-org-shell_4.4_arm64.deb

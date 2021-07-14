@@ -24,7 +24,7 @@
 set -e
 
 OPS_DEPS_CORE=(
-  'libcurl3' \
+  'libcurl4' \
   'libssl1.1' \
   'ca-certificates' \
 )
